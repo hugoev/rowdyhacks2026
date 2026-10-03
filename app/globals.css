@@ -70,3 +70,27 @@ input:focus, textarea:focus, select:focus { border-color: #805c36; }
 .case-tab { color: #644a30; }
 .case-lesson { color: #654d33; }
 .footer { color: #70583e; }
+
+body { --sans: var(--font-inter), Arial, Helvetica, sans-serif; }
+.brand { font-family: Arial, Helvetica, sans-serif; }
+h1, h2, h3, h4, h5, h6,
+.senior-heading h1,
+.section-title h2,
+.risk-copy h3,
+.demo-card h2,
+.empty h3,
+.confirm-dialog h2,
+.verification-card h2,
+.inspector-title h2,
+.inspector-empty h2,
+.inspector-results.has-result h2,
+.sample-section h2,
+.case-card h2,
+.settings-card h2 {
+  font-family: var(--font-syne), Arial, Helvetica, sans-serif;
+}
+.crew-note p, .empathy-note p, .family-strip > div:nth-child(2) p,
+.activity-waiting p, .stat-card > strong, .risk-dial strong,
+.payment-item-top > strong {
+  font-family: var(--sans);
+}
