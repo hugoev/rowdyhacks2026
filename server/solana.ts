@@ -6,7 +6,7 @@ import { createVault, decodeVault, resolveVault, vaultAddress } from '../lib/sol
 import type { Payment, SolanaStatus } from '../lib/types';
 import { Store } from './store';
 
-export const DEVNET_GENESIS = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1';
+export const DEVNET_GENESIS = 'EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG';
 const LAMPORTS = 1_000_000; // Fixed 0.001 devnet SOL, never the displayed mock dollar amount.
 type Intent = { id: string; decision: 'approve' | 'deny'; message: string; transaction: string; expires: number };
 export function checkSignedIntent(intent: Intent, encoded: string, guardian: PublicKey) {
