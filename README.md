@@ -8,15 +8,32 @@ A working RowdyHacks XII P0 prototype: a calm payment and call screen for a prot
 
 ## Run locally
 
-Requires **Node.js 22.16 or newer** (the server uses built-in `node:sqlite`).
+Requires **Node.js 22.22 or newer** (the ElevenLabs dependency requires it; the server also uses built-in `node:sqlite`).
 
 ```sh
 npm ci
-cp .env.example .env
 npm run dev
 ```
 
 Open [localhost:3000](http://localhost:3000). No API keys are needed for the scripted demo, payment holds, callbacks, family safe word, text scanner, or browser voice.
+
+The same npm commands work on **Windows, macOS, and Linux**. The team version is **22.22.0**, recorded in `.node-version` and `.nvmrc`; newer supported Node versions also work. Built-in SQLite does not need a separate SQLite install or C++ compiler. Run `node --version` if startup fails. On Windows, reopen PowerShell or Command Prompt after installing/upgrading Node, then run `npm ci` to install dependencies for that machine. Do not copy `node_modules` from another operating system.
+
+An `.env` file is optional for the local demo. To configure providers, copy `.env.example` to `.env`:
+
+```powershell
+# Windows PowerShell
+Copy-Item .env.example .env
+```
+
+```sh
+# macOS / Linux / Git Bash
+cp .env.example .env
+```
+
+In Windows Command Prompt, use `copy .env.example .env`. If PowerShell blocks `npm.ps1`, use `npm.cmd ci` and `npm.cmd run dev`. In a shared folder or network drive, if file watching fails, run `node --import tsx server/index.ts` and restart it manually after backend changes. If Next.js compilation specifically fails in Turbopack, use `npm run build` followed by `npm start` to run the verified Webpack build, and share the exact error so the development compiler can be diagnosed.
+
+Development uses a portable Node launcher that watches `server/` and `lib/`, while Next.js handles frontend hot reload. Production startup sets `NODE_ENV` in a JavaScript launcher, and the test runner discovers files directly. These commands avoid shell-specific environment assignments, tsx watcher IPC, and wildcard expansion. CI checks the unit tests, production build, and TypeScript on Windows, macOS, and Linux.
 
 The server prints an experimental SQLite warning on some Node 22 versions; this is expected. One development server should run per checkout. Browser tests use a separate build directory and port.
 
