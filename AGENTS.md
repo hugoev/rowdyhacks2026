@@ -30,7 +30,7 @@ Name unit tests `*.test.ts`. Cover risk thresholds, routine-payment friction, fa
 
 ## Commit & Pull Request Guidelines
 
-History currently contains only `Initial commit`. Apply these rules to new work:
+The current team workflow is to commit and push directly to `main`, unless the user explicitly requests a feature branch or pull request. Apply these metadata rules to new work:
 
 - Name branches `<type>/<short-kebab-case-description>`, such as `feat/payment-shield`, `fix/guardian-approval`, or `docs/setup-guide`. Use project-focused names; never use `agent/`, `codex/`, `ai/`, or other automation-identifying prefixes.
 - Use Conventional Commit subjects: `<type>(<optional-scope>): <imperative description>`, such as `feat(teller): add payment holds`. Types include `feat`, `fix`, `docs`, `test`, `refactor`, `perf`, `build`, `ci`, `chore`, `style`, and `revert`. Mark breaking changes with `!` and explain them in the body.

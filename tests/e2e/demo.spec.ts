@@ -18,12 +18,16 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   await rosa.goto('/protected'); await rosa.getByLabel('Read critical warnings aloud').uncheck();
   await rosa.getByRole('button', { name: 'Start scripted demo' }).click();
   await rosa.getByRole('button', { name: 'Next scripted line' }).click();
+  const detectionStarted = Date.now();
   await rosa.getByRole('button', { name: 'Next scripted line' }).click();
   await expect(guardian.getByText('Keep-it-secret request', { exact: true })).toBeVisible();
+  expect(Date.now() - detectionStarted).toBeLessThan(10000);
   await rosa.getByRole('button', { name: 'Check with Alex' }).click();
   await expect(relative.getByRole('button', { name: 'No, that’s not me' })).toBeVisible();
+  const callbackStarted = Date.now();
   await relative.getByRole('button', { name: 'No, that’s not me' }).click();
   await expect(rosa.getByText('Alex says: “That isn’t me calling.” Hang up and call his saved number.')).toBeVisible();
+  expect(Date.now() - callbackStarted).toBeLessThan(5000);
   await rosa.getByRole('button', { name: 'Check & send demo payment' }).click();
   await expect(rosa.getByRole('heading', { name: 'Your money can wait.' })).toBeVisible();
   await guardian.getByRole('button', { name: 'Deny payment', exact: true }).click();
@@ -41,7 +45,7 @@ test('normal $40 bill completes with no friction', async ({ page }) => {
 test('safe word setup and incorrect answer escalate the call', async ({ page }) => {
   await page.goto('/settings');
   await expect(page.getByRole('heading', { name: 'Set your safety net.' })).toBeVisible();
-  if (await page.getByRole('button', { name: 'Set safe word', exact: true }).isVisible()) { await page.getByLabel('Your family word').fill('marigold'); await page.getByRole('button', { name: 'Set safe word', exact: true }).click(); }
+  if (await page.getByRole('button', { name: 'Set safe word', exact: true }).isVisible()) { await page.getByLabel('Your family word').fill('marigold'); await page.getByRole('button', { name: 'Set safe word', exact: true }).click(); await expect(page.getByText('SAFE WORD CONFIGURED', { exact: true })).toBeVisible(); }
   await page.goto('/protected'); await page.getByLabel('Read critical warnings aloud').uncheck(); await page.getByRole('button', { name: 'Start scripted demo' }).click();
   await page.getByLabel('What word did they say?').fill('wrong answer'); await page.getByRole('button', { name: 'Check their answer' }).click();
   await expect(page.getByText('That word did not match. Please hang up and call Alex.')).toBeVisible(); await expect(page.getByText(/CRITICAL ·/)).toBeVisible();
@@ -55,9 +59,21 @@ test('Inspector flags a romance sample and does not mislabel an ordinary message
 test('phone layouts have no horizontal overflow and navigation works', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const route of ['/guardian', '/protected', '/relative', '/inspector', '/settings', '/cases']) {
-    await page.goto(route); await expect(page.locator('main h1')).toBeVisible();
+    await page.goto(route); await expect(page.locator('main h1')).toBeVisible(); await expect(page.getByText('Live connection', { exact: true })).toBeAttached();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
   await page.getByRole('button', { name: 'Open navigation' }).click(); await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'The Inspector' }).click();
   await expect(page.getByRole('heading', { name: 'Something feel off?' })).toBeVisible();
+});
+test('desktop and mobile views render without runtime errors', async ({ page }) => {
+  const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.setViewportSize({ width: 1440, height: 1100 }); await page.goto('/guardian');
+  await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/tripwire-desktop.png', fullPage: true });
+  await page.goto('/protected'); await expect(page.getByRole('button', { name: 'Start scripted demo' })).toBeVisible();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('.sidebar')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, -244, 0)');
+  await page.screenshot({ path: 'test-results/tripwire-mobile.png', fullPage: true });
+  expect(errors).toEqual([]);
 });
