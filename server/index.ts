@@ -70,7 +70,8 @@ const server = createServer(async (req, res) => {
     if (req.method === 'GET' && path === '/api/config') { json(res, 200, publicConfig()); return; }
     if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', analytics: tiger.status().state, mode: config.demo ? 'demo' : 'paired', hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
     if (req.method !== 'GET' && (req.method !== 'POST' || req.headers['x-tripwire-client'] !== 'web')) throw Object.assign(new Error('Unsupported request.'), { status: 403 });
-    const ip = req.socket.remoteAddress || 'local'; limit(ip, 240);
+    // Public demo mode shares one request budget across repeated multi-view rehearsals.
+    const ip = req.socket.remoteAddress || 'local'; limit(ip, config.demo ? 1200 : 240);
     const body = req.method === 'POST' ? await readBody(req) : {};
     if (path === '/api/session' && req.method === 'POST') {
       const input = z.object({ role: z.enum(roles), accessCode: z.string().max(256).optional() }).parse(body);

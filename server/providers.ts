@@ -15,11 +15,11 @@ export async function inspect(text: string, image?: { data: string; mimeType: st
       return { ...result, verdict: result.score >= 60 ? 'Strong scam warning signs' : result.score >= 30 ? 'Pause and verify' : 'No red flags found', source: 'gemini' };
     } catch (error) {
       if (!(error instanceof GeminiError)) throw error;
-      if (image && !text.trim()) throw new Error('Image analysis is temporarily unavailable. Paste the text from the image to use the rules fallback.');
+      if (image && !text.trim()) throw new Error('Image analysis is temporarily unavailable. Paste the words from the picture to check the text instead.');
       failure = error.message;
     }
   }
-  if (image && !text.trim()) throw new Error('Screenshot analysis needs GEMINI_API_KEY. You can paste the text from the screenshot to inspect it without an API key.');
+  if (image && !text.trim()) throw new Error('Picture checking is unavailable right now. Paste the words from the picture to check the text instead.');
   const assessment = assessTranscript(text);
   const redFlags = assessment.tells.map(t => t.label + ': “' + t.phrase + '”');
   for (const match of text.matchAll(/https?:\/\/[^\s]+/g)) {
