@@ -3,6 +3,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import bcrypt from 'bcryptjs';
+import { explainCase } from '../lib/case-education';
 import { assessPayment, assessTranscript, levelFor } from '../lib/risk';
 import type { AnalyticsEvent, Assessment, Payment, PublicState, Rail, Role, State } from '../lib/types';
 
@@ -27,6 +28,10 @@ export class Store {
     const saved = this.get('state');
     this.state = saved ? JSON.parse(saved) : emptyState();
     for (const payment of this.state.payments) payment.summarySource ??= 'rules';
+    for (const file of this.state.cases) {
+      const payment = this.state.payments.find(p => p.id === file.paymentId);
+      if (file.outcome === 'foiled' && payment?.status === 'denied' && !file.education) file.education = explainCase(file, payment);
+    }
     // A server restart ends the live session; retained evidence remains available only with consent.
     this.state.call.active = false;
     this.state.settings.safeWordConfigured = !!this.get('safeWordHash');
@@ -143,6 +148,7 @@ export class Store {
       const next = assessTranscript(this.state.call.transcript.map(l => l.text).join(' '), true, this.state.call.callback?.answer === 'no');
       this.state.call.assessment = { ...next, score: Math.max(next.score, this.state.call.assessment.score), level: 'Critical' };
     }
+    this.captureCaseChecks();
     this.event(matched ? 'Safe word matched · still verify independently' : 'Safe word failed · identity unverified', this.state.call.assessment.score, 'verification'); this.save();
     return matched;
   }
@@ -159,7 +165,16 @@ export class Store {
     if (!callback || callback.id !== id || callback.answeredAt) throw new Error('This callback is no longer awaiting a reply.');
     callback.answer = answer; callback.answeredAt = this.now();
     if (answer === 'no') this.state.call.assessment = assessTranscript(this.state.call.transcript.map(l => l.text).join(' '), this.state.call.safeWord === 'failed', true);
+    this.captureCaseChecks();
     this.event(answer === 'no' ? 'Alex says: “That is not me calling.”' : 'Alex confirmed the call · verify the payment separately', this.state.call.assessment.score, 'verification'); this.save();
+  }
+  private captureCaseChecks() {
+    for (const file of this.state.cases) {
+      if (file.outcome !== 'open' || !file.evidence?.callId || file.evidence.callId !== this.state.call.id) continue;
+      file.evidence.safeWordFailed ||= this.state.call.safeWord === 'failed';
+      file.evidence.callbackDenied ||= this.state.call.callback?.answer === 'no';
+      file.tells = [...new Set([...file.tells, ...this.state.call.assessment.tells.map(t => t.label)])];
+    }
   }
   createPayment(input: { amount: number; payee: string; rail: Rail; newPayee: boolean; pasted?: boolean }) {
     this.tick();
@@ -174,7 +189,7 @@ export class Store {
       summarySource: 'rules', summary: `${input.payee} · $${input.amount.toFixed(2)} by ${input.rail}. ${reasons.join('. ')}. ${held ? 'Held for a guardian decision or the 24-hour cooling-off period.' : status === 'review' ? 'A specific warning must be reviewed before continuing.' : 'No red flags found by the demo rules.'}`,
     };
     this.state.payments.unshift(payment);
-    if (assessment.score >= 30 || held) this.state.cases.unshift({ id: randomUUID(), title: this.state.call.assessment.scamType === 'Unverified request' ? 'The Payment Check' : this.state.call.assessment.scamType, openedAt: this.now(), score: payment.score, tells: [...new Set([...this.state.call.assessment.tells.map(t => t.label), ...reasons])], paymentId: payment.id, outcome: 'open' });
+    if (assessment.score >= 30 || held) this.state.cases.unshift({ id: randomUUID(), title: this.state.call.assessment.scamType === 'Unverified request' ? 'The Payment Check' : this.state.call.assessment.scamType, openedAt: this.now(), score: payment.score, tells: [...new Set([...this.state.call.assessment.tells.map(t => t.label), ...reasons])], paymentId: payment.id, outcome: 'open', evidence: { callId: this.state.call.id, safeWordFailed: this.state.call.safeWord === 'failed', callbackDenied: this.state.call.callback?.answer === 'no', held } });
     this.event(held ? 'Two-Key Rule · payment held' : status === 'review' ? 'Teller · review requested' : 'Routine payment completed', payment.score, 'payment'); this.save(); return payment;
   }
   reviewPayment(id: string, secret: boolean) {
@@ -191,7 +206,7 @@ export class Store {
       payment.status = 'held'; payment.releaseAt = this.now() + DAY;
     } else { payment.status = 'released'; payment.resolvedAt = this.now(); this.closeCase(id, 'reviewed'); }
     const file = this.state.cases.find(c => c.paymentId === id);
-    if (file) { file.score = payment.score; file.tells = [...new Set([...file.tells, ...payment.reasons])]; }
+    if (file) { file.score = payment.score; file.tells = [...new Set([...file.tells, ...payment.reasons])]; if (mustHold && file.evidence) file.evidence.held = true; }
     payment.summarySource = 'rules';
     payment.summary = `${payment.payee} · $${payment.amount.toFixed(2)}. ${payment.reasons.join('. ')}. ${mustHold ? 'Updated risk check; payment held.' : 'User reviewed the warning.'}`;
     this.event(mustHold ? 'Updated risk check · payment held' : 'Warning reviewed · payment completed', payment.score, 'payment'); this.save(); return payment;
@@ -203,6 +218,16 @@ export class Store {
     if (payment.status !== 'held' && payment.status !== 'review') throw new Error('This payment has already been resolved.');
     payment.status = decision === 'approve' ? 'released' : 'denied'; payment.resolvedAt = this.now();
     this.closeCase(id, decision === 'deny' ? 'foiled' : 'reviewed');
+    const file = this.state.cases.find(c => c.paymentId === id);
+    if (file && decision === 'deny') {
+      // Only verification from the original call belongs in this case.
+      if (file.evidence?.callId && file.evidence.callId === this.state.call.id) {
+        file.evidence.safeWordFailed ||= this.state.call.safeWord === 'failed';
+        file.evidence.callbackDenied ||= this.state.call.callback?.answer === 'no';
+        file.tells = [...new Set([...file.tells, ...this.state.call.assessment.tells.map(t => t.label)])];
+      }
+      file.education = explainCase(file, payment);
+    }
     this.event(decision === 'deny' ? 'HEIST FOILED · guardian denied payment' : 'Guardian approved payment', payment.score, 'payment'); this.save(); return payment;
   }
   closeCase(paymentId: string, outcome: 'foiled' | 'reviewed') { const file = this.state.cases.find(c => c.paymentId === paymentId); if (file) file.outcome = outcome; }

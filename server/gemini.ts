@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { createHash } from 'node:crypto';
 import { levelFor } from '../lib/risk';
-import type { Assessment, Payment } from '../lib/types';
+import type { Assessment, CaseFile, Payment } from '../lib/types';
 import { configureProvider, providerFailure, providerSuccess } from './provider-status';
 
 type Task = 'call' | 'scan' | 'summary';
@@ -84,4 +84,11 @@ const summarySchema = z.object({ summary: z.string().min(1).max(1000) });
 export async function summarizePayment(payment: Payment, labels: string[]) {
   const result = await generate('summary', 'Write a short guardian explanation of this held demo payment, naming the evidence and one verification action. Do not decide approval or denial. No raw call quotes or invented claims. Return summary.', { payee: payment.payee, amount: payment.amount, rail: payment.rail, reasons: payment.reasons, labels, status: payment.status }, summarySchema);
   return result.summary;
+}
+
+const caseSchema = z.object({ whatHappened: z.string().trim().min(1).max(450) });
+export async function summarizeCase(file: CaseFile) {
+  if (!file.education || file.outcome !== 'foiled') throw new Error('A denied payment case is required.');
+  const result = await generate('summary', 'Explain this denied demo payment to an older adult in at most two short sentences. Use familiar words and no blame. Describe suspected patterns, not a proven scam or identity. Use only the supplied explanation and warning labels. Do not add names, amounts, quotes, verification results, guarantees, or instructions. Return whatHappened. The application supplies the recorded protections and next step separately.', { explanation: file.education.whatHappened, warningSigns: file.education.clues }, caseSchema);
+  return result.whatHappened;
 }

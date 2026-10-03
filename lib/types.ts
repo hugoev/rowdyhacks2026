@@ -12,7 +12,8 @@ export type Payment = {
   escrow?: { state: 'depositing' | 'held' | 'released' | 'refunded'; address: string; lamports: number; unlock: number; depositSignature?: string; resolutionSignature?: string; error?: string };
 };
 export type RiskEvent = { id: string; at: number; score: number; label: string; kind: 'call' | 'payment' | 'verification' | 'system' };
-export type CaseFile = { id: string; title: string; openedAt: number; score: number; tells: string[]; paymentId?: string; outcome: 'open' | 'foiled' | 'reviewed' };
+export type CaseEducation = { whatHappened: string; clues: string[]; protections: string[]; nextStep: string; source: 'rules' | 'gemini' };
+export type CaseFile = { id: string; title: string; openedAt: number; score: number; tells: string[]; paymentId?: string; outcome: 'open' | 'foiled' | 'reviewed'; evidence?: { callId: string | null; safeWordFailed: boolean; callbackDenied: boolean; held: boolean }; education?: CaseEducation };
 export type Callback = { id: string; requestedAt: number; answeredAt: number | null; answer: 'yes' | 'no' | null };
 export type State = {
   call: { id: string | null; active: boolean; startedAt: number | null; transcript: TranscriptLine[]; assessment: Assessment; safeWord: 'unchecked' | 'matched' | 'failed'; callback: Callback | null };

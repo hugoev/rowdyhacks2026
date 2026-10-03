@@ -40,8 +40,13 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   await guardian.getByRole('button', { name: 'Deny payment', exact: true }).click();
   await guardian.getByRole('dialog').getByRole('button', { name: 'Deny payment' }).click();
   await expect(rosa.getByRole('heading', { name: 'Elena stopped this payment.' })).toBeVisible();
+  await expect(rosa.getByRole('heading', { name: 'What happened', exact: true })).toBeVisible();
+  await expect(rosa.getByText('Your relative replied that they were not the person calling.')).toBeVisible();
+  await expect(rosa.getByText('Call the person who asked for money using a number you already have saved.')).toBeVisible();
   await expect(guardian.locator('.payment-item').getByText('HEIST FOILED', { exact: true })).toBeVisible();
   await guardian.goto('/cases'); await expect(guardian.getByRole('heading', { name: 'The Grandson Job' })).toBeVisible();
+  await expect(guardian.getByRole('heading', { name: 'Your next step', exact: true })).toBeVisible();
+  await guardian.reload(); await expect(guardian.getByText('Your guardian denied this demo payment. It was not sent.')).toBeVisible();
   await context.close();
 });
 
