@@ -2,6 +2,11 @@
   "name": "tripwire",
   "version": "0.1.0",
   "private": true,
+  "overrides": {
+    "@solana/web3.js": {
+      "jayson": "5.0.0"
+    }
+  },
   "type": "module",
   "engines": {
     "node": ">=22.22.0"
@@ -18,6 +23,9 @@
     "test:e2e": "playwright test",
     "eval:gemini": "node --import tsx scripts/eval-gemini.ts",
     "setup:tiger": "node --import tsx scripts/check-tiger.ts --setup",
+    "setup:solana": "node --import tsx scripts/setup-solana.ts",
+    "build:solana": "node scripts/build-solana.mjs",
+    "check:solana": "node --import tsx scripts/check-solana.ts",
     "check:tiger": "node --import tsx scripts/check-tiger.ts",
     "setup:vultr": "node --import tsx scripts/setup-vultr.ts",
     "check:vultr": "node --import tsx scripts/check-vultr.ts",
@@ -26,7 +34,9 @@
   },
   "dependencies": {
     "@elevenlabs/client": "^1.26.0",
+    "@solana/web3.js": "^1.99.0",
     "bcryptjs": "^3.0.2",
+    "bs58": "^6.0.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.468.0",
     "next": "16.3.8",

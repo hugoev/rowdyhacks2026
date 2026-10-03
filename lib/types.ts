@@ -9,6 +9,7 @@ export type Payment = {
   status: 'review' | 'held' | 'released' | 'denied'; score: number; reasons: string[];
   createdAt: number; releaseAt: number | null; resolvedAt: number | null; summary: string;
   summarySource?: 'rules' | 'gemini';
+  escrow?: { state: 'depositing' | 'held' | 'released' | 'refunded'; address: string; lamports: number; unlock: number; depositSignature?: string; resolutionSignature?: string; error?: string };
 };
 export type RiskEvent = { id: string; at: number; score: number; label: string; kind: 'call' | 'payment' | 'verification' | 'system' };
 export type CaseEducation = { whatHappened: string; clues: string[]; protections: string[]; nextStep: string; source: 'rules' | 'gemini' };
@@ -24,5 +25,6 @@ export type ProviderStatus = { state: 'unconfigured' | 'configured' | 'working' 
 export type AnalyticsStatus = { state: 'unconfigured' | 'configured' | 'working' | 'degraded'; source: 'local' | 'tiger'; lastSuccessAt: number | null; pendingEvents: number; error?: string };
 export type RiskHistory = { source: 'local' | 'tiger'; points: RiskEvent[]; minutes: { at: number; peak: number; average: number; samples: number }[]; peak: number; total: number };
 export type AnalyticsEvent = { id: string; streamId: string; at: number; score: number; kind: RiskEvent['kind']; scamType: string; callId: string | null };
-export type PublicState = State & { riskHistory?: RiskHistory; config: { demo: boolean; gemini: boolean; elevenlabs: boolean; analytics?: AnalyticsStatus; providers?: Partial<Record<ProviderCapability, ProviderStatus>> } };
+export type SolanaStatus = { state: 'unconfigured' | 'configured' | 'working' | 'degraded'; cluster: 'devnet'; program?: string; guardian?: string; payer?: string; error?: string };
+export type PublicState = State & { riskHistory?: RiskHistory; config: { demo: boolean; gemini: boolean; elevenlabs: boolean; solana?: SolanaStatus; analytics?: AnalyticsStatus; providers?: Partial<Record<ProviderCapability, ProviderStatus>> } };
 export type ScanResult = { score: number; verdict: string; redFlags: string[]; explanation: string; nextStep: string; source: 'rules' | 'gemini'; limitations?: string };

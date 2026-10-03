@@ -30,6 +30,6 @@ Use three windows with the same origin: `/protected`, `/guardian`, `/relative`. 
 - **What does AI do?** With a key, Gemini enriches call signals and inspects screenshots. Payment enforcement remains deterministic; Gemini can asynchronously add a guardian summary for held payments.
 - **What if APIs fail?** Text rules, scripted calls, local holds, callback, and browser voice still work. Image-only analysis reports unavailable rather than inventing a verdict.
 - **Does it hang up the call?** No. It tells Rosa to hang up on her phone and stops the guard.
-- **What comes next?** Durable Postgres/Tiger Data, real payment integration, and optional Solana/Presage work after the P0 path is stable.
+- **What comes next?** Tiger is live on Vultr. Solana devnet escrow is implemented but awaiting funded program deployment and the guardian wallet. Presage remains optional; real bank payments are not connected.
 
 Avoid citing unverified loss statistics or claiming sponsor prizes are qualified by integrations that are not connected.

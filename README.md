@@ -1,10 +1,30 @@
 # Tripwire
+**Tripwire is a family scam-protection app, with a payment-protection feature that could integrate into a bank’s app.** Our MVP puts both together in one website to demonstrate the complete experience.
+
+There are three connected views:
+
+- **Rosa’s shield:** Rosa turns on call monitoring, sees specific warnings, checks the family safe word, asks her real relative to verify a call, and scans suspicious messages or screenshots.
+- **Guardian command center:** A trusted family member sees alerts, reviews suspicious payment requests, approves or denies them, and reads case files.
+- **Relative’s reply screen:** The real relative answers, “Are you actually calling Rosa?” Their response reaches Rosa immediately.
+
+The technologies support that experience: **ElevenLabs** turns spoken calls into text and reads warnings aloud; **Gemini** analyzes conversations and screenshots and explains warning signs; **Tiger Data** records risk trends; **Vultr** hosts the app and keeps the family’s screens connected.
+
+**The payment screen is a simulated bank integration.** It demonstrates how Tripwire could stop a risky payment when a bank or payment provider gives it that ability. Our standalone app cannot freeze money sent through another app.
+
+The clearest product direction is:
+
+**A standalone mobile companion for Rosa and her family, plus an integration that banks can embed at the payment moment.**
+
+For the hackathon, we’re building that as a mobile-friendly web app. Call monitoring currently uses the browser microphone to hear a speakerphone conversation; it does not automatically access ordinary phone calls.
+
+The promise is: **help Rosa recognize a scam, bring someone she trusts into the conversation, and—with a payment-provider integration—stop the money before it leaves.**
+
 
 **Every scam is a heist. Tripwire trips the alarm before the money moves.**
 
 A working RowdyHacks XII P0 prototype: a calm payment and call screen for a protected family member, a case-file command center for their guardian, and a separate callback screen for a trusted relative. Built with Next.js, TypeScript, Socket.IO, and SQLite.
 
-> All payments are simulated. No bank, wallet, escrow program, telephone network, or real funds are connected. This is a single-household hackathon prototype, not a production fraud-prevention service.
+> Dollar payments are simulated. Optional Solana escrow uses a fixed 0.001 devnet SOL, never real funds or the displayed dollar amount. No bank or telephone network is connected. This is a single-household hackathon prototype, not a production fraud-prevention service.
 
 ## Run locally
 
@@ -67,13 +87,14 @@ The demo uses **manual next-line controls**, so venue noise and timing cannot br
 | Voice warning | Optional ElevenLabs text-to-speech, browser speech synthesis fallback, visible warning always available. |
 | Vault Code | Working salted bcrypt hash, rate-limited verification, sticky Critical risk after a wrong answer. A later correct guess cannot erase it. |
 | Callback | Working Socket.IO request/reply across paired views. No SMS or actual phone call. |
-| Two-Key Rule | Working durable SQLite **mock-payment** hold. Guardian approval or a server-clock 24-hour deadline releases it; denial is terminal. |
+| Two-Key Rule | Durable SQLite mock-payment holds. Optional Solana devnet escrow requires an actual guardian wallet signature or on-chain deadline; local approval/timers cannot bypass an attached escrow. |
 | Guardian summary | Optional Gemini summary with an explainable rules-based fallback. |
 | Inspector | Rules-based text/link checks. Gemini image understanding and richer text checks when configured. Image-only scans explicitly fail when image analysis is unavailable. |
 | Cases / risk chart | Working local events and payment case files, not seeded outcome metrics. |
 | Tiger Data | PostgreSQL risk-event hypertable, minute continuous aggregate, and cloud-backed guardian chart. Durable local retry queue and local chart fallback. See [Tiger setup](docs/TIGER.md). |
 | Vultr | Deployed with Caddy HTTPS, Socket.IO, paired role access, and persistent SQLite storage. See [deployment details](docs/VULTR.md). |
-| Solana / Presage | Not integrated. Payment enforcement remains local SQLite; Tiger does not move or hold money. |
+| Solana | Native Rust escrow program and wallet-signing integration implemented. Program compiled and tested on an isolated validator; devnet deployment and production activation still require a funded deployment wallet and guardian public address. See [Solana setup](docs/SOLANA.md). |
+| Presage | Not integrated. Tiger does not move or hold money. |
 | Heist Drill / Scam Weather | Not implemented. |
 | PWA | App manifest, standalone display, custom icon. No offline service worker; connected family flows require the server. |
 

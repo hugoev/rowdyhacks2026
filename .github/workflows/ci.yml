@@ -39,8 +39,15 @@ jobs:
             test-results/**/*.zip
             test-results/**/*.md
           retention-days: 7
+  verify-chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: rustup update stable --no-self-update
+      - run: cargo +stable test --locked --manifest-path chain/Cargo.toml
   deploy:
-    needs: verify
+    needs: [verify, verify-chain]
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -56,6 +63,10 @@ jobs:
           VULTR_SSH_KEY: ${{ secrets.VULTR_SSH_KEY }}
           VULTR_KNOWN_HOSTS: ${{ secrets.VULTR_KNOWN_HOSTS }}
           VULTR_ENV: ${{ secrets.VULTR_ENV }}
+          SOLANA_PROGRAM_ID: ${{ vars.SOLANA_PROGRAM_ID }}
+          SOLANA_GUARDIAN_PUBLIC_KEY: ${{ vars.SOLANA_GUARDIAN_PUBLIC_KEY }}
+          SOLANA_RECIPIENT_PUBLIC_KEY: ${{ vars.SOLANA_RECIPIENT_PUBLIC_KEY }}
+          SOLANA_RPC_URL: ${{ secrets.SOLANA_RPC_URL }}
         run: |
           test -n "$VULTR_SSH_KEY"
           test -n "$VULTR_KNOWN_HOSTS"
@@ -65,6 +76,7 @@ jobs:
           printf '%s\n' "$VULTR_SSH_KEY" > ~/.ssh/id_ed25519
           printf '%s\n' "$VULTR_KNOWN_HOSTS" > ~/.ssh/known_hosts
           printf '%s\n' "$VULTR_ENV" > .env.vultr
+          node --input-type=module -e 'import {appendFileSync} from "node:fs"; for (const key of ["SOLANA_PROGRAM_ID", "SOLANA_GUARDIAN_PUBLIC_KEY", "SOLANA_RECIPIENT_PUBLIC_KEY", "SOLANA_RPC_URL"]) if (process.env[key]) appendFileSync(".env.vultr", "\n" + key + "=" + JSON.stringify(process.env[key]) + "\n");'
           printf 'Host 64.177.46.134\n  BatchMode yes\n  StrictHostKeyChecking yes\n  IdentitiesOnly yes\n' > ~/.ssh/config
       - name: Deploy and verify HTTPS
         run: npm run deploy:vultr -- root@64.177.46.134
