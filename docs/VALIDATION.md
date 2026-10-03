@@ -18,5 +18,27 @@ Separate live Tiger Data verification on October 3, 2026 connected over encrypte
 PostgreSQL to TimescaleDB 2.30.2, initialized the dedicated schema, inserted three
 synthetic events, read a one-minute continuous aggregate with peak risk 100,
 and confirmed repeat uploads leave exactly three rows. Synthetic rows use an
-isolated test stream. The production server still needs its own database secret;
-local verification does not prove deployed Tiger configuration.
+isolated test stream.
+
+Live Vultr verification on October 3, 2026 also passed against release
+`5893ce7054cc` at `https://tripwire.64.177.46.134.sslip.io` after configuring the
+database URL in the private deployment environment. The complete GitHub Actions
+deployment secret was synchronized so future releases keep the connection.
+Public health reports `hosting: vultr`, `mode: paired`, and `analytics: working`.
+
+- All three paired roles log in with secure HttpOnly cookies.
+- A protected user's synthetic gift-card payment is held and delivered to the
+  guardian over a real WebSocket; protected-role approval is rejected and the
+  guardian can deny it.
+- Creation and denial events appear in the guardian's Tiger chart, exist exactly
+  once in Tiger Data, and are included in the minute aggregate. The local outbox
+  drains to zero. Protected and relative roles cannot read cloud analytics.
+- All three live role views render at 390 by 844 without horizontal overflow or
+  browser runtime errors.
+- `npm run check:vultr:e2e` repeats these live checks. Verification creates mock
+  payments that are denied, leaving synthetic cases and anonymized risk events;
+  it does not reset household data or change safe words or active calls.
+
+The local 14-test browser suite passes on rerun, alongside strict TypeScript and
+all six unit-test files. An earlier browser run completed its demo assertions but
+failed while closing a trace archive; the clean rerun passed every test.
