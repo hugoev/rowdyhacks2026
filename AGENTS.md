@@ -8,7 +8,7 @@ Next.js views live in `app/`, shared UI in `components/`, the custom backend in 
 
 ## Build, Test, and Development Commands
 
-Use Node.js 22.16 or newer and npm:
+Use Node.js 22.22 or newer and npm:
 
 - `npm ci`: install dependencies from the committed lockfile.
 - `npm run dev`: watch the custom TypeScript server; requires `server/index.ts`.

@@ -4,14 +4,17 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=22.16.0"
+    "node": ">=22.22.0"
   },
   "scripts": {
-    "dev": "tsx watch server/index.ts",
+    "predev": "node scripts/check-runtime.mjs",
+    "dev": "node scripts/dev.mjs",
+    "prebuild": "node scripts/check-runtime.mjs",
     "build": "next build --webpack",
-    "start": "NODE_ENV=production tsx server/index.ts",
+    "prestart": "node scripts/check-runtime.mjs",
+    "start": "node --import tsx scripts/start.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test tests/*.test.ts",
+    "test": "node scripts/test.mjs",
     "test:e2e": "playwright test",
     "eval:gemini": "node --import tsx scripts/eval-gemini.ts",
     "setup:vultr": "node --import tsx scripts/setup-vultr.ts",
