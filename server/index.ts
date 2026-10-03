@@ -8,7 +8,7 @@ import { Store } from './store';
 import { authenticate, equal, issue, roles } from './auth';
 import { enrichTranscript, inspect, speak } from './providers';
 import { CallScheduler } from './call-scheduler';
-import { configureGemini, summarizePayment, GeminiError } from './gemini';
+import { configureGemini, summarizePayment, summarizeCase, GeminiError } from './gemini';
 import { configureElevenLabs, transcriptionToken } from './elevenlabs';
 import { providerFailure, providerSuccess, providerStatuses } from './provider-status';
 import { TigerAnalytics } from './tiger';
@@ -28,15 +28,29 @@ const callScheduler = new CallScheduler();
 const publicConfig = () => ({ ...config, analytics: tiger.status(), providers: providerStatuses() });
 function publicSnapshot(role: Role) { return { ...store.snapshot(role, publicConfig()), ...(role === 'guardian' ? { riskHistory: tiger.history(role) } : {}) }; }
 const summaryJobs = new Map<string, string>();
+// Do not spend credits rewriting historical cases after each restart.
+const caseJobs = new Set(store.state.cases.filter(c => c.outcome === 'foiled').map(c => c.id));
 function paymentRevision(payment: Payment) { return JSON.stringify([payment.status, payment.score, payment.reasons]); }
 function queueSummaries() {
   if (!config.gemini) return;
+  for (const file of store.state.cases) {
+    if (file.outcome !== 'foiled' || !file.education || file.education.source === 'gemini' || caseJobs.has(file.id)) continue;
+    caseJobs.add(file.id);
+    const evidence = structuredClone(file);
+    void summarizeCase(evidence).then(whatHappened => {
+      const current = store.state.cases.find(c => c.id === evidence.id);
+      if (current === file && current.outcome === 'foiled' && current.education) {
+        current.education.whatHappened = whatHappened;
+        current.education.source = 'gemini'; store.save();
+      }
+    }).catch(error => { if (!(error instanceof GeminiError)) console.error('Case explanation failed unexpectedly.'); }).finally(() => broadcast());
+  }
   for (const payment of store.state.payments.filter(p => p.status === 'held')) {
     const revision = paymentRevision(payment);
     if (summaryJobs.get(payment.id) === revision) continue;
     summaryJobs.set(payment.id, revision);
     const evidence = structuredClone(payment);
-    const labels = store.state.call.assessment.tells.map(t => t.label);
+    const labels = store.state.cases.find(c => c.paymentId === payment.id)?.tells || [];
     void summarizePayment(evidence, labels).then(summary => {
       const current = store.state.payments.find(p => p.id === evidence.id);
       if (current && current.status === 'held' && paymentRevision(current) === revision) {
@@ -157,7 +171,7 @@ const server = createServer(async (req, res) => {
         if (!audio) { json(res, 200, { fallback: 'browser' }); return; }
         res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' }); res.end(audio); return;
       }
-      case '/api/demo/reset': permit('guardian'); if (!config.demo) throw new Error('Reset is available only in demo mode.'); callScheduler.cancel(); summaryJobs.clear(); store.reset(); break;
+      case '/api/demo/reset': permit('guardian'); if (!config.demo) throw new Error('Reset is available only in demo mode.'); callScheduler.cancel(); summaryJobs.clear(); caseJobs.clear(); store.reset(); break;
       default: json(res, 404, { error: 'Endpoint not found.' }); return;
     }
     json(res, 200, result);

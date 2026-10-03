@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeCall, analyzeScan, geminiModel, summarizePayment } from '../server/gemini';
+import { analyzeCall, analyzeScan, geminiModel, summarizePayment, summarizeCase } from '../server/gemini';
 import { providerStatuses } from '../server/provider-status';
 import { inspect } from '../server/providers';
 import { Store } from '../server/store';
@@ -32,6 +32,17 @@ test('Gemini schemas, evidence, summaries, and explicit failures', async t => {
   const store = new Store(':memory:'); t.after(() => store.db.close());
   const payment = store.createPayment({ amount: 2500, payee: 'Demo', rail: 'gift-card', newPayee: true });
   assert.match(await summarizePayment(payment, ['Urgency']), /held/); assert.equal(payment.status, 'held');
+  store.decidePayment(payment.id, 'deny');
+  fetchMock.mock.mockImplementation(async (_url, options) => {
+    const body = JSON.parse(String(options?.body));
+    assert.ok(!body.contents[0].parts[0].text.includes('2500'));
+    return response({ whatHappened: 'This request had warning signs. Your family paused to check it.' });
+  });
+  const education = structuredClone(store.state.cases[0].education);
+  assert.match(await summarizeCase(store.state.cases[0]), /warning signs/);
+  assert.deepEqual(store.state.cases[0].education, education);
+  fetchMock.mock.mockImplementation(async () => response({ whatHappened: '' }));
+  await assert.rejects(summarizeCase(store.state.cases[0]), /invalid response/);
   process.env.GEMINI_CALL_MODEL = ''; process.env.GEMINI_MODEL = 'legacy'; assert.equal(geminiModel('call'), 'legacy');
 });
 test('429 backs off without retrying paid or alternate models', async t => {
