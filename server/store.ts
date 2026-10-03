@@ -199,6 +199,7 @@ export class Store {
   payment(id: string) { const payment = this.state.payments.find(p => p.id === id); if (!payment) throw new Error('Payment not found.'); return payment; }
   decidePayment(id: string, decision: 'approve' | 'deny') {
     this.tick(); const payment = this.payment(id);
+    if (payment.escrow) throw new Error('This devnet escrow needs a confirmed on-chain decision.');
     if (payment.status !== 'held' && payment.status !== 'review') throw new Error('This payment has already been resolved.');
     payment.status = decision === 'approve' ? 'released' : 'denied'; payment.resolvedAt = this.now();
     this.closeCase(id, decision === 'deny' ? 'foiled' : 'reviewed');
@@ -215,7 +216,7 @@ export class Store {
   }
   tick() {
     let changed = false;
-    for (const payment of this.state.payments) if (payment.status === 'held' && payment.releaseAt !== null && this.now() >= payment.releaseAt) {
+    for (const payment of this.state.payments) if (payment.status === 'held' && !payment.escrow && payment.releaseAt !== null && this.now() >= payment.releaseAt) {
       payment.status = 'released'; payment.resolvedAt = this.now(); this.closeCase(payment.id, 'reviewed');
       this.event('Cooling-off period complete · payment released', payment.score, 'payment'); changed = true;
     }
@@ -223,5 +224,8 @@ export class Store {
     if (pending && this.now() >= pending.effectiveAt) { this.state.settings.coSignLimit = pending.value; this.state.settings.pendingLimit = null; changed = true; }
     if (changed) this.save();
   }
-  reset() { this.segments.clear(); this.set('analyticsStream', randomUUID()); this.state = emptyState(); this.state.settings.safeWordConfigured = !!this.get('safeWordHash'); this.save(); }
+  reset() {
+    if (this.state.payments.some(p => p.escrow && !['released', 'refunded'].includes(p.escrow.state))) throw new Error('Resolve active devnet escrows before resetting the demo.');
+    this.segments.clear(); this.set('analyticsStream', randomUUID()); this.state = emptyState(); this.state.settings.safeWordConfigured = !!this.get('safeWordHash'); this.save();
+  }
 }

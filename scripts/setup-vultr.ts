@@ -6,7 +6,7 @@ if (existsSync('.env.vultr')) throw new Error('.env.vultr already exists; edit i
 const local = existsSync('.env') ? parse(readFileSync('.env')) : {};
 let template = readFileSync('deploy/vultr/env.example', 'utf8');
 for (const role of ['PROTECTED', 'GUARDIAN', 'RELATIVE']) template = template.replace(`${role}_ACCESS_CODE=`, `${role}_ACCESS_CODE=${randomBytes(24).toString('hex')}`);
-for (const key of ['GEMINI_API_KEY', 'ELEVENLABS_API_KEY', 'DATABASE_URL', 'TIGER_CA_CERT']) {
+for (const key of ['GEMINI_API_KEY', 'ELEVENLABS_API_KEY', 'DATABASE_URL', 'TIGER_CA_CERT', 'SOLANA_PROGRAM_ID', 'SOLANA_GUARDIAN_PUBLIC_KEY', 'SOLANA_RECIPIENT_PUBLIC_KEY', 'SOLANA_RPC_URL']) {
   if (local[key]) template = template.replace(`${key}=`, `${key}=${JSON.stringify(local[key])}`);
 }
 writeFileSync('.env.vultr', template, { mode: 0o600, flag: 'wx' });

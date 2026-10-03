@@ -12,6 +12,7 @@ import { configureGemini, summarizePayment, GeminiError } from './gemini';
 import { configureElevenLabs, transcriptionToken } from './elevenlabs';
 import { providerFailure, providerSuccess, providerStatuses } from './provider-status';
 import { TigerAnalytics } from './tiger';
+import { SolanaVault } from './solana';
 import type { Payment, Role } from '../lib/types';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -24,8 +25,9 @@ const config = { demo: process.env.DEMO_MODE !== 'false', gemini: !!process.env.
 if (!config.demo) for (const role of roles) if ((process.env[`${role.toUpperCase()}_ACCESS_CODE`] || '').length < 16) throw new Error(`${role.toUpperCase()}_ACCESS_CODE must contain at least 16 characters outside demo mode.`);
 const store = new Store(join(process.env.DATA_DIR || './data', 'tripwire.sqlite'));
 const tiger = new TigerAnalytics(store, process.env.DATABASE_URL);
+const solana = new SolanaVault(store);
 const callScheduler = new CallScheduler();
-const publicConfig = () => ({ ...config, analytics: tiger.status(), providers: providerStatuses() });
+const publicConfig = () => ({ ...config, solana: solana.status(), analytics: tiger.status(), providers: providerStatuses() });
 function publicSnapshot(role: Role) { return { ...store.snapshot(role, publicConfig()), ...(role === 'guardian' ? { riskHistory: tiger.history(role) } : {}) }; }
 const summaryJobs = new Map<string, string>();
 function paymentRevision(payment: Payment) { return JSON.stringify([payment.status, payment.score, payment.reasons]); }
@@ -68,7 +70,7 @@ const server = createServer(async (req, res) => {
   try {
     if (req.headers.origin && req.headers.origin !== origin) throw Object.assign(new Error('This origin is not allowed. Check APP_ORIGIN.'), { status: 403 });
     if (req.method === 'GET' && path === '/api/config') { json(res, 200, publicConfig()); return; }
-    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', analytics: tiger.status().state, mode: config.demo ? 'demo' : 'paired', hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
+    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', analytics: tiger.status().state, solana: solana.status().state, mode: config.demo ? 'demo' : 'paired', hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
     if (req.method !== 'GET' && (req.method !== 'POST' || req.headers['x-tripwire-client'] !== 'web')) throw Object.assign(new Error('Unsupported request.'), { status: 403 });
     // Public demo mode shares one request budget across repeated multi-view rehearsals.
     const ip = req.socket.remoteAddress || 'local'; limit(ip, config.demo ? 1200 : 240);
@@ -124,9 +126,11 @@ const server = createServer(async (req, res) => {
       case '/api/callback/answer': { permit('relative'); const input = z.object({ id: z.string().uuid(), answer: z.enum(['yes', 'no']) }).parse(body); store.answerCallback(input.id, input.answer); break; }
       case '/api/payments': {
         permit('protected'); const input = z.object({ payee: z.string().trim().min(1).max(100), amount: z.number().positive().max(100000).refine(n => Math.abs(n * 100 - Math.round(n * 100)) < 1e-6, 'Use at most two decimal places'), rail: z.enum(['bill', 'bank', 'gift-card', 'crypto', 'wire']), newPayee: z.boolean(), pasted: z.boolean().optional() }).parse(body);
-        result = store.createPayment(input); break;
+        const payment = store.createPayment(input); solana.attach(payment); result = payment; void solana.sync(); break;
       }
-      case '/api/payments/review': { permit('protected'); const input = z.object({ id: z.string().uuid(), secret: z.boolean() }).parse(body); result = store.reviewPayment(input.id, input.secret); break; }
+      case '/api/payments/review': { permit('protected'); const input = z.object({ id: z.string().uuid(), secret: z.boolean() }).parse(body); const payment = store.reviewPayment(input.id, input.secret); solana.attach(payment); result = payment; void solana.sync(); break; }
+      case '/api/solana/prepare': { permit('guardian'); limit(ip + ':solana', 20); const input = z.object({ id: z.string().uuid(), decision: z.enum(['approve', 'deny']) }).parse(body); result = await solana.prepare(input.id, input.decision); break; }
+      case '/api/solana/submit': { permit('guardian'); limit(ip + ':solana', 20); const input = z.object({ token: z.string().uuid(), transaction: z.string().max(5000).regex(/^[A-Za-z0-9+/]+={0,2}$/) }).parse(body); result = await solana.submit(input.token, input.transaction); break; }
       case '/api/payments/decide': { permit('guardian'); const input = z.object({ id: z.string().uuid(), decision: z.enum(['approve', 'deny']) }).parse(body); result = store.decidePayment(input.id, input.decision); break; }
       case '/api/settings': permit('protected'); store.updateSettings(z.object({ retainFlaggedTranscripts: z.boolean().optional(), coSignLimit: z.number().min(0).max(100000).optional() }).parse(body)); break;
       case '/api/inspect': {
@@ -181,6 +185,8 @@ store.onChange = () => { broadcast(); queueSummaries(); void tiger.flush(); };
 tiger.onChange = broadcast;
 void tiger.flush();
 const analyticsTicker = setInterval(() => void tiger.flush(), 5000);
+void solana.sync();
+const solanaTicker = setInterval(() => void solana.sync(), 15000);
 const ticker = setInterval(() => {
   store.tick();
   for (const [key, value] of limits) if (value.until < Date.now()) limits.delete(key);
@@ -190,7 +196,7 @@ server.listen(port, hostname, () => console.log(`Tripwire ready at ${origin} · 
 let stopping = false;
 async function shutdown() {
   if (stopping) return; stopping = true;
-  callScheduler.cancel(); clearInterval(ticker); clearInterval(analyticsTicker); io.close(); server.close();
+  solana.stop(); callScheduler.cancel(); clearInterval(ticker); clearInterval(analyticsTicker); clearInterval(solanaTicker); io.close(); server.close();
   await Promise.race([tiger.close(), new Promise(resolve => setTimeout(resolve, 2000))]);
   store.db.close(); process.exit(0);
 }

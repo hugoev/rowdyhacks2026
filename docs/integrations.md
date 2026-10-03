@@ -67,6 +67,13 @@ Set server-only `DATABASE_URL` in your ignored `.env`. Follow [Tiger setup](TIGE
 for schema initialization, connection checks, TLS options, and deployment secrets.
 Only risk metadata is uploaded; payment holds still work without the database.
 
-Mock payments, SQLite holds, and scripted calls remain simulated. Solana,
-Presage, and SMS are not connected. Live provider accuracy and microphone
+## Solana
+
+See [production Solana setup](SOLANA.md). The devnet escrow program and guardian
+wallet-signing flow are implemented; activation requires program deployment,
+independent guardian configuration, and a funded runtime payer. No mainnet funds
+are supported. Without configuration the UI retains its explicit Web2 fallback.
+
+Mock dollar payments, SQLite holds, and scripted calls remain simulated.
+Presage and SMS are not connected. Live provider accuracy and microphone
 latency must be measured with your account before claiming those demo metrics.
