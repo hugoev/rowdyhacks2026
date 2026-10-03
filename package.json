@@ -1,0 +1,36 @@
+{
+  "name": "tripwire",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.16.0" },
+  "scripts": {
+    "dev": "tsx watch server/index.ts",
+    "build": "next build",
+    "start": "NODE_ENV=production tsx server/index.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test tests/*.test.ts",
+    "test:e2e": "playwright test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "dotenv": "^17.2.3",
+    "lucide-react": "^0.468.0",
+    "next": "16.3.8",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
+    "tsx": "^4.20.6",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@tailwindcss/postcss": "^4.1.16",
+    "@types/node": "^22.18.10",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.9.3"
+  }
+}
