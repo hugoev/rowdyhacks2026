@@ -4,6 +4,24 @@ Vultr runs the Node/Next.js server, Socket.IO hub, and SQLite holds. Caddy provi
 HTTPS so family phones can use the microphone. Only Caddy publishes ports; the
 app and its database remain on Docker's private network. One VM runs one household.
 
+## Current demo and updates
+
+The demo runs at https://tripwire.64.177.46.134.sslip.io on Vultr. HTTPS, all three
+role logins, secure cookies, and WebSocket state delivery were verified. ElevenLabs
+is configured; Gemini is disabled in the deployment to preserve credits. Role
+access codes are in the local private `.env.vultr` file.
+
+GitHub Actions runs validation; deployment is currently manual. After pushing to
+`main`, wait for CI to pass, ensure your local `main` contains that commit, then run:
+
+```sh
+npm run deploy:vultr -- root@64.177.46.134
+```
+
+The script deploys local committed HEAD, builds on Vultr, replaces containers,
+preserves named volumes, and checks HTTPS health. It does not pull GitHub changes
+automatically, and a failed CI check does not prevent manual deployment.
+
 ## Create the instance
 
 Use Cloud Compute, Ubuntu 24.04 LTS, a nearby region, and approximately two vCPUs

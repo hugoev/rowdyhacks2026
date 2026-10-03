@@ -71,7 +71,8 @@ The demo uses **manual next-line controls**, so venue noise and timing cannot br
 | Guardian summary | Explainable rule-generated summary with payment details and named reasons. Not represented as an AI-generated summary. |
 | Inspector | Rules-based text/link checks. Gemini image understanding and richer text checks when configured. Image-only scans explicitly fail when image analysis is unavailable. |
 | Cases / risk chart | Working local events and payment case files, not seeded outcome metrics. |
-| Solana / Tiger Data / Presage / Vultr | **Not integrated or deployed.** Local Web2 hold and SQLite event log are the P0 fallback. Docker and reverse-proxy examples are provided for self-hosting. |
+| Vultr | Deployed with Caddy HTTPS, Socket.IO, paired role access, and persistent SQLite storage. See [deployment details](docs/VULTR.md). |
+| Solana / Tiger Data / Presage | Not integrated. Local Web2 holds and SQLite events remain the fallback. |
 | Heist Drill / Scam Weather | Not implemented. |
 | PWA | App manifest, standalone display, custom icon. No offline service worker; connected family flows require the server. |
 
@@ -144,7 +145,7 @@ For the automated Vultr deployment with Caddy HTTPS, persistent storage, and pri
 
 To test on phones on your own network without Docker, set `HOST=0.0.0.0` and `APP_ORIGIN` to the exact reachable origin. All devices must use that origin. Microphone access generally requires HTTPS or localhost.
 
-This repository has not been deployed to Vultr and does not include a registered domain. Use one server instance with a persistent SQLite volume; horizontal scaling needs shared storage, transactional coordination, and a Socket.IO adapter.
+The demo is deployed at https://tripwire.64.177.46.134.sslip.io using a temporary hostname. Use one server instance with a persistent SQLite volume; horizontal scaling needs shared storage, transactional coordination, and a Socket.IO adapter.
 
 ## Code map
 
