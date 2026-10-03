@@ -31,7 +31,9 @@ test('mocked Scribe streams committed text, shows failure, and closes on stop', 
   await context.grantPermissions(['microphone']);
   await page.route('**/socket.io/**', route => route.abort());
   await page.route('**/api/state', async route => {
-    const response = await route.fetch(); const state = await response.json(); state.config.elevenlabs = true;
+    const response = await route.fetch();
+    expect(response.ok(), `State request failed with ${response.status()}`).toBe(true);
+    const state = await response.json(); state.config.elevenlabs = true;
     await route.fulfill({ response, json: state });
   });
   await page.route('**/api/transcription/token', route => route.fulfill({ json: { token: 'mock-token', callId: route.request().postDataJSON().callId } }));
