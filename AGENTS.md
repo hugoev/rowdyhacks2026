@@ -4,7 +4,7 @@
 
 Tripwire is a RowdyHacks XII counter-scam prototype that combines call analysis with payment verification. The current scaffold uses Next.js, React, strict TypeScript, Tailwind CSS, and Socket.IO. Shared models live in `lib/types.ts`, deterministic scoring in `lib/risk.ts`, and scripted calls and scanner samples in `lib/scenarios.ts`. Static assets belong in `public/`.
 
-The app, backend, and tests are not yet present. Place Next.js views in `app/`, the custom server in `server/index.ts`, and unit tests in `tests/`. Keep protected-user, guardian, and relative views consistent through shared types and server events.
+Next.js views live in `app/`, shared UI in `components/`, the custom backend in `server/`, and unit and Playwright tests in `tests/`. Provider adapters and the call scheduler belong in `server/`. Keep protected-user, guardian, and relative views consistent through shared types and server events.
 
 ## Build, Test, and Development Commands
 
@@ -18,7 +18,7 @@ Use Node.js 22.16 or newer and npm:
 - `npm test`: run `tests/*.test.ts` with the Node test runner through tsx.
 - `npm run test:e2e`: run Playwright browser tests once configured.
 
-Several commands require completing the scaffold before they can run successfully.
+Use `npm run eval:gemini` only for an explicit live evaluation with synthetic fixtures and a server-side API key.
 
 ## Coding Style & Naming Conventions
 
