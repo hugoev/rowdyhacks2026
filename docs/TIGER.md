@@ -60,3 +60,11 @@ Local `.env` changes do not change production secrets. Add `DATABASE_URL` and an
 access codes. Do not overwrite that secret with an incomplete example file.
 `npm run setup:vultr` copies these values when creating a new `.env.vultr`; it
 refuses to replace an existing file. Deploy/restart after updating configuration.
+
+After deployment, run `npm run check:vultr:e2e` to verify the live HTTPS app,
+all three paired logins, secure cookies, guardian WebSocket delivery, payment
+holds and denial permissions, guardian-only analytics, Tiger event persistence,
+minute aggregation, and mobile views. Install Playwright Chromium first if needed.
+This explicit live check creates and denies one synthetic mock payment; its case
+and anonymized risk events remain as verification evidence. It does not reset the
+household, change the family safe word, or start a call.
