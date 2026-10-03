@@ -11,6 +11,7 @@ import { CallScheduler } from './call-scheduler';
 import { configureGemini, summarizePayment, GeminiError } from './gemini';
 import { configureElevenLabs, transcriptionToken } from './elevenlabs';
 import { providerFailure, providerSuccess, providerStatuses } from './provider-status';
+import { TigerAnalytics } from './tiger';
 import type { Payment, Role } from '../lib/types';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -22,8 +23,10 @@ configureElevenLabs();
 const config = { demo: process.env.DEMO_MODE !== 'false', gemini: !!process.env.GEMINI_API_KEY, elevenlabs: !!process.env.ELEVENLABS_API_KEY };
 if (!config.demo) for (const role of roles) if ((process.env[`${role.toUpperCase()}_ACCESS_CODE`] || '').length < 16) throw new Error(`${role.toUpperCase()}_ACCESS_CODE must contain at least 16 characters outside demo mode.`);
 const store = new Store(join(process.env.DATA_DIR || './data', 'tripwire.sqlite'));
+const tiger = new TigerAnalytics(store, process.env.DATABASE_URL);
 const callScheduler = new CallScheduler();
-const publicConfig = () => ({ ...config, providers: providerStatuses() });
+const publicConfig = () => ({ ...config, analytics: tiger.status(), providers: providerStatuses() });
+function publicSnapshot(role: Role) { return { ...store.snapshot(role, publicConfig()), ...(role === 'guardian' ? { riskHistory: tiger.history(role) } : {}) }; }
 const summaryJobs = new Map<string, string>();
 function paymentRevision(payment: Payment) { return JSON.stringify([payment.status, payment.score, payment.reasons]); }
 function queueSummaries() {
@@ -65,7 +68,7 @@ const server = createServer(async (req, res) => {
   try {
     if (req.headers.origin && req.headers.origin !== origin) throw Object.assign(new Error('This origin is not allowed. Check APP_ORIGIN.'), { status: 403 });
     if (req.method === 'GET' && path === '/api/config') { json(res, 200, publicConfig()); return; }
-    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', mode: config.demo ? 'demo' : 'paired', hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
+    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', analytics: tiger.status().state, mode: config.demo ? 'demo' : 'paired', hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
     if (req.method !== 'GET' && (req.method !== 'POST' || req.headers['x-tripwire-client'] !== 'web')) throw Object.assign(new Error('Unsupported request.'), { status: 403 });
     const ip = req.socket.remoteAddress || 'local'; limit(ip, 240);
     const body = req.method === 'POST' ? await readBody(req) : {};
@@ -82,7 +85,8 @@ const server = createServer(async (req, res) => {
     const role = z.enum(roles).parse(req.headers['x-tripwire-role']);
     if (!authenticate(req.headers.cookie, role, secret)) throw Object.assign(new Error('Connect your view to continue.'), { status: 401 });
     const permit = (...allowed: Role[]) => { if (!allowed.includes(role)) throw Object.assign(new Error('This action requires a different family role.'), { status: 403 }); };
-    if (path === '/api/state' && req.method === 'GET') { store.tick(); json(res, 200, store.snapshot(role, publicConfig())); return; }
+    if (path === '/api/state' && req.method === 'GET') { store.tick(); json(res, 200, publicSnapshot(role)); return; }
+    if (path === '/api/analytics' && req.method === 'GET') { permit('guardian'); json(res, 200, { status: tiger.status(), history: tiger.history(role) }); return; }
     if (req.method !== 'POST') { json(res, 404, { error: 'Endpoint not found.' }); return; }
     let result: unknown = { ok: true };
     switch (path) {
@@ -168,16 +172,25 @@ io.use((socket, done) => {
   socket.data.role = role; done();
 });
 io.on('connection', socket => {
-  socket.join(socket.data.role); socket.emit('state', store.snapshot(socket.data.role, publicConfig()));
+  socket.join(socket.data.role); socket.emit('state', publicSnapshot(socket.data.role));
   socket.on('disconnect', () => {});
 });
-function broadcast() { for (const role of roles) io.to(role).emit('state', store.snapshot(role, publicConfig())); }
-store.onChange = () => { broadcast(); queueSummaries(); };
+function broadcast() { for (const role of roles) io.to(role).emit('state', publicSnapshot(role)); }
+store.onChange = () => { broadcast(); queueSummaries(); void tiger.flush(); };
+tiger.onChange = broadcast;
+void tiger.flush();
+const analyticsTicker = setInterval(() => void tiger.flush(), 5000);
 const ticker = setInterval(() => {
   store.tick();
   for (const [key, value] of limits) if (value.until < Date.now()) limits.delete(key);
   for (const socket of io.sockets.sockets.values()) if (!authenticate(socket.request.headers.cookie, socket.data.role, secret)) socket.disconnect(true);
 }, 1000);
 server.listen(port, hostname, () => console.log(`Tripwire ready at ${origin} · ${config.demo ? 'DEMO — mock payments, public role switching' : 'paired access'} mode`));
-function shutdown() { callScheduler.cancel(); clearInterval(ticker); io.close(); server.close(); store.db.close(); process.exit(0); }
+let stopping = false;
+async function shutdown() {
+  if (stopping) return; stopping = true;
+  callScheduler.cancel(); clearInterval(ticker); clearInterval(analyticsTicker); io.close(); server.close();
+  await Promise.race([tiger.close(), new Promise(resolve => setTimeout(resolve, 2000))]);
+  store.db.close(); process.exit(0);
+}
 process.on('SIGTERM', shutdown); process.on('SIGINT', shutdown);

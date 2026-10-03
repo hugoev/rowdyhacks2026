@@ -61,6 +61,12 @@ start a prepared scam call, and inspect the guardian's held-payment summary.
 Rehearse all three family views three times and confirm provider failures cannot
 release payments or erase critical warnings.
 
-Mock payments, SQLite holds, and scripted calls remain simulated. Solana, Tiger
-Data, Presage, and SMS are not connected. Live provider accuracy and microphone
+## Tiger Data
+
+Set server-only `DATABASE_URL` in your ignored `.env`. Follow [Tiger setup](TIGER.md)
+for schema initialization, connection checks, TLS options, and deployment secrets.
+Only risk metadata is uploaded; payment holds still work without the database.
+
+Mock payments, SQLite holds, and scripted calls remain simulated. Solana,
+Presage, and SMS are not connected. Live provider accuracy and microphone
 latency must be measured with your account before claiming those demo metrics.

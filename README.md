@@ -68,11 +68,12 @@ The demo uses **manual next-line controls**, so venue noise and timing cannot br
 | Vault Code | Working salted bcrypt hash, rate-limited verification, sticky Critical risk after a wrong answer. A later correct guess cannot erase it. |
 | Callback | Working Socket.IO request/reply across paired views. No SMS or actual phone call. |
 | Two-Key Rule | Working durable SQLite **mock-payment** hold. Guardian approval or a server-clock 24-hour deadline releases it; denial is terminal. |
-| Guardian summary | Explainable rule-generated summary with payment details and named reasons. Not represented as an AI-generated summary. |
+| Guardian summary | Optional Gemini summary with an explainable rules-based fallback. |
 | Inspector | Rules-based text/link checks. Gemini image understanding and richer text checks when configured. Image-only scans explicitly fail when image analysis is unavailable. |
 | Cases / risk chart | Working local events and payment case files, not seeded outcome metrics. |
+| Tiger Data | PostgreSQL risk-event hypertable, minute continuous aggregate, and cloud-backed guardian chart. Durable local retry queue and local chart fallback. See [Tiger setup](docs/TIGER.md). |
 | Vultr | Deployed with Caddy HTTPS, Socket.IO, paired role access, and persistent SQLite storage. See [deployment details](docs/VULTR.md). |
-| Solana / Tiger Data / Presage | Not integrated. Local Web2 holds and SQLite events remain the fallback. |
+| Solana / Presage | Not integrated. Payment enforcement remains local SQLite; Tiger does not move or hold money. |
 | Heist Drill / Scam Weather | Not implemented. |
 | PWA | App manifest, standalone display, custom icon. No offline service worker; connected family flows require the server. |
 

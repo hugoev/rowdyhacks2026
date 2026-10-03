@@ -7,8 +7,15 @@ test('unauthenticated and wrong-role callers cannot approve payments', async ({ 
   const api = await playwright.request.newContext({ baseURL: 'http://localhost:3101' });
   const guest = await api.get('/api/state', { headers: headers('guardian') }); expect(guest.status()).toBe(401);
   await login(api, 'protected');
+  const analyticsDenied = await api.get('/api/analytics', { headers: headers('protected') }); expect(analyticsDenied.status()).toBe(403);
+  const protectedState = await api.get('/api/state', { headers: headers('protected') }); expect(await protectedState.json()).not.toHaveProperty('riskHistory');
   const denied = await api.post('/api/payments/decide', { headers: headers('protected'), data: { id: '00000000-0000-4000-8000-000000000000', decision: 'approve' } }); expect(denied.status()).toBe(403);
-  const csrf = await api.post('/api/call/start', { headers: { ...headers('protected'), Origin: 'https://attacker.example' }, data: { consent: true } }); expect(csrf.status()).toBe(403); await api.dispose();
+  const csrf = await api.post('/api/call/start', { headers: { ...headers('protected'), Origin: 'https://attacker.example' }, data: { consent: true } }); expect(csrf.status()).toBe(403);
+  await login(api, 'relative');
+  const relativeState = await api.get('/api/state', { headers: headers('relative') }); expect(await relativeState.json()).not.toHaveProperty('riskHistory');
+  await login(api, 'guardian');
+  const analytics = await api.get('/api/analytics', { headers: headers('guardian') }); expect(analytics.status()).toBe(200); expect((await analytics.json()).history.source).toBe('local');
+  await api.dispose();
 });
 
 for (let run = 1; run <= 3; run++) test(`grandson demo completes across three views — run ${run}`, async ({ browser }) => {

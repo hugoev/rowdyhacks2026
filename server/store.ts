@@ -4,7 +4,7 @@ import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 import bcrypt from 'bcryptjs';
 import { assessPayment, assessTranscript, levelFor } from '../lib/risk';
-import type { Assessment, Payment, PublicState, Rail, Role, State } from '../lib/types';
+import type { AnalyticsEvent, Assessment, Payment, PublicState, Rail, Role, State } from '../lib/types';
 
 export const DAY = 24 * 60 * 60 * 1000;
 export const emptyState = (): State => ({
@@ -17,11 +17,13 @@ export class Store {
   db: DatabaseSync;
   state: State;
   private segments = new Map<string, string>();
+  private analyticsEnabled = false;
   onChange: () => void = () => {};
   constructor(path: string, private now: () => number = Date.now) {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
     this.db = new DatabaseSync(path);
     this.db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
+    this.db.exec('CREATE TABLE IF NOT EXISTS risk_outbox (id TEXT PRIMARY KEY, payload TEXT NOT NULL)');
     const saved = this.get('state');
     this.state = saved ? JSON.parse(saved) : emptyState();
     for (const payment of this.state.payments) payment.summarySource ??= 'rules';
@@ -42,8 +44,36 @@ export class Store {
     this.onChange();
   }
   event(label: string, score: number, kind: State['events'][number]['kind']) {
-    this.state.events.push({ id: randomUUID(), at: this.now(), score, label, kind });
+    const event = { id: randomUUID(), at: this.now(), score, label, kind };
+    this.state.events.push(event);
+    if (this.analyticsEnabled) this.queueRiskEvent(event);
     this.state.events = this.state.events.slice(-250);
+  }
+  analyticsStream() {
+    let stream = this.get('analyticsStream');
+    if (!stream) { stream = randomUUID(); this.set('analyticsStream', stream); }
+    return stream;
+  }
+  enableAnalytics() {
+    this.analyticsEnabled = true;
+    // Backfill the retained local event window once on startup. Remote inserts
+    // are idempotent; no transcript, payee, secret, or payment amount is sent.
+    for (const event of this.state.events) this.queueRiskEvent(event, true);
+  }
+  private queueRiskEvent(event: State['events'][number], backfill = false) {
+    const known = ['The Grandson Job', 'The IRS Job', 'The Safe Account Job', 'The Tech Support Job', 'The Romance Job', 'The Fake Check Job'];
+    const scamType = !backfill && known.includes(this.state.call.assessment.scamType) ? this.state.call.assessment.scamType : 'Unverified request';
+    const payload: AnalyticsEvent = { id: event.id, streamId: this.analyticsStream(), at: event.at, score: event.score, kind: event.kind, scamType, callId: backfill ? null : this.state.call.id };
+    this.db.prepare('INSERT INTO risk_outbox(id,payload) VALUES (?,?) ON CONFLICT(id) DO NOTHING').run(event.id, JSON.stringify(payload));
+  }
+  pendingRiskEvents(limit = 100): AnalyticsEvent[] {
+    return (this.db.prepare('SELECT payload FROM risk_outbox ORDER BY rowid LIMIT ?').all(limit) as { payload: string }[]).map(row => JSON.parse(row.payload));
+  }
+  pendingRiskCount(): number { return Number((this.db.prepare('SELECT count(*) AS total FROM risk_outbox').get() as { total: number }).total); }
+  acknowledgeRiskEvents(ids: string[]) {
+    const remove = this.db.prepare('DELETE FROM risk_outbox WHERE id=?');
+    this.db.exec('BEGIN');
+    try { for (const id of ids) remove.run(id); this.db.exec('COMMIT'); } catch (error) { this.db.exec('ROLLBACK'); throw error; }
   }
   snapshot(role: Role, config: PublicState['config']): PublicState {
     const state = structuredClone(this.state);
@@ -193,5 +223,5 @@ export class Store {
     if (pending && this.now() >= pending.effectiveAt) { this.state.settings.coSignLimit = pending.value; this.state.settings.pendingLimit = null; changed = true; }
     if (changed) this.save();
   }
-  reset() { this.segments.clear(); this.state = emptyState(); this.state.settings.safeWordConfigured = !!this.get('safeWordHash'); this.save(); }
+  reset() { this.segments.clear(); this.set('analyticsStream', randomUUID()); this.state = emptyState(); this.state.settings.safeWordConfigured = !!this.get('safeWordHash'); this.save(); }
 }

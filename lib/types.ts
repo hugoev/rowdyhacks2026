@@ -20,5 +20,8 @@ export type State = {
 };
 export type ProviderCapability = 'geminiCall' | 'geminiScan' | 'geminiSummary' | 'elevenlabsTranscription' | 'elevenlabsVoice';
 export type ProviderStatus = { state: 'unconfigured' | 'configured' | 'working' | 'degraded'; model: string; lastSuccessAt: number | null; error?: string };
-export type PublicState = State & { config: { demo: boolean; gemini: boolean; elevenlabs: boolean; providers?: Partial<Record<ProviderCapability, ProviderStatus>> } };
+export type AnalyticsStatus = { state: 'unconfigured' | 'configured' | 'working' | 'degraded'; source: 'local' | 'tiger'; lastSuccessAt: number | null; pendingEvents: number; error?: string };
+export type RiskHistory = { source: 'local' | 'tiger'; points: RiskEvent[]; minutes: { at: number; peak: number; average: number; samples: number }[]; peak: number; total: number };
+export type AnalyticsEvent = { id: string; streamId: string; at: number; score: number; kind: RiskEvent['kind']; scamType: string; callId: string | null };
+export type PublicState = State & { riskHistory?: RiskHistory; config: { demo: boolean; gemini: boolean; elevenlabs: boolean; analytics?: AnalyticsStatus; providers?: Partial<Record<ProviderCapability, ProviderStatus>> } };
 export type ScanResult = { score: number; verdict: string; redFlags: string[]; explanation: string; nextStep: string; source: 'rules' | 'gemini'; limitations?: string };
