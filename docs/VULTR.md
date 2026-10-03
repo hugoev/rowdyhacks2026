@@ -11,8 +11,23 @@ role logins, secure cookies, and WebSocket state delivery were verified. ElevenL
 is configured; Gemini is disabled in the deployment to preserve credits. Role
 access codes are in the local private `.env.vultr` file.
 
-GitHub Actions runs validation; deployment is currently manual. After pushing to
-`main`, wait for CI to pass, ensure your local `main` contains that commit, then run:
+Every push to `main` runs GitHub Actions validation across Linux, Windows, and
+macOS, plus browser tests on Linux. If all checks pass, Actions runs deployment
+automatically. Pull requests run checks only. Main releases are serialized so
+another push cannot interrupt an active deployment. Failed checks leave the
+current live release running.
+
+Repository Actions Secrets contain `VULTR_SSH_KEY` (a dedicated deployment key),
+`VULTR_KNOWN_HOSTS` (the verified server identity), and `VULTR_ENV` (the complete
+private deployment configuration). To change the domain, API keys, or role codes,
+update `.env.vultr` locally and synchronize it without printing credentials:
+
+```sh
+gh secret set VULTR_ENV --repo hugoev/rowdyhacks2026 < .env.vultr
+```
+
+The next push deploys the new configuration. For a manual release, ensure your
+local `main` contains the desired commit, then run:
 
 ```sh
 npm run deploy:vultr -- root@64.177.46.134
@@ -20,7 +35,7 @@ npm run deploy:vultr -- root@64.177.46.134
 
 The script deploys local committed HEAD, builds on Vultr, replaces containers,
 preserves named volumes, and checks HTTPS health. It does not pull GitHub changes
-automatically, and a failed CI check does not prevent manual deployment.
+automatically when invoked manually; manual deployment bypasses CI checks.
 
 ## Create the instance
 
