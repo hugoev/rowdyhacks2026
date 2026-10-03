@@ -12,7 +12,7 @@ test('Inspector explains unavailable picture checking and rejects unsupported fi
   await page.getByLabel('Upload screenshot').setInputFiles(picture);
   await expect(page.getByAltText('Preview of your selected message')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Inspect this message' })).toBeDisabled();
-  await page.getByLabel('Or paste the message or link').fill('Please buy gift cards immediately. Keep this secret.');
+  await page.getByLabel('Paste the message or link').fill('Please buy gift cards immediately. Keep this secret.');
   await expect(page.getByRole('button', { name: 'Inspect this message' })).toBeEnabled();
   await page.getByRole('button', { name: 'Inspect this message' }).click();
   await expect(page.getByRole('heading', { name: 'Strong scam warning signs' })).toBeFocused();
@@ -20,7 +20,7 @@ test('Inspector explains unavailable picture checking and rejects unsupported fi
   await expect(page.getByText(/The image was not analyzed/)).toBeVisible();
 });
 
-test('mocked picture check shows loading, evidence, and one next step with readable mobile controls', async ({ page }) => {
+test('mocked picture check shows loading, evidence, and one next step on mobile', async ({ page }) => {
   await page.route('**/socket.io/**', route => route.abort());
   await page.route('**/api/state', async route => {
     const response = await route.fetch(); expect(response.ok()).toBe(true);
@@ -39,8 +39,6 @@ test('mocked picture check shows loading, evidence, and one next step with reada
   await page.getByLabel('Upload screenshot').setInputFiles(picture);
   await expect(page.getByAltText('Preview of your selected message')).toBeVisible();
   const button = page.getByRole('button', { name: 'Inspect this message' });
-  expect(await button.evaluate(element => element.getBoundingClientRect().height)).toBeGreaterThanOrEqual(56);
-  await expect(page.getByLabel('Or paste the message or link')).toHaveCSS('font-size', '24px');
   await button.click();
   await expect(page.getByRole('heading', { name: 'Checking your message...' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Remove picture' })).toBeDisabled();
@@ -57,7 +55,7 @@ test('mocked picture check shows loading, evidence, and one next step with reada
 test('failed picture check keeps the picture and offers a retry without false reassurance', async ({ page }) => {
   await page.route('**/api/inspect', route => route.fulfill({ status: 400, json: { error: 'Picture checking could not finish. Please try again.' } }));
   await page.goto('/inspector');
-  await page.getByLabel('Or paste the message or link').fill('Message to check');
+  await page.getByLabel('Paste the message or link').fill('Message to check');
   await page.getByLabel('Upload screenshot').setInputFiles(picture);
   await expect(page.getByAltText('Preview of your selected message')).toBeVisible();
   await page.getByRole('button', { name: 'Inspect this message' }).click();

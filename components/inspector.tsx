@@ -5,6 +5,7 @@ import type { ScanResult } from '@/lib/types';
 import { scanSamples } from '@/lib/scenarios';
 import { useTripwire } from './context';
 import styles from './inspector.module.css';
+import { Badge } from './ui';
 
 type Screenshot = { data: string; mimeType: string; name: string };
 
@@ -74,54 +75,48 @@ export function Inspector() {
     } finally { setBusy(false); }
   }
 
-  return <div className={styles.inspector}>
-    <header className={styles.heading}>
-      <p className={styles.kicker}>THE INSPECTOR</p>
-      <h1>Something feel off?</h1>
-      <p>Check a message before you reply, click a link, or send money.</p>
-      <p className={styles.reassurance}>You did nothing wrong by checking. You can take your time.</p>
-    </header>
-    <div className={styles.grid}>
-      <section className={styles.card} aria-labelledby="inspector-input-title">
-        <h2 id="inspector-input-title">1. Add the message</h2>
-        <p>Choose a picture of the message, or paste its words below.</p>
+  return <>
+    <div className="page-heading"><div><p className="eyebrow">LOOK CLOSER. BEFORE YOU CLICK.</p><h1>Something feel off<span>?</span></h1><p>Bring the message. We will look for the warning signs.</p></div><Badge tone={gemini ? 'green' : 'outline'}>{gemini ? 'GEMINI MULTIMODAL' : 'TEXT RULES MODE'}</Badge></div>
+    <div className="inspector-grid">
+      <section className="panel inspector-input" aria-labelledby="inspector-input-title">
+        <div className="inspector-title"><FileSearch size={24}/><h2 id="inspector-input-title">The Inspector</h2></div>
+        <p>Check a text, email, dating-app message, payment request, or suspicious link. You did nothing wrong by checking.</p>
         <form onSubmit={event => void submit(event)}>
           <fieldset disabled={busy} className={styles.fields}>
-            <div className={`${styles.upload} ${dragging ? styles.dragging : ''}`} onDragOver={event => { event.preventDefault(); if (!busy) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); if (event.dataTransfer.files[0]) addFile(event.dataTransfer.files[0]); }}>
-              <input ref={input} className={styles.fileInput} type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload screenshot" onChange={event => { if (event.target.files?.[0]) addFile(event.target.files[0]); }}/>
+            <label htmlFor="inspector-message">Paste the message or link<textarea id="inspector-message" rows={7} maxLength={20000} placeholder="Paste the whole message here. A little context helps." value={text} onChange={event => { setText(event.target.value); setResult(null); setError(''); }} aria-describedby="inspector-privacy"/></label>
+            <div className={'upload-zone ' + (dragging ? 'dragging' : '')} onDragOver={event => { event.preventDefault(); if (!busy) setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={event => { event.preventDefault(); setDragging(false); if (event.dataTransfer.files[0]) addFile(event.dataTransfer.files[0]); }}>
+              <input ref={input} type="file" accept="image/png,image/jpeg,image/webp" aria-label="Upload screenshot" onChange={event => { if (event.target.files?.[0]) addFile(event.target.files[0]); }}/>
               {image ? <>
                 <img className={styles.preview} src={`data:${image.mimeType};base64,${image.data}`} alt="Preview of your selected message" onError={() => { clearImage(); setError('That picture could not be displayed. Choose another picture or paste the message.'); }}/>
-                <p className={styles.filename}>{image.name}</p>
-                <button type="button" className={styles.secondary} onClick={() => { clearImage(); setResult(null); setError(''); }}><X aria-hidden="true" size={22}/>Remove picture</button>
+                <span>{image.name}</span>
+                <button type="button" className="text-link" onClick={() => { clearImage(); setResult(null); setError(''); }}>Remove picture<X aria-hidden="true" size={14}/></button>
               </> : <>
-                <Upload aria-hidden="true" size={32}/>
-                <button type="button" className={styles.secondary} onClick={() => input.current?.click()}>Choose a picture</button>
-                <p>JPG, PNG, or WebP. Up to 5 MB.</p>
+                <Upload aria-hidden="true" size={26}/>
+                <button type="button" onClick={() => input.current?.click()}>Choose a picture, or drop it here</button>
+                <span>PNG, JPG, WEBP - UP TO 5 MB</span>
               </>}
             </div>
             {reading && <p role="status">Opening your picture...</p>}
-            {!gemini && <p className={styles.notice}>Picture checking is unavailable right now. Paste the words below to check the text instead.{image && ' Your picture will not be checked.'}</p>}
-            <label className={styles.label} htmlFor="inspector-message">Or paste the message or link</label>
-            <textarea id="inspector-message" className={styles.textarea} rows={5} maxLength={20000} placeholder="For example: Your package is held. Send money now." value={text} onChange={event => { setText(event.target.value); setResult(null); setError(''); }} aria-describedby="inspector-privacy"/>
-            <p id="inspector-privacy" className={styles.privacy}><LockKeyhole aria-hidden="true" size={22}/>Tripwire does not save these checks. When picture checking is available, the content is shared with Google's Gemini service. Remove account numbers and other private details first.</p>
-            <button className={styles.primary} disabled={busy || reading || (!text.trim() && (!image || !gemini))}><FileSearch aria-hidden="true" size={24}/>{busy ? 'Checking your message...' : 'Inspect this message'}<ArrowRight aria-hidden="true" size={24}/></button>
+            {!gemini && <p className="provider-note">Picture checking is unavailable right now. Paste the words above to check the text instead.{image && ' Your picture will not be checked.'}</p>}
+            <button className="button primary full" disabled={busy || reading || (!text.trim() && (!image || !gemini))}><FileSearch aria-hidden="true" size={18}/>{busy ? 'Checking your message...' : 'Inspect this message'}<ArrowRight aria-hidden="true" size={17}/></button>
+            <p id="inspector-privacy" className="privacy-note"><LockKeyhole aria-hidden="true" size={13}/>Scans are not saved by Tripwire. When configured, content is sent to Gemini for analysis. Remove account numbers and other private details first. Use fictional examples on the free tier; Google may use that content to improve its products.</p>
           </fieldset>
-          {error && <div className={styles.error} role="alert"><h3>We could not finish this check</h3><p>{error}</p><p>You can try again or paste the words from the picture. Do not send money while you are unsure.</p></div>}
+          {error && <div className="error" role="alert"><h3>We could not finish this check</h3><p>{error}</p><p>You can try again or paste the words from the picture. Do not send money while you are unsure.</p></div>}
         </form>
       </section>
-      <section className={`${styles.card} ${styles.results}`} aria-labelledby="inspector-result-title" aria-busy={busy}>
-        {busy ? <div className={styles.empty} role="status"><FileSearch aria-hidden="true" size={48}/><h2 id="inspector-result-title">Checking your message...</h2><p>Take a breath. You do not need to reply or send money while you wait.</p></div> : result ? <>
-          <p className={`${styles.verdictLabel} ${result.score >= 60 ? styles.high : result.score >= 30 ? styles.medium : styles.low}`}>{result.score >= 60 ? 'Stop and check' : result.score >= 30 ? 'Take a moment to check' : 'Keep checking who sent it'}</p>
+      <section className={'panel inspector-results ' + (result ? 'has-result' : '')} aria-labelledby="inspector-result-title" aria-busy={busy}>
+        {busy ? <div className="inspector-empty" role="status"><FileSearch aria-hidden="true" size={48}/><h2 id="inspector-result-title">Checking your message...</h2><p>Take a breath. You do not need to reply or send money while you wait.</p></div> : result ? <>
+          <Badge tone={result.score >= 60 ? 'red' : result.score >= 30 ? 'amber' : 'green'}>{result.score}/100 - {result.source.toUpperCase()}</Badge>
           <h2 id="inspector-result-title" ref={resultHeading} tabIndex={-1}>{result.verdict}</h2>
           <p>{result.explanation}</p>
-          <h3>Warning signs in this message</h3>
-          {result.redFlags.length ? <ul className={styles.flags}>{result.redFlags.map((flag, index) => <li key={index}><AlertTriangle aria-hidden="true" size={24}/><span>{flag}</span></li>)}</ul> : <p>No known warning signs were found. This does not prove that the sender or request is real.</p>}
-          <div className={styles.nextStep}><h3>2. What to do next</h3><p>{result.nextStep}</p></div>
-          <p className={styles.reassurance}>Checking is a good decision. These messages can fool anyone.</p>
-          <details className={styles.details}><summary>How this was checked</summary><p>{result.source === 'gemini' ? 'Gemini helped look for warning signs in the content you provided.' : 'Tripwire checked the pasted text for common scam patterns.'} Links were not opened. This check cannot confirm anyone's identity.</p>{result.limitations && <p>{result.limitations}</p>}</details>
-        </> : <div className={styles.empty}><FileSearch aria-hidden="true" size={48}/><h2 id="inspector-result-title">Your result will appear here</h2><p>We will explain any warning signs and give you one next step.</p><p>If someone is rushing you, stop and contact them using a number you already trust.</p></div>}
+          <div className="case-divider"/>
+          <h3>What stood out</h3>
+          {result.redFlags.length ? <ul className="red-flags">{result.redFlags.map((flag, index) => <li key={index}><AlertTriangle aria-hidden="true" size={16}/><span>{flag}</span></li>)}</ul> : <p>No known warning signs were found. This does not prove that the sender or request is real.</p>}
+          <div className="next-step"><p className="eyebrow">ONE NEXT STEP</p><p>{result.nextStep}</p></div>
+          <details className="provider-note"><summary>How this was checked</summary><p>{result.source === 'gemini' ? 'Gemini helped look for warning signs in the content you provided.' : 'Tripwire checked the pasted text for common scam patterns.'} Links were not opened. This check cannot confirm anyone's identity.</p>{result.limitations && <p>{result.limitations}</p>}</details>
+        </> : <div className="inspector-empty"><div className="inspection-art"><FileSearch size={64} strokeWidth={1}/><span className="inspection-cross one">+</span><span className="inspection-cross two">+</span><span className="inspection-line"/></div><p className="eyebrow">TRUST YOUR INSTINCT TO CHECK</p><h2 id="inspector-result-title">No judgment.<br/>Just a closer look.</h2><p>Your findings will appear here, with the warning signs and one clear next step.</p></div>}
       </section>
     </div>
-    <section className={styles.samples} aria-labelledby="inspector-samples-title"><h2 id="inspector-samples-title">Want to try it first?</h2><p>These made-up messages are for practice.</p><div className={styles.sampleButtons}>{scanSamples.map(sample => <button key={sample.title} disabled={busy} onClick={() => { clearImage(); setText(sample.text); setResult(null); setError(''); document.getElementById('inspector-input-title')?.scrollIntoView({ block: 'start' }); }}>{sample.title}<ArrowRight aria-hidden="true" size={22}/></button>)}</div></section>
-  </div>;
+    <section className="sample-section" aria-labelledby="inspector-samples-title"><div><p className="eyebrow">FROM THE CASEBOOK</p><h2 id="inspector-samples-title">Try a prepared example.</h2></div><p>These made-up messages are for practice.</p><div className="sample-buttons">{scanSamples.map(sample => <button key={sample.title} disabled={busy} onClick={() => { clearImage(); setText(sample.text); setResult(null); setError(''); document.getElementById('inspector-input-title')?.scrollIntoView({ block: 'start' }); }}>{sample.title}<ArrowRight aria-hidden="true" size={14}/></button>)}</div></section>
+  </>;
 }

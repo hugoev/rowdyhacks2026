@@ -1,7 +1,7 @@
 # Inspector demo checks
 
-The Inspector uses large text, large controls, picture previews, inline errors,
-and a focused result heading. Results name warning signs and one next step;
+The Inspector preserves the frontend team's typography and design, adding picture
+previews, inline errors, and a focused result heading. Results name warning signs and one next step;
 they never confirm that a sender is safe. The same layout works for the protected
 user and guardian. Keyboard users can choose pictures without dragging them.
 
@@ -27,7 +27,7 @@ test a controlled demo and do not establish real-world accuracy.
 ## Verification
 
 `npm run test:e2e` checks picture validation, preview, unavailable analysis,
-loading, retry, focus, readable mobile controls, and a mocked Gemini result.
+loading, retry, focus, mobile layout, and a mocked Gemini result.
 `npm test` checks provider validation and fallback behavior. Neither command
 makes live Gemini requests. Only run `npm run eval:gemini` when explicitly
 authorized to spend credits.
