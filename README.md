@@ -118,6 +118,8 @@ Build uses Webpack for predictable compatibility with this custom-server setup. 
 
 For a Vultr VM or another Node/Docker host:
 
+For the automated Vultr deployment with Caddy HTTPS, persistent storage, and private role codes, follow [the Vultr guide](docs/VULTR.md). Start with `npm run setup:vultr`, configure the domain and email in `.env.vultr`, then use `npm run deploy:vultr -- user@server-ip` after committing the release.
+
 1. Copy `.env.example` to `.env`. Set `APP_ORIGIN=https://your-domain`, `DEMO_MODE=false`, distinct role access codes, and `COOKIE_SECURE=true`.
 2. Run `docker compose up --build -d`. Docker’s named volume preserves SQLite data. The port is bound to localhost.
 3. Put Caddy or another HTTPS reverse proxy in front of port 3000. See [the Caddy example](docs/Caddyfile.example); WebSocket upgrades must be supported.

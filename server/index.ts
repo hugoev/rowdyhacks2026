@@ -65,7 +65,7 @@ const server = createServer(async (req, res) => {
   try {
     if (req.headers.origin && req.headers.origin !== origin) throw Object.assign(new Error('This origin is not allowed. Check APP_ORIGIN.'), { status: 403 });
     if (req.method === 'GET' && path === '/api/config') { json(res, 200, publicConfig()); return; }
-    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', mode: config.demo ? 'demo' : 'paired' }); return; }
+    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', mode: config.demo ? 'demo' : 'paired', hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
     if (req.method !== 'GET' && (req.method !== 'POST' || req.headers['x-tripwire-client'] !== 'web')) throw Object.assign(new Error('Unsupported request.'), { status: 403 });
     const ip = req.socket.remoteAddress || 'local'; limit(ip, 240);
     const body = req.method === 'POST' ? await readBody(req) : {};

@@ -13,7 +13,10 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --test tests/*.test.ts",
     "test:e2e": "playwright test",
-    "eval:gemini": "node --import tsx scripts/eval-gemini.ts"
+    "eval:gemini": "node --import tsx scripts/eval-gemini.ts",
+    "setup:vultr": "node --import tsx scripts/setup-vultr.ts",
+    "check:vultr": "node --import tsx scripts/check-vultr.ts",
+    "deploy:vultr": "bash scripts/deploy-vultr.sh"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.26.0",

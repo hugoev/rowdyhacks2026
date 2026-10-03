@@ -1,0 +1,61 @@
+name: tripwire
+services:
+  tripwire:
+    image: tripwire:${TRIPWIRE_RELEASE:-local}
+    build:
+      context: ../..
+    env_file: ../../.env.vultr
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3000
+      DATA_DIR: /app/data
+      APP_ORIGIN: https://${TRIPWIRE_DOMAIN:?Set TRIPWIRE_DOMAIN in .env.vultr}
+      COOKIE_SECURE: "true"
+      DEMO_MODE: "false"
+      HOSTING_PROVIDER: vultr
+      APP_RELEASE: ${TRIPWIRE_RELEASE:-local}
+    expose:
+      - "3000"
+    volumes:
+      - tripwire-data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  caddy:
+    image: caddy:2-alpine
+    environment:
+      TRIPWIRE_DOMAIN: ${TRIPWIRE_DOMAIN:?Set TRIPWIRE_DOMAIN in .env.vultr}
+      ACME_EMAIL: ${ACME_EMAIL:?Set ACME_EMAIL in .env.vultr}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      tripwire:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  tripwire-data:
+  caddy-data:
+  caddy-config:
