@@ -7,15 +7,39 @@ import { z } from 'zod';
 import { Store } from './store';
 import { authenticate, equal, issue, roles } from './auth';
 import { enrichTranscript, inspect, speak } from './providers';
-import type { Role } from '../lib/types';
+import { CallScheduler } from './call-scheduler';
+import { configureGemini, summarizePayment, GeminiError } from './gemini';
+import { providerStatuses } from './provider-status';
+import type { Payment, Role } from '../lib/types';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3000);
 const origin = process.env.APP_ORIGIN || `http://localhost:${port}`;
+configureGemini();
 const config = { demo: process.env.DEMO_MODE !== 'false', gemini: !!process.env.GEMINI_API_KEY, elevenlabs: !!process.env.ELEVENLABS_API_KEY };
 if (!config.demo) for (const role of roles) if ((process.env[`${role.toUpperCase()}_ACCESS_CODE`] || '').length < 16) throw new Error(`${role.toUpperCase()}_ACCESS_CODE must contain at least 16 characters outside demo mode.`);
 const store = new Store(join(process.env.DATA_DIR || './data', 'tripwire.sqlite'));
+const callScheduler = new CallScheduler();
+const publicConfig = () => ({ ...config, providers: providerStatuses() });
+const summaryJobs = new Map<string, string>();
+function paymentRevision(payment: Payment) { return JSON.stringify([payment.status, payment.score, payment.reasons]); }
+function queueSummaries() {
+  if (!config.gemini) return;
+  for (const payment of store.state.payments.filter(p => p.status === 'held')) {
+    const revision = paymentRevision(payment);
+    if (summaryJobs.get(payment.id) === revision) continue;
+    summaryJobs.set(payment.id, revision);
+    const evidence = structuredClone(payment);
+    const labels = store.state.call.assessment.tells.map(t => t.label);
+    void summarizePayment(evidence, labels).then(summary => {
+      const current = store.state.payments.find(p => p.id === evidence.id);
+      if (current && current.status === 'held' && paymentRevision(current) === revision) {
+        current.summary = summary; current.summarySource = 'gemini'; store.save();
+      }
+    }).catch(error => { if (!(error instanceof GeminiError)) console.error('Guardian summary failed unexpectedly.'); }).finally(() => broadcast());
+  }
+}
 const secret = store.get('sessionSecret')!;
 const app = next({ dev, hostname, port });
 await app.prepare();
@@ -38,7 +62,7 @@ const server = createServer(async (req, res) => {
   if (!path.startsWith('/api/')) { await handle(req, res); return; }
   try {
     if (req.headers.origin && req.headers.origin !== origin) throw Object.assign(new Error('This origin is not allowed. Check APP_ORIGIN.'), { status: 403 });
-    if (req.method === 'GET' && path === '/api/config') { json(res, 200, config); return; }
+    if (req.method === 'GET' && path === '/api/config') { json(res, 200, publicConfig()); return; }
     if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, storage: 'sqlite', mode: config.demo ? 'demo' : 'paired' }); return; }
     if (req.method !== 'GET' && (req.method !== 'POST' || req.headers['x-tripwire-client'] !== 'web')) throw Object.assign(new Error('Unsupported request.'), { status: 403 });
     const ip = req.socket.remoteAddress || 'local'; limit(ip, 240);
@@ -56,19 +80,28 @@ const server = createServer(async (req, res) => {
     const role = z.enum(roles).parse(req.headers['x-tripwire-role']);
     if (!authenticate(req.headers.cookie, role, secret)) throw Object.assign(new Error('Connect your view to continue.'), { status: 401 });
     const permit = (...allowed: Role[]) => { if (!allowed.includes(role)) throw Object.assign(new Error('This action requires a different family role.'), { status: 403 }); };
-    if (path === '/api/state' && req.method === 'GET') { store.tick(); json(res, 200, store.snapshot(role, config)); return; }
+    if (path === '/api/state' && req.method === 'GET') { store.tick(); json(res, 200, store.snapshot(role, publicConfig())); return; }
     if (req.method !== 'POST') { json(res, 404, { error: 'Endpoint not found.' }); return; }
     let result: unknown = { ok: true };
     switch (path) {
       case '/api/call/start': permit('protected'); z.object({ consent: z.literal(true) }).parse(body); store.startCall(); break;
-      case '/api/call/end': permit('protected'); store.endCall(); break;
+      case '/api/call/end': permit('protected'); callScheduler.cancel(); store.endCall(); break;
       case '/api/call/line': {
         permit('protected');
         const input = z.object({ text: z.string().trim().min(1).max(3000), source: z.enum(['scripted', 'browser', 'manual', 'elevenlabs']).default('manual') }).parse(body);
         const id = store.addLine(input.text, input.source);
         const text = store.state.call.transcript.map(l => l.text).join(' ');
         // Deterministic warning is broadcast immediately; AI can only add risk afterward.
-        void enrichTranscript(text).then(a => { if (a && id) store.enrichCall(id, a); }); break;
+        if (config.gemini && id) {
+          const labels = store.state.call.assessment.tells.map(t => t.label);
+          callScheduler.submit(id, async () => {
+            if (store.state.call.id !== id || !store.state.call.active) return;
+            const assessment = await enrichTranscript(text, labels);
+            if (assessment) store.enrichCall(id, assessment);
+            broadcast();
+          });
+        }
+        break;
       }
       case '/api/safe-word/set': {
         permit('protected', 'guardian');
@@ -98,7 +131,7 @@ const server = createServer(async (req, res) => {
         if (!audio) { json(res, 200, { fallback: 'browser' }); return; }
         res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' }); res.end(audio); return;
       }
-      case '/api/demo/reset': permit('guardian'); if (!config.demo) throw new Error('Reset is available only in demo mode.'); store.reset(); break;
+      case '/api/demo/reset': permit('guardian'); if (!config.demo) throw new Error('Reset is available only in demo mode.'); callScheduler.cancel(); summaryJobs.clear(); store.reset(); break;
       default: json(res, 404, { error: 'Endpoint not found.' }); return;
     }
     json(res, 200, result);
@@ -114,15 +147,16 @@ io.use((socket, done) => {
   socket.data.role = role; done();
 });
 io.on('connection', socket => {
-  socket.join(socket.data.role); socket.emit('state', store.snapshot(socket.data.role, config));
+  socket.join(socket.data.role); socket.emit('state', store.snapshot(socket.data.role, publicConfig()));
   socket.on('disconnect', () => {});
 });
-store.onChange = () => { for (const role of roles) io.to(role).emit('state', store.snapshot(role, config)); };
+function broadcast() { for (const role of roles) io.to(role).emit('state', store.snapshot(role, publicConfig())); }
+store.onChange = () => { broadcast(); queueSummaries(); };
 const ticker = setInterval(() => {
   store.tick();
   for (const [key, value] of limits) if (value.until < Date.now()) limits.delete(key);
   for (const socket of io.sockets.sockets.values()) if (!authenticate(socket.request.headers.cookie, socket.data.role, secret)) socket.disconnect(true);
 }, 1000);
 server.listen(port, hostname, () => console.log(`Tripwire ready at ${origin} · ${config.demo ? 'DEMO — mock payments, public role switching' : 'paired access'} mode`));
-function shutdown() { clearInterval(ticker); io.close(); server.close(); store.db.close(); process.exit(0); }
+function shutdown() { callScheduler.cancel(); clearInterval(ticker); io.close(); server.close(); store.db.close(); process.exit(0); }
 process.on('SIGTERM', shutdown); process.on('SIGINT', shutdown);

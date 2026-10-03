@@ -23,6 +23,7 @@ export class Store {
     this.db.exec('PRAGMA journal_mode=WAL; CREATE TABLE IF NOT EXISTS kv (key TEXT PRIMARY KEY, value TEXT NOT NULL)');
     const saved = this.get('state');
     this.state = saved ? JSON.parse(saved) : emptyState();
+    for (const payment of this.state.payments) payment.summarySource ??= 'rules';
     // A server restart ends the live session; retained evidence remains available only with consent.
     this.state.call.active = false;
     this.state.settings.safeWordConfigured = !!this.get('safeWordHash');
@@ -69,12 +70,16 @@ export class Store {
   }
   enrichCall(id: string, assessment: Assessment) {
     if (this.state.call.id !== id || !this.state.call.active) return;
-    if (assessment.score > this.state.call.assessment.score) {
-      const existing = this.state.call.assessment;
-      this.state.call.assessment = { ...assessment, tells: [...new Map([...existing.tells, ...assessment.tells].map(t => [t.id, t])).values()] };
-      this.event('AI added a conversation warning', assessment.score, 'call'); this.save();
-    }
+    const existing = this.state.call.assessment;
+    const score = Math.max(existing.score, assessment.score);
+    this.state.call.assessment = {
+      ...existing, ...(assessment.score >= existing.score ? assessment : {}),
+      score, level: levelFor(score), source: 'gemini',
+      tells: [...new Map([...existing.tells, ...assessment.tells].map(t => [t.id, t])).values()],
+    };
+    this.event('Gemini analyzed the conversation', score, 'call'); this.save();
   }
+
   endCall() {
     this.state.call.active = false;
     if (!this.state.settings.retainFlaggedTranscripts || this.state.call.assessment.score < 30) this.state.call.transcript = [];
@@ -125,7 +130,7 @@ export class Store {
     const payment: Payment = {
       id: randomUUID(), ...input, status, score: assessment.score, reasons, createdAt: this.now(),
       releaseAt: held ? this.now() + DAY : null, resolvedAt: status === 'released' ? this.now() : null,
-      summary: `${input.payee} · $${input.amount.toFixed(2)} by ${input.rail}. ${reasons.join('. ')}. ${held ? 'Held for a guardian decision or the 24-hour cooling-off period.' : status === 'review' ? 'A specific warning must be reviewed before continuing.' : 'No red flags found by the demo rules.'}`,
+      summarySource: 'rules', summary: `${input.payee} · $${input.amount.toFixed(2)} by ${input.rail}. ${reasons.join('. ')}. ${held ? 'Held for a guardian decision or the 24-hour cooling-off period.' : status === 'review' ? 'A specific warning must be reviewed before continuing.' : 'No red flags found by the demo rules.'}`,
     };
     this.state.payments.unshift(payment);
     if (assessment.score >= 30 || held) this.state.cases.unshift({ id: randomUUID(), title: this.state.call.assessment.scamType === 'Unverified request' ? 'The Payment Check' : this.state.call.assessment.scamType, openedAt: this.now(), score: payment.score, tells: [...new Set([...this.state.call.assessment.tells.map(t => t.label), ...reasons])], paymentId: payment.id, outcome: 'open' });
@@ -146,6 +151,7 @@ export class Store {
     } else { payment.status = 'released'; payment.resolvedAt = this.now(); this.closeCase(id, 'reviewed'); }
     const file = this.state.cases.find(c => c.paymentId === id);
     if (file) { file.score = payment.score; file.tells = [...new Set([...file.tells, ...payment.reasons])]; }
+    payment.summarySource = 'rules';
     payment.summary = `${payment.payee} · $${payment.amount.toFixed(2)}. ${payment.reasons.join('. ')}. ${mustHold ? 'Updated risk check; payment held.' : 'User reviewed the warning.'}`;
     this.event(mustHold ? 'Updated risk check · payment held' : 'Warning reviewed · payment completed', payment.score, 'payment'); this.save(); return payment;
   }

@@ -8,6 +8,7 @@ export type Payment = {
   id: string; payee: string; amount: number; rail: Rail; newPayee: boolean;
   status: 'review' | 'held' | 'released' | 'denied'; score: number; reasons: string[];
   createdAt: number; releaseAt: number | null; resolvedAt: number | null; summary: string;
+  summarySource?: 'rules' | 'gemini';
 };
 export type RiskEvent = { id: string; at: number; score: number; label: string; kind: 'call' | 'payment' | 'verification' | 'system' };
 export type CaseFile = { id: string; title: string; openedAt: number; score: number; tells: string[]; paymentId?: string; outcome: 'open' | 'foiled' | 'reviewed' };
@@ -17,5 +18,7 @@ export type State = {
   payments: Payment[]; events: RiskEvent[]; cases: CaseFile[];
   settings: { coSignLimit: number; pendingLimit: { value: number; effectiveAt: number } | null; retainFlaggedTranscripts: boolean; safeWordConfigured: boolean };
 };
-export type PublicState = State & { config: { demo: boolean; gemini: boolean; elevenlabs: boolean } };
+export type ProviderCapability = 'geminiCall' | 'geminiScan' | 'geminiSummary' | 'elevenlabsTranscription' | 'elevenlabsVoice';
+export type ProviderStatus = { state: 'unconfigured' | 'configured' | 'working' | 'degraded'; model: string; lastSuccessAt: number | null; error?: string };
+export type PublicState = State & { config: { demo: boolean; gemini: boolean; elevenlabs: boolean; providers?: Partial<Record<ProviderCapability, ProviderStatus>> } };
 export type ScanResult = { score: number; verdict: string; redFlags: string[]; explanation: string; nextStep: string; source: 'rules' | 'gemini'; limitations?: string };
