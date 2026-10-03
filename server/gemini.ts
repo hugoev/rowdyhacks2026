@@ -78,7 +78,7 @@ export async function analyzeCall(text: string, previousSignals: string[] = []):
 }
 const scanSchema = z.object({ score: z.number().min(0).max(100), redFlags: z.array(z.string().max(300)).max(12), explanation: z.string().min(1).max(2000), nextStep: z.string().min(1).max(1000) });
 export async function analyzeScan(text: string, image?: ImageInput) {
-  return generate('scan', 'Inspect this message or screenshot for social engineering, including romance, fake jobs, gift cards, and credential phishing. Cite visible evidence. Do not visit links. Return score, redFlags, explanation, nextStep.', { message: text }, scanSchema, image);
+  return generate('scan', 'Inspect this message or screenshot for social engineering, including romance, fake jobs, gift cards, and credential phishing. Write for an older adult: familiar words, short sentences, no technical jargon or blame. Cite only visible evidence and give at most three specific redFlags. Keep explanation to two short sentences. Give one practical nextStep, such as contacting the sender through a saved number, never a number or link in the suspicious message. Do not visit links, invent evidence, or claim a sender or payment is safe. If the image is unreadable or lacks enough context, say so, score at least 30, and ask for a clearer picture as the nextStep. Return score, redFlags, explanation, nextStep.', { message: text }, scanSchema, image);
 }
 const summarySchema = z.object({ summary: z.string().min(1).max(1000) });
 export async function summarizePayment(payment: Payment, labels: string[]) {
