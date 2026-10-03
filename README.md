@@ -70,11 +70,11 @@ The server prints an experimental SQLite warning on some Node 22 versions; this 
 
 1. Open `/guardian`, `/protected`, and `/relative` in separate tabs/windows. The role cookies are separate so all three can coexist in one browser. Use the same host (`localhost`, not a mixture of hostnames).
 2. In Family settings, agree on and save a family safe word. Only its salted bcrypt hash is stored. Do not include it in a transcript.
-3. In Rosa’s shield, choose **The Grandson Job**, then **Start scripted demo**. Click **Next scripted line** twice. The guardian sees the risk and detected tells update immediately. Browser voice reads the critical warning where supported; the speaker button replays it.
-4. Enter a wrong caller answer in **The Vault Code**. Then click **Check with Alex**. In Alex’s view, choose **No, that’s not me**. Rosa sees his answer.
-5. Use the prefilled **$2,500 gift-card payment**, then **Check & send demo payment**. Its hold is enforced by the server. The guardian chooses **Deny payment** and confirms. Both views update; the case file is marked **HEIST FOILED**.
+3. In Rosa’s shield, open **Check a call**, expand **Presenter controls**, choose **The Grandson Job**, then **Start scripted demo**. Click **Next scripted line** twice. The guardian sees the risk and detected tells update immediately. Browser voice reads the critical warning where supported; the speaker button replays it.
+4. Open **Check the family word** and enter a wrong caller answer. Then open **Ask Alex** and click **Check with Alex**. In Alex’s view, choose **No, that’s not me**. Rosa sees his answer.
+5. Switch to **Send money**. Use the prefilled **$2,500 gift-card payment**, then **Check & send demo payment**. Its hold is enforced by the server. The guardian chooses **Deny payment** and confirms. Both views update; the case file is marked **HEIST FOILED**.
 6. Inspect a prepared romance or phishing message in `/inspector`. With a Gemini key, upload a screenshot instead.
-7. For the normal-payment contrast, use **Reset demo** in the guardian view, then choose **Try a $40 bill** in Rosa’s view. It completes without friction. Reset preserves the safe word but clears demo activity and preferences.
+7. For the normal-payment contrast, use **Reset demo** in the guardian view, then expand **Presenter controls** and choose **Try a $40 bill** in Rosa’s view. It completes without friction. Reset preserves the safe word but clears demo activity and preferences.
 
 The demo uses **manual next-line controls**, so venue noise and timing cannot break the presentation. Scripted mode never turns on the microphone. The browser cannot hang up a telephone call; the hang-up control explicitly tells the user to end the call on their phone and stops Tripwire’s guard.
 

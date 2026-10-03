@@ -22,20 +22,20 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   const context = await browser.newContext(); const rosa = await context.newPage(); const guardian = await context.newPage(); const relative = await context.newPage();
   await guardian.goto('/guardian'); await expect(guardian.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
   await relative.goto('/relative'); await expect(relative.getByRole('heading', { name: 'You’re part of her safety net.' })).toBeVisible();
-  await rosa.goto('/protected'); await rosa.getByLabel('Read critical warnings aloud').uncheck();
-  await rosa.getByRole('button', { name: 'Start scripted demo' }).click();
+  await rosa.goto('/protected'); await rosa.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await rosa.getByLabel('Read critical warnings aloud').uncheck();
+  await rosa.getByText('Presenter controls', { exact: true }).click(); await rosa.getByRole('button', { name: 'Start scripted demo' }).click();
   await rosa.getByRole('button', { name: 'Next scripted line' }).click();
   const detectionStarted = Date.now();
   await rosa.getByRole('button', { name: 'Next scripted line' }).click();
   await expect(guardian.getByText('Keep-it-secret request', { exact: true })).toBeVisible();
   expect(Date.now() - detectionStarted).toBeLessThan(10000);
-  await rosa.getByRole('button', { name: 'Check with Alex' }).click();
+  await rosa.getByRole('button', { name: 'Ask Alex', exact: true }).click(); await rosa.getByRole('button', { name: 'Check with Alex' }).click();
   await expect(relative.getByRole('button', { name: 'No, that’s not me' })).toBeVisible();
   const callbackStarted = Date.now();
   await relative.getByRole('button', { name: 'No, that’s not me' }).click();
   await expect(rosa.getByText('Alex says: “That isn’t me calling.” Hang up and call his saved number.')).toBeVisible();
   expect(Date.now() - callbackStarted).toBeLessThan(5000);
-  await rosa.getByRole('button', { name: 'Check & send demo payment' }).click();
+  await rosa.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click(); await rosa.getByRole('button', { name: 'Check & send demo payment' }).click();
   await expect(rosa.getByRole('heading', { name: 'Your money can wait.' })).toBeVisible();
   await guardian.getByRole('button', { name: 'Deny payment', exact: true }).click();
   await guardian.getByRole('dialog').getByRole('button', { name: 'Deny payment' }).click();
@@ -51,15 +51,15 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
 });
 
 test('normal $40 bill completes with no friction', async ({ page }) => {
-  await page.goto('/protected'); await page.getByRole('button', { name: 'Try a $40 bill' }).click(); await page.getByRole('button', { name: 'Check & send demo payment' }).click();
+  await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await page.getByText('Presenter controls', { exact: true }).click(); await page.getByRole('button', { name: 'Try a $40 bill' }).click(); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click(); await page.getByRole('button', { name: 'Check & send demo payment' }).click();
   await expect(page.getByRole('heading', { name: 'Demo payment completed.' })).toBeVisible(); await expect(page.getByText('PAYMENT HELD', { exact: true })).toHaveCount(0);
 });
 test('safe word setup and incorrect answer escalate the call', async ({ page }) => {
   await page.goto('/settings');
   await expect(page.getByRole('heading', { name: 'Set your safety net.' })).toBeVisible();
   if (await page.getByRole('button', { name: 'Set safe word', exact: true }).isVisible()) { await page.getByLabel('Your family word').fill('marigold'); await page.getByRole('button', { name: 'Set safe word', exact: true }).click(); await expect(page.getByText('SAFE WORD CONFIGURED', { exact: true })).toBeVisible(); }
-  await page.goto('/protected'); await page.getByLabel('Read critical warnings aloud').uncheck(); await page.getByRole('button', { name: 'Start scripted demo' }).click();
-  await page.getByLabel('What word did they say?').fill('wrong answer'); await page.getByRole('button', { name: 'Check their answer' }).click();
+  await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await page.getByLabel('Read critical warnings aloud').uncheck(); await page.getByText('Presenter controls', { exact: true }).click(); await page.getByRole('button', { name: 'Start scripted demo' }).click();
+  await page.getByRole('button', { name: 'Check the family word', exact: true }).click(); await page.getByLabel('What word did they say?').fill('wrong answer'); await page.getByRole('button', { name: 'Check their answer' }).click();
   await expect(page.getByText('That word did not match. Please hang up and call Alex.')).toBeVisible(); await expect(page.getByText(/CRITICAL ·/)).toBeVisible();
 });
 test('Inspector flags a romance sample and does not mislabel an ordinary message', async ({ page }) => {
@@ -83,9 +83,40 @@ test('desktop and mobile views render without runtime errors', async ({ page }) 
   await page.setViewportSize({ width: 1440, height: 1100 }); await page.goto('/guardian');
   await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
   await page.screenshot({ path: 'test-results/tripwire-desktop.png', fullPage: true });
-  await page.goto('/protected'); await expect(page.getByRole('button', { name: 'Start scripted demo' })).toBeVisible();
+  await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await expect(page.getByRole('button', { name: 'Use microphone', exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.sidebar')).toHaveCSS('transform', 'matrix(1, 0, 0, 1, -244, 0)');
+  await expect(page.locator('.sidebar')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/tripwire-mobile.png', fullPage: true });
   expect(errors).toEqual([]);
+});
+
+test('Rosa home, payment result and reduced motion remain readable on a narrow screen', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/protected');
+  await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/rosa-home.png', fullPage: true });
+  await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click();
+  await page.getByRole('button', { name: 'Check & send demo payment' }).click();
+  await expect(page.getByRole('heading', { name: 'Your money can wait.' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Check & send demo payment' })).toBeHidden();
+  await expect(page.locator('.payment-result')).toHaveCSS('animation-name', 'none');
+  await expect(page.locator('.senior-payment .payment-result > p').first()).toHaveCSS('font-size', '24px');
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.screenshot({ path: 'test-results/rosa-hold.png', fullPage: true });
+  await page.getByRole('button', { name: 'Check another payment' }).click();
+  await expect(page.getByLabel('Who are you paying?')).toHaveValue('Emergency gift cards');
+});
+
+
+test('Rosa header returns home and other screens retain the existing theme', async ({ page }) => {
+  await page.goto('/protected');
+  await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
+  await expect(page.locator('.family-brand')).toHaveAttribute('href', '/');
+  await page.locator('.family-brand').click();
+  await expect(page).toHaveURL('/');
+  await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
+  await expect(page.locator('.sidebar')).toBeVisible();
+  await expect(page.locator('.footer')).toBeVisible();
+  await expect(page.locator('body')).toHaveCSS('font-family', 'Arial, Helvetica, sans-serif');
 });

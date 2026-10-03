@@ -14,9 +14,9 @@ Use three windows with the same origin: `/protected`, `/guardian`, `/relative`. 
 
 “Scammers don’t need to break into the vault. They convince someone to open it. Tripwire adds a second set of ears and a second key before the money moves.”
 
-1. Run **The Grandson Job** and advance the lines. Point out family emergency, urgency, and secrecy as specific warning signs.
-2. Give the wrong family word. Ask the real Alex through the separate callback screen. Alex answers no.
-3. Attempt the $2,500 gift-card payment. Show the held payment and the server-owned cooling-off deadline.
+1. In Rosa’s shield, open **Check a call**, then expand **Presenter controls**. Run **The Grandson Job** and advance the lines. Point out family emergency, urgency, and secrecy as specific warning signs.
+2. Open **Check the family word** and give the wrong answer. Open **Ask Alex**, then choose **Check with Alex** through the separate callback screen. Alex answers no.
+3. Switch to **Send money** and attempt the $2,500 gift-card payment. The call guard keeps running while Rosa switches tasks. Show the held payment and the server-owned cooling-off deadline.
 4. Elena denies it. Show **HEIST FOILED**, then its case file and the concrete tells.
 5. Inspect a romance example. If Gemini is configured and has been checked, inspect a screenshot.
 

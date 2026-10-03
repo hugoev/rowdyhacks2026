@@ -40,7 +40,10 @@ export function Provider({ role, children }: { role: Role; children: React.React
   useEffect(() => {
     if (!ready) return;
     const socket = io({ auth: { role }, withCredentials: true });
-    socket.on('connect', () => { setOnline(true); void refresh().catch(() => {}); });
+    socket.on('connect', () => {
+      if (role === 'protected') void refresh().then(() => { if (socket.connected) setOnline(true); }).catch(() => setOnline(false));
+      else { setOnline(true); void refresh().catch(() => {}); }
+    });
     socket.on('disconnect', () => setOnline(false));
     socket.on('connect_error', () => setOnline(false));
     socket.on('state', (snapshot: PublicState) => setState(snapshot));

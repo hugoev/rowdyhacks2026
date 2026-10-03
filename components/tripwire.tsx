@@ -4,6 +4,8 @@ import { Activity, ArrowUpRight, Bell, Check, ChevronRight, CircleHelp, FileSear
 import { Provider, useTripwire } from './context';
 import { Badge, Confirm, Countdown, Empty, money, PaymentStatus, RiskChart, RiskDial, SectionTitle, time, ViewLink } from './ui';
 import { Protected } from './protected';
+import { ProtectedShell } from './protected-shell';
+import { MotionProvider } from './motion';
 import { CaseEducation } from './case-education';
 import { Inspector, Preferences, Relative } from './views';
 import type { Payment } from '@/lib/types';
@@ -14,6 +16,7 @@ export type View = 'guardian' | 'protected' | 'relative' | 'inspector' | 'cases'
 const names: Record<View, string> = { guardian: 'Command center', protected: 'Rosa’s shield', relative: 'Family callback', inspector: 'The Inspector', cases: 'Case files', settings: 'Family settings' };
 export default function Tripwire({ view }: { view: View }) {
   const role = view === 'protected' || view === 'settings' ? 'protected' : view === 'relative' ? 'relative' : 'guardian';
+  if (view === 'protected') return <Provider role={role}><div className="rosa-surface"><MotionProvider><ProtectedShell/></MotionProvider></div></Provider>;
   return <Provider role={role}><Shell view={view}/></Provider>;
 }
 function Shell({ view }: { view: View }) {
