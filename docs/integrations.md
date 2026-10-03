@@ -3,6 +3,13 @@
 Keep API keys in `.env` or the hosting provider's server-side secret settings.
 Never use `NEXT_PUBLIC_` for keys. Restart the server after changing configuration.
 
+Each teammate copies `.env.example` to an untracked local `.env` and adds their
+own provider keys. Prefer separate keys per developer so one can be revoked
+without affecting teammates. If sharing sponsor credentials, use a password
+manager's shared vault, not Git, issue comments, PRs, or screenshots. The deployed
+server has its own protected `.env` or secret settings. `.env.example` contains
+variable names and placeholders only; `.gitignore` excludes local secret files.
+
 ## Gemini
 
 Create a Gemini Developer API key in Google AI Studio. Start with the free tier;
@@ -25,6 +32,25 @@ It requires a Playwright Chromium installation. It makes up to 39 API requests;
 quota errors are reported as incomplete evaluations, not successful detections.
 No model is switched automatically: record results, then change task-specific
 environment settings if the selected model fails accuracy or latency targets.
+
+## ElevenLabs
+
+Set `ELEVENLABS_API_KEY`, select a stock `ELEVENLABS_VOICE_ID`, and keep
+`ELEVENLABS_TTS_MODEL=eleven_flash_v2_5` for prompt warnings. Confirm your account
+includes Scribe Realtime and enough credits in the ElevenLabs dashboard; 130,000
+credits do not imply a fixed number of transcription minutes across plans.
+
+Choose Use microphone on Rosa's screen. The protected-role endpoint issues a
+single-use token only after a consented call starts. The browser SDK sends audio
+directly to ElevenLabs; committed text goes to Tripwire and, when configured,
+Gemini. Partial text stays in the browser. Capture ends on call end or navigation
+and is muted during spoken warnings. HTTPS or localhost is required. If Scribe
+fails, choose browser transcription, resume the microphone, or paste text; no
+other recording service starts automatically. Browser audio is the voice fallback.
+
+Token issuance is only configuration evidence. A connected session or committed
+transcript marks live transcription working. Warning audio marks voice working.
+Settings show last success and degraded service separately for each capability.
 
 ## Verification
 

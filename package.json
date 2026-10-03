@@ -16,6 +16,7 @@
     "eval:gemini": "node --import tsx scripts/eval-gemini.ts"
   },
   "dependencies": {
+    "@elevenlabs/client": "^1.26.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.468.0",

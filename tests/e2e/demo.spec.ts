@@ -40,6 +40,7 @@ test('normal $40 bill completes with no friction', async ({ page }) => {
 });
 test('safe word setup and incorrect answer escalate the call', async ({ page }) => {
   await page.goto('/settings');
+  await expect(page.getByRole('heading', { name: 'Set your safety net.' })).toBeVisible();
   if (await page.getByRole('button', { name: 'Set safe word', exact: true }).isVisible()) { await page.getByLabel('Your family word').fill('marigold'); await page.getByRole('button', { name: 'Set safe word', exact: true }).click(); }
   await page.goto('/protected'); await page.getByLabel('Read critical warnings aloud').uncheck(); await page.getByRole('button', { name: 'Start scripted demo' }).click();
   await page.getByLabel('What word did they say?').fill('wrong answer'); await page.getByRole('button', { name: 'Check their answer' }).click();

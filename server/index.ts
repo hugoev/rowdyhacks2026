@@ -9,7 +9,8 @@ import { authenticate, equal, issue, roles } from './auth';
 import { enrichTranscript, inspect, speak } from './providers';
 import { CallScheduler } from './call-scheduler';
 import { configureGemini, summarizePayment, GeminiError } from './gemini';
-import { providerStatuses } from './provider-status';
+import { configureElevenLabs, transcriptionToken } from './elevenlabs';
+import { providerFailure, providerSuccess, providerStatuses } from './provider-status';
 import type { Payment, Role } from '../lib/types';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -17,6 +18,7 @@ const hostname = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3000);
 const origin = process.env.APP_ORIGIN || `http://localhost:${port}`;
 configureGemini();
+configureElevenLabs();
 const config = { demo: process.env.DEMO_MODE !== 'false', gemini: !!process.env.GEMINI_API_KEY, elevenlabs: !!process.env.ELEVENLABS_API_KEY };
 if (!config.demo) for (const role of roles) if ((process.env[`${role.toUpperCase()}_ACCESS_CODE`] || '').length < 16) throw new Error(`${role.toUpperCase()}_ACCESS_CODE must contain at least 16 characters outside demo mode.`);
 const store = new Store(join(process.env.DATA_DIR || './data', 'tripwire.sqlite'));
@@ -81,12 +83,15 @@ const server = createServer(async (req, res) => {
     if (req.method !== 'POST') { json(res, 404, { error: 'Endpoint not found.' }); return; }
     let result: unknown = { ok: true };
     switch (path) {
-      case '/api/call/start': permit('protected'); z.object({ consent: z.literal(true) }).parse(body); store.startCall(); break;
+      case '/api/call/start': permit('protected'); z.object({ consent: z.literal(true) }).parse(body); store.startCall(); result = { callId: store.state.call.id }; break;
       case '/api/call/end': permit('protected'); callScheduler.cancel(); store.endCall(); break;
       case '/api/call/line': {
         permit('protected');
-        const input = z.object({ text: z.string().trim().min(1).max(3000), source: z.enum(['scripted', 'browser', 'manual', 'elevenlabs']).default('manual') }).parse(body);
-        const id = store.addLine(input.text, input.source);
+        const input = z.object({ text: z.string().trim().min(1).max(3000), source: z.enum(['scripted', 'browser', 'manual', 'elevenlabs']).default('manual'), callId: z.string().uuid().optional(), segmentId: z.string().uuid().optional() }).parse(body);
+        if (input.source === 'elevenlabs' && (!input.callId || !input.segmentId)) throw new Error('Live transcripts require call and segment identifiers.');
+        const id = store.addLine(input.text, input.source, input.callId, input.segmentId);
+        if (!id) break;
+        if (input.source === 'elevenlabs' && config.elevenlabs) providerSuccess('elevenlabsTranscription');
         const text = store.state.call.transcript.map(l => l.text).join(' ');
         // Deterministic warning is broadcast immediately; AI can only add risk afterward.
         if (config.gemini && id) {
@@ -122,13 +127,29 @@ const server = createServer(async (req, res) => {
         if (!input.text.trim() && !input.image) throw new Error('Add a message, link, or screenshot first.');
         result = await inspect(input.text, input.image); break;
       }
+      case '/api/transcription/token': {
+        permit('protected'); limit(ip + ':scribe-token', 6);
+        const input = z.object({ callId: z.string().uuid() }).parse(body);
+        if (!store.state.call.active || store.state.call.id !== input.callId) throw new Error('Start a consented call before connecting the microphone.');
+        const token = await transcriptionToken();
+        if (!store.state.call.active || store.state.call.id !== input.callId) throw new Error('The call ended before transcription connected.');
+        result = { token, callId: input.callId }; break;
+      }
+      case '/api/transcription/status': {
+        permit('protected');
+        const input = z.object({ callId: z.string().uuid(), state: z.enum(['working', 'degraded']) }).parse(body);
+        if (!store.state.call.active || store.state.call.id !== input.callId) throw new Error('This call has ended.');
+        if (input.state === 'working') providerSuccess('elevenlabsTranscription');
+        else providerFailure('elevenlabsTranscription', 'live session interrupted');
+        broadcast(); break;
+      }
       case '/api/speak': {
         permit('protected', 'guardian'); limit(ip + ':speak', 10);
         const audio = await speak(z.object({ text: z.string().min(1).max(1500) }).parse(body).text);
         if (!audio) { json(res, 200, { fallback: 'browser' }); return; }
         res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' }); res.end(audio); return;
       }
-      case '/api/demo/reset': permit('guardian'); if (!config.demo) throw new Error('Reset is available only in demo mode.'); callScheduler.cancel(); summaryJobs.clear(); store.reset(); break;
+      case '/api/demo/reset': permit('guardian'); if (!config.demo) throw new Error('Reset is available only in demo mode.'); callScheduler.cancel(); summaryJobs.clear(); limits.clear(); store.reset(); break;
       default: json(res, 404, { error: 'Endpoint not found.' }); return;
     }
     json(res, 200, result);

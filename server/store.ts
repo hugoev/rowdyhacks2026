@@ -16,6 +16,7 @@ export const emptyState = (): State => ({
 export class Store {
   db: DatabaseSync;
   state: State;
+  private segments = new Map<string, string>();
   onChange: () => void = () => {};
   constructor(path: string, private now: () => number = Date.now) {
     if (path !== ':memory:') mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
@@ -55,11 +56,21 @@ export class Store {
   }
   startCall() {
     if (this.state.call.active) throw new Error('A call guard session is already running. End it before starting another.');
+    this.segments.clear();
     this.state.call = { id: randomUUID(), active: true, startedAt: this.now(), transcript: [], assessment: assessTranscript(''), safeWord: 'unchecked', callback: null };
     this.event('Call guard started with consent', 0, 'call'); this.save();
   }
-  addLine(text: string, source: string) {
+  addLine(text: string, source: string, callId?: string, segmentId?: string) {
+    if (callId && callId !== this.state.call.id) throw new Error('This transcript belongs to an ended or different call.');
     if (!this.state.call.active) throw new Error('Start the call guard first.');
+    if (segmentId && this.segments.has(segmentId)) {
+      if (this.segments.get(segmentId) !== text) throw new Error('This transcript segment has already been submitted with different text.');
+      return null;
+    }
+    if (segmentId) {
+      if (this.segments.size >= 10000) throw new Error('This session has reached its transcript limit. Start a new call guard session.');
+      this.segments.set(segmentId, text);
+    }
     this.state.call.transcript.push({ id: randomUUID(), text, source, at: this.now() });
     this.state.call.transcript = this.state.call.transcript.slice(-100);
     const next = assessTranscript(this.state.call.transcript.map(l => l.text).join(' '), this.state.call.safeWord === 'failed', this.state.call.callback?.answer === 'no');
@@ -182,5 +193,5 @@ export class Store {
     if (pending && this.now() >= pending.effectiveAt) { this.state.settings.coSignLimit = pending.value; this.state.settings.pendingLimit = null; changed = true; }
     if (changed) this.save();
   }
-  reset() { this.state = emptyState(); this.state.settings.safeWordConfigured = !!this.get('safeWordHash'); this.save(); }
+  reset() { this.segments.clear(); this.state = emptyState(); this.state.settings.safeWordConfigured = !!this.get('safeWordHash'); this.save(); }
 }
