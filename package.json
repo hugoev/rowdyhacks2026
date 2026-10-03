@@ -21,6 +21,7 @@
     "check:tiger": "node --import tsx scripts/check-tiger.ts",
     "setup:vultr": "node --import tsx scripts/setup-vultr.ts",
     "check:vultr": "node --import tsx scripts/check-vultr.ts",
+    "check:vultr:e2e": "node --import tsx scripts/check-vultr-e2e.ts",
     "deploy:vultr": "bash scripts/deploy-vultr.sh"
   },
   "dependencies": {
