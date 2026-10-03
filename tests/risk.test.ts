@@ -10,6 +10,9 @@ test('friction boundaries are exact', () => {
 test('routine $40 bill has no friction', () => {
   assert.equal(assessPayment({ amount: 40, rail: 'bill', newPayee: false, activeCall: false, callScore: 0 }).score, 0);
 });
+test('Critical call evidence holds even a small otherwise ordinary payment', () => {
+  assert.equal(assessPayment({ amount: 40, rail: 'bill', newPayee: false, activeCall: true, callScore: 85 }).level, 'Critical');
+});
 test('$2,500 gift cards during a flagged call reaches Critical with reasons', () => {
   const result = assessPayment({ amount: 2500, rail: 'gift-card', newPayee: true, activeCall: true, callScore: 65 });
   assert.equal(result.level, 'Critical'); assert.ok(result.reasons.length >= 4);

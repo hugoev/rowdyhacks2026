@@ -44,8 +44,11 @@ const server = createServer(async (req, res) => {
     const ip = req.socket.remoteAddress || 'local'; limit(ip, 240);
     const body = req.method === 'POST' ? await readBody(req) : {};
     if (path === '/api/session' && req.method === 'POST') {
-      limit(ip + ':session', 30);
       const input = z.object({ role: z.enum(roles), accessCode: z.string().max(256).optional() }).parse(body);
+      // Navigating between views should reuse a valid session, not consume the
+      // shared family's login-attempt budget (including React dev-mode remounts).
+      if (authenticate(req.headers.cookie, input.role, secret)) { json(res, 200, { ok: true }); return; }
+      limit(ip + ':session:' + input.role, config.demo ? 60 : 10);
       if (!config.demo && !equal(input.accessCode || '', process.env[`${input.role.toUpperCase()}_ACCESS_CODE`] || '')) throw Object.assign(new Error('That access code did not match.'), { status: 401 });
       res.setHeader('Set-Cookie', `tw_${input.role}=${issue(input.role, secret)}; HttpOnly; SameSite=Strict; Path=/; Max-Age=43200${process.env.COOKIE_SECURE === 'true' ? '; Secure' : ''}`);
       json(res, 200, { ok: true }); return;

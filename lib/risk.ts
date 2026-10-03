@@ -38,6 +38,8 @@ export function assessPayment(input: { amount: number; rail: Rail; newPayee: boo
   if (input.callScore >= 30) add(Math.round(input.callScore * .45), 'The current call contains scam warning signs');
   if (input.pasted) add(5, 'Payment details were pasted');
   if (input.secret) add(85, 'The caller asked you to keep this secret');
-  score = Math.min(100, score);
+  // Confirmed identity failures and Critical call evidence protect every payment,
+  // including a small first transfer a scammer might use to test the shield.
+  score = Math.min(100, Math.max(score, input.callScore >= 85 ? 85 : 0));
   return { score, level: levelFor(score), reasons };
 }
