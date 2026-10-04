@@ -77,8 +77,9 @@ test('capture the vault reveal for design review', async ({ page }) => {
   await expect(page.locator('main h1')).toBeVisible();
   // Slow only this visual capture; production navigation still takes 820ms.
   await page.addStyleTag({ content: '.vault-door { animation-duration: 30s !important; } .vault-wheel, .vault-bolts i { animation-duration: 8s !important; }' });
-  await page.clock.install();
-  await page.clock.pauseAt(new Date());
+  const captureTime = new Date();
+  await page.clock.install({ time: captureTime });
+  await page.clock.pauseAt(new Date(captureTime.getTime() + 1000));
   await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'The Inspector' }).click();
   await expect(page.locator('.vault-transition')).toBeAttached();
   for (const [name, fraction] of [['closed', 0], ['unlocking', .27], ['opening', .65]] as const) {

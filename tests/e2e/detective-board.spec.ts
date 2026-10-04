@@ -66,6 +66,7 @@ test('all boards reflow at phone and 200-percent desktop-equivalent widths', asy
     for (const route of ['guardian', 'protected', 'relative', 'inspector', 'settings', 'cases']) {
       await page.goto(`/${route}`);
       await expect(page.locator('main h1')).toBeVisible();
+      await expect(page.locator('.detective-board')).toBeVisible();
       await page.evaluate(() => document.fonts.ready);
       const visibleCards = await page.locator('[data-board-node]:visible').count();
       await expect(page.locator('.board-paper-pin')).toHaveCount(visibleCards);
