@@ -28,7 +28,7 @@ A working RowdyHacks XII P0 prototype: a calm payment and call screen for a prot
 
 ## Run locally
 
-Requires **Node.js 22.22 or newer** (the ElevenLabs dependency requires it; the server also uses built-in `node:sqlite`).
+Requires **Node.js 22.5 or newer** (the server uses built-in `node:sqlite`). Node.js **22.22.0** is the team-recommended version and is recorded in `.node-version` and `.nvmrc`.
 
 ```sh
 npm ci
@@ -37,7 +37,7 @@ npm run dev
 
 Open [localhost:3000](http://localhost:3000). No API keys are needed for the scripted demo, payment holds, callbacks, family safe word, text scanner, or browser voice.
 
-The same npm commands work on **Windows, macOS, and Linux**. The team version is **22.22.0**, recorded in `.node-version` and `.nvmrc`; newer supported Node versions also work. Built-in SQLite does not need a separate SQLite install or C++ compiler. Run `node --version` if startup fails. On Windows, reopen PowerShell or Command Prompt after installing/upgrading Node, then run `npm ci` to install dependencies for that machine. Do not copy `node_modules` from another operating system.
+The same npm commands work on **Windows, macOS, and Linux**. The minimum is **22.5.0**; the team version is **22.22.0**, recorded in `.node-version` and `.nvmrc`. Built-in SQLite does not need a separate SQLite install or C++ compiler. Run `node --version` if startup fails. On Windows, reopen PowerShell or Command Prompt after installing/upgrading Node, then run `npm ci` to install dependencies for that machine. Do not copy `node_modules` from another operating system.
 
 An `.env` file is optional for the local demo. To configure providers, copy `.env.example` to `.env`:
 
