@@ -32,10 +32,10 @@
 .board-lamp { width: 120px; height: 90px; top: 0; left: calc(50% - 60px); z-index: 3; filter: drop-shadow(0 4px 3px #30251c22); }
 .board-lamp svg { width: 100%; height: 100%; }
 .board-lamp-shade { transform: rotate(var(--lamp-angle, 0deg)); transform-origin: 60px 42px; }
-.board-beam, .board-strings { inset: 0; width: 100%; height: 100%; overflow: visible; }
-.board-beam { z-index: 0; opacity: 0; transition: opacity 160ms ease; }
-.detective-board[data-spotlight='pointer'] > .board-beam,
-.detective-board[data-spotlight='keyboard'] > .board-beam { opacity: 1; }
+.board-strings { inset: 0; width: 100%; height: 100%; overflow: visible; }
+.board-beam { position: fixed; inset: 0; width: 100%; height: 100%; overflow: hidden; z-index: 40; opacity: 0; pointer-events: none; }
+.board-beam[data-spotlight='pointer'],
+.board-beam[data-spotlight='keyboard'] { opacity: 1; }
 .board-strings { z-index: 2; }
 .board-thread-shadow { fill: none; stroke: #30251c; stroke-width: 3; opacity: .17; transform: translate(1px, 2px); }
 .board-thread-red { fill: none; stroke: var(--red); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -147,9 +147,8 @@
 
 /* Family screens retain their generous task layout and larger accessible font. */
 .detective-board--calm { background-color: #e8dcc8; box-shadow: inset 0 0 0 3px #c8a27a70, 0 3px 12px #30251c08; }
-.detective-board--calm .board-beam { opacity: 0; }
-.detective-board--calm[data-spotlight='pointer'] > .board-beam,
-.detective-board--calm[data-spotlight='keyboard'] > .board-beam { opacity: .45; }
+.board-beam[data-variant='calm'][data-spotlight='pointer'],
+.board-beam[data-variant='calm'][data-spotlight='keyboard'] { opacity: .45; }
 .detective-board--calm [data-board-lit] { background-image: radial-gradient(circle 240px at var(--spot-x, 50%) var(--spot-y, 0%), #fff0b36b, transparent 75%); }
 .rosa-surface .detective-board { padding: 44px 24px 28px; }
 .rosa-surface .detective-board .task-choices { gap: 30px; }
@@ -181,7 +180,7 @@
   .detective-board, .rosa-surface .detective-board { padding: 44px 18px 22px; }
   .detective-board--spotlight { padding-top: 78px; }
   .board-lamp { width: 100px; height: 75px; left: calc(50% - 50px); }
-  .detective-board > .board-beam { display: none; }
+  .board-beam { display: none; }
   .board-thread { display: none; }
   .detective-board [data-board-node]::before { content: ''; position: absolute; left: 0; top: 15px; width: 13px; height: 2px; background: var(--red); transform: rotate(-20deg); pointer-events: none; }
   .detective-board .page-heading { flex-direction: column; gap: 20px; }
@@ -207,10 +206,10 @@
   .rosa-surface .detective-board .task-navigation button { padding: 12px 8px; font-size: 20px; }
 }
 @media (hover: none), (pointer: coarse) {
-  .detective-board > .board-beam { display: none; }
+  .board-beam { display: none; }
   .board-lamp-shade { transform: none; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .detective-board > .board-beam { display: none; }
+  .board-beam { display: none; }
   .board-lamp-shade { transform: none; }
 }

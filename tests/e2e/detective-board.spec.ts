@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test('only the three command-center summary cards follow the pointer', async ({ page }) => {
+test('the lamp follows the cursor across cards, gaps and the window', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/guardian');
   const board = page.locator('.detective-board');
@@ -11,10 +11,10 @@ test('only the three command-center summary cards follow the pointer', async ({ 
   await expect(card).toHaveAttribute('data-board-lit', 'true');
   await expect(board).toHaveAttribute('data-spotlight', 'pointer');
   await expect.poll(() => card.evaluate(node => node.style.getPropertyValue('--spot-x'))).toBe('40px');
-  const previousBeam = await board.locator('.board-beam polygon').getAttribute('points');
+  const previousBeam = await page.locator('.board-beam polygon').getAttribute('points');
   await page.mouse.move(box.x + 180, box.y + 130);
   await expect.poll(() => card.evaluate(node => node.style.getPropertyValue('--spot-x'))).toBe('180px');
-  await expect(board.locator('.board-beam polygon')).not.toHaveAttribute('points', previousBeam!);
+  await expect(page.locator('.board-beam polygon')).not.toHaveAttribute('points', previousBeam!);
   const next = page.locator('[data-board-node="attention"]');
   await next.hover();
   await expect(next).toHaveAttribute('data-board-lit', 'true');
@@ -26,16 +26,23 @@ test('only the three command-center summary cards follow the pointer', async ({ 
   await page.screenshot({ path: 'test-results/detective-spotlight.png', fullPage: true });
   const lookout = (await page.locator('[data-board-node="lookout"]').boundingBox())!;
   await page.mouse.move(lookout.x + 40, lookout.y + 20);
-  await expect(board).toHaveAttribute('data-spotlight', 'idle');
+  await expect(board).toHaveAttribute('data-spotlight', 'pointer');
   await expect(board.locator('[data-board-lit]')).toHaveCount(0);
-  await expect.poll(() => board.locator('.board-lamp').evaluate(node => node.getBoundingClientRect().top)).toBeGreaterThanOrEqual(0);
-  await page.mouse.move(1, 1);
+  await page.mouse.move(30, 120);
+  await expect(board).toHaveAttribute('data-spotlight', 'pointer');
+  await expect.poll(() => page.locator('.board-beam ellipse').getAttribute('cx')).toBe('30');
+  await expect(page.locator('.board-beam ellipse')).toHaveAttribute('cy', '120');
+  const points = (await page.locator('.board-beam polygon').getAttribute('points'))!.split(' ').slice(0, 2).map(point => point.split(',').map(Number));
+  const bulb = (await page.locator('.board-lamp-shade path[fill="#fff2bb"]').boundingBox())!;
+  expect((points[0][0] + points[1][0]) / 2).toBeCloseTo(bulb.x + bulb.width / 2, 0);
+  expect((points[0][1] + points[1][1]) / 2).toBeCloseTo(bulb.y + bulb.height / 2, 0);
+  await page.screenshot({ path: 'test-results/window-lamp.png' });
+  await page.evaluate(() => document.dispatchEvent(new PointerEvent('pointerout', { relatedTarget: null })));
   await expect(board).toHaveAttribute('data-spotlight', 'idle');
-  await expect(board.locator('[data-board-lit]')).toHaveCount(0);
   await expect(board.locator('.board-thread')).toHaveCount(2);
   await expect(board.locator('.board-strings')).toHaveAttribute('aria-hidden', 'true');
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(board.locator('.board-beam')).toHaveCSS('display', 'none');
+  await expect(page.locator('.board-beam')).toHaveCSS('display', 'none');
   await expect.poll(async () => Math.abs(Number((await board.locator('.board-strings').getAttribute('viewBox'))!.split(' ')[2]) - (await board.boundingBox())!.width)).toBeLessThan(1);
 });
 
@@ -60,10 +67,10 @@ test('keyboard lighting is steady and reduced motion stops cursor tracking', asy
   const centered = await card.evaluate(node => node.style.getPropertyValue('--spot-x'));
   await card.hover({ position: { x: 150, y: 130 } });
   await expect.poll(() => card.evaluate(node => node.style.getPropertyValue('--spot-x'))).toBe(centered);
-  await expect(board.locator('.board-beam')).toHaveCSS('display', 'none');
+  await expect(page.locator('.board-beam')).toHaveCSS('display', 'none');
 });
 
-test('scrolling any part of the lamp out of view clears lighting without a pointer move', async ({ page }) => {
+test('the light stays on while the bulb is visible and switches off when it scrolls away', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/');
   const board = page.locator('.detective-board');
@@ -71,15 +78,17 @@ test('scrolling any part of the lamp out of view clears lighting without a point
   await card.hover({ position: { x: 50, y: 25 } });
   await expect(card).toHaveAttribute('data-board-lit', 'true');
   const lamp = (await board.locator('.board-lamp').boundingBox())!;
-  for (const scrollY of [lamp.y + 1, lamp.y + lamp.height + 1]) {
-    await page.evaluate(y => window.scrollTo(0, y), scrollY);
-    await expect(board).toHaveAttribute('data-spotlight', 'idle');
-    await expect(board.locator('[data-board-lit]')).toHaveCount(0);
-    await expect.poll(() => board.evaluate(node => node.style.getPropertyValue('--lamp-angle'))).toBe('0deg');
-    await expect(board.locator('.board-beam')).toHaveCSS('opacity', '0');
-    await page.evaluate(() => window.scrollTo(0, 0));
-    await expect(card).toHaveAttribute('data-board-lit', 'true');
-  }
+  await page.evaluate(y => window.scrollTo(0, y), lamp.y + 1);
+  await expect(board).toHaveAttribute('data-spotlight', 'pointer');
+  await expect(page.locator('.board-beam')).toHaveCSS('opacity', '1');
+  await page.evaluate(y => window.scrollTo(0, y), lamp.y + lamp.height + 1);
+  await expect(board).toHaveAttribute('data-spotlight', 'idle');
+  await expect(board.locator('[data-board-lit]')).toHaveCount(0);
+  await expect(page.locator('.board-beam')).toHaveCSS('opacity', '0');
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(board).toHaveAttribute('data-spotlight', 'pointer');
+  await expect(page.locator('.board-beam')).toHaveCSS('opacity', '1');
+  await page.screenshot({ path: 'test-results/window-lamp-restored.png' });
 });
 
 test('other routes have no lamps or spotlight behavior while keeping their boards', async ({ page }) => {
@@ -115,7 +124,7 @@ test('touch layouts retain readable choices without moving beams', async ({ brow
   const board = page.locator('.detective-board');
   const summary = page.locator('[data-board-node="money"]');
   await summary.tap();
-  await expect(board.locator('.board-beam')).toHaveCSS('display', 'none');
+  await expect(page.locator('.board-beam')).toHaveCSS('display', 'none');
   await expect(summary).toHaveAttribute('data-board-lit', 'true');
   await expect.poll(() => summary.evaluate(node => parseFloat(node.style.getPropertyValue('--spot-x')))).toBeCloseTo((await summary.boundingBox())!.width / 2, 0);
   await context.close();

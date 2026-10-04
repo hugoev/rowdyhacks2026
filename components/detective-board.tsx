@@ -1,5 +1,6 @@
 'use client';
 
+import { createPortal } from 'react-dom';
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 export type BoardConnection = readonly [from: string, to: string];
@@ -17,6 +18,10 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
 }) {
   const root = useRef<HTMLDivElement>(null);
   const lamp = useRef<HTMLDivElement>(null);
+  const bulb = useRef<SVGPathElement>(null);
+  const head = useRef<SVGGElement>(null);
+  const [portalHost, setPortalHost] = useState<HTMLElement | null>(null);
+  useEffect(() => setPortalHost(document.body), []);
   const beam = useRef<SVGPolygonElement>(null);
   const pool = useRef<SVGEllipseElement>(null);
   const [geometry, setGeometry] = useState<{ width: number; height: number; anchors: Anchor[] }>({ width: 1, height: 1, anchors: [] });
@@ -50,7 +55,7 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
         active = node;
         active?.setAttribute('data-board-lit', 'true');
       }
-      source = node ? input : 'idle';
+      source = input;
     }
 
     function measure() {
@@ -64,8 +69,8 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       });
       anchors.forEach((_, node) => { if (!next.has(node)) resize.unobserve(node); });
       anchors = next;
-      const lampBounds = lamp.current?.getBoundingClientRect();
-      lampVisible = !!lampBounds && lampBounds.top >= 0 && lampBounds.left >= 0 && lampBounds.bottom <= window.innerHeight && lampBounds.right <= window.innerWidth;
+      const lampBounds = bulb.current?.getBoundingClientRect();
+      lampVisible = !!lampBounds && lampBounds.bottom > 0 && lampBounds.top < window.innerHeight && lampBounds.right > 0 && lampBounds.left < window.innerWidth;
       const nextGeometry = { width: bounds.width, height: bounds.height, anchors: [...anchors.values()] };
       setGeometry(previous => JSON.stringify(previous) === JSON.stringify(nextGeometry) ? previous : nextGeometry);
       dirty = false;
@@ -80,26 +85,40 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       const target = intent === 'pointer' && pointer && finePointer.matches
         ? document.elementFromPoint(pointer.x, pointer.y)
         : intent === 'keyboard' ? document.activeElement : null;
-      activate(lampVisible ? nodeFor(target) : null, intent);
+      const tracksCursor = intent === 'pointer' && pointer && finePointer.matches && !reducedMotion.matches;
+      const node = lampVisible ? nodeFor(target) : null;
+      const lightInput = lampVisible && (tracksCursor || node) ? intent : 'idle';
+      activate(node, lightInput);
       board.dataset.spotlight = source;
+      const layer = beam.current?.ownerSVGElement;
+      if (layer) layer.dataset.spotlight = source;
       const anchor = active && anchors.get(active);
-      if (!active || !anchor) {
+      if (source === 'idle') {
         board.style.setProperty('--lamp-angle', '0deg');
         return;
       }
-      const tracksCursor = source === 'pointer' && pointer && finePointer.matches && !reducedMotion.matches;
-      const localX = tracksCursor ? Math.max(0, Math.min(anchor.width, pointer!.x - bounds.left - anchor.x)) : anchor.width / 2;
-      const localY = tracksCursor ? Math.max(0, Math.min(anchor.height, pointer!.y - bounds.top - anchor.y)) : anchor.height / 2;
-      active.style.setProperty('--spot-x', `${localX}px`);
-      active.style.setProperty('--spot-y', `${localY}px`);
-      const x = anchor.x + localX;
-      const y = Math.max(90, anchor.y + localY);
-      const radius = Math.min(140, anchor.width * .42);
-      beam.current?.setAttribute('points', `${bounds.width / 2 - 9},68 ${bounds.width / 2 + 9},68 ${x + radius},${y} ${x - radius},${y}`);
+      const x = tracksCursor ? pointer!.x : bounds.left + (anchor?.x ?? 0) + (anchor?.width ?? 0) / 2;
+      const y = tracksCursor ? pointer!.y : bounds.top + (anchor?.y ?? 0) + (anchor?.height ?? 0) / 2;
+      if (active && anchor) {
+        active.style.setProperty('--spot-x', `${x - bounds.left - anchor.x}px`);
+        active.style.setProperty('--spot-y', `${y - bounds.top - anchor.y}px`);
+      }
+      board.style.setProperty('--lamp-angle', `${tracksCursor ? Math.max(-13, Math.min(13, (x - bounds.left - bounds.width / 2) / bounds.width * 30)) : 0}deg`);
+      // Read the actual bulb after rotating the shade: the beam stays attached
+      // even over the sidebar, page gutters, or after scrolling the window.
+      const origin = bulb.current?.getBoundingClientRect();
+      if (!origin) return;
+      const ox = origin.left + origin.width / 2;
+      const oy = origin.top + origin.height / 2;
+      const dx = x - ox; const dy = y - oy;
+      const distance = Math.hypot(dx, dy) || 1;
+      const px = -dy / distance; const py = dx / distance;
+      const radius = Math.min(140, distance * .3);
+      beam.current?.setAttribute('points', `${ox + px * 7},${oy + py * 7} ${ox - px * 7},${oy - py * 7} ${x - px * radius},${y - py * radius} ${x + px * radius},${y + py * radius}`);
       pool.current?.setAttribute('cx', String(x));
       pool.current?.setAttribute('cy', String(y));
       pool.current?.setAttribute('rx', String(radius));
-      board.style.setProperty('--lamp-angle', `${Math.max(-13, Math.min(13, (x - bounds.width / 2) / bounds.width * 30))}deg`);
+      pool.current?.setAttribute('transform', `rotate(${Math.atan2(dy, dx) * 180 / Math.PI - 90} ${x} ${y})`);
     }
 
     function schedule() { if (!frame && !disposed) frame = requestAnimationFrame(draw); }
@@ -111,15 +130,18 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       schedule();
     }
     function focus() { intent = 'keyboard'; schedule(); }
+    function leave(event: PointerEvent) { if (!event.relatedTarget) { pointer = null; intent = 'idle'; schedule(); } }
+    function blur() { pointer = null; intent = 'idle'; schedule(); }
     const resize = new ResizeObserver(refresh);
     const mutation = new MutationObserver(refresh);
     resize.observe(board);
     mutation.observe(board, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'data-board-node'] });
     const visibility = spotlight ? new IntersectionObserver(refresh, { threshold: [0, 1] }) : null;
-    if (lamp.current) visibility?.observe(lamp.current);
+    if (head.current) visibility?.observe(head.current);
     if (spotlight) {
-      board.addEventListener('pointermove', move);
-      board.addEventListener('pointerleave', focus);
+      window.addEventListener('pointermove', move);
+      document.addEventListener('pointerout', leave);
+      window.addEventListener('blur', blur);
       board.addEventListener('focusin', focus);
       board.addEventListener('focusout', focus);
       finePointer.addEventListener('change', refresh);
@@ -137,8 +159,9 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       active?.removeAttribute('data-board-lit');
       board.dataset.spotlight = 'idle';
       board.style.setProperty('--lamp-angle', '0deg');
-      board.removeEventListener('pointermove', move);
-      board.removeEventListener('pointerleave', focus);
+      window.removeEventListener('pointermove', move);
+      document.removeEventListener('pointerout', leave);
+      window.removeEventListener('blur', blur);
       board.removeEventListener('focusin', focus);
       board.removeEventListener('focusout', focus);
       window.removeEventListener('resize', refresh);
@@ -146,17 +169,17 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       finePointer.removeEventListener('change', refresh);
       reducedMotion.removeEventListener('change', refresh);
     };
-  }, [spotlight]);
+  }, [spotlight, portalHost]);
 
   const byId = new Map(geometry.anchors.map(anchor => [anchor.id, anchor]));
   return <div ref={root} className={`detective-board detective-board--${variant}${spotlight ? ' detective-board--spotlight' : ''}`} data-spotlight="idle">
     {spotlight && <div ref={lamp} className="board-lamp" aria-hidden="true">
-      <svg viewBox="0 0 120 90" focusable="false"><path d="M60 0V43" stroke="#493527" strokeWidth="3"/><g className="board-lamp-shade"><path d="M48 40h24l8 15 25 17H15l25-17Z" fill="#30251c"/><path d="M43 54h34" stroke="#70583e" strokeWidth="2"/><ellipse cx="60" cy="72" rx="44" ry="5" fill="#c8a27a"/><path d="M47 72a13 10 0 0 0 26 0" fill="#fff2bb"/></g></svg>
+      <svg viewBox="0 0 120 90" focusable="false"><path d="M60 0V43" stroke="#493527" strokeWidth="3"/><g ref={head} className="board-lamp-shade"><path d="M48 40h24l8 15 25 17H15l25-17Z" fill="#30251c"/><path d="M43 54h34" stroke="#70583e" strokeWidth="2"/><ellipse cx="60" cy="72" rx="44" ry="5" fill="#c8a27a"/><path ref={bulb} d="M47 72a13 10 0 0 0 26 0" fill="#fff2bb"/></g></svg>
     </div>}
-    {spotlight && <svg className="board-beam" viewBox={`0 0 ${geometry.width} ${geometry.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    {spotlight && portalHost && createPortal(<svg className="board-beam" data-spotlight="idle" data-variant={variant} aria-hidden="true" focusable="false">
       <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff2b9" stopOpacity=".55"/><stop offset="1" stopColor="#fff5d6" stopOpacity=".08"/></linearGradient></defs>
       <polygon ref={beam} fill={`url(#${gradientId})`}/><ellipse ref={pool} ry="22" fill="#fff5d6" opacity=".24"/>
-    </svg>}
+    </svg>, portalHost)}
     <svg className="board-strings" viewBox={`0 0 ${geometry.width} ${geometry.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
       {connections.map(([from, to], index) => {
         const a = byId.get(from); const b = byId.get(to);
