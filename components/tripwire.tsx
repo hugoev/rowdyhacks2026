@@ -12,8 +12,10 @@ import { Preferences, Relative } from './views';
 import type { Payment } from '@/lib/types';
 import { signGuardianDecision } from './solana-wallet';
 import { EscrowStatus } from './escrow-status';
-import { DetectiveBoard } from './detective-board';
+import { DetectiveBoard, type BoardSpotlight } from './detective-board';
 import { CaseFileCard, ConMeter, EvalCard, HeistFoiled, ToolTimeline, stamp } from './heist';
+
+const commandSpotlight: BoardSpotlight = { targets: ['meter', 'risk', 'transcript', 'log', 'money', 'case'] };
 
 export type View = 'guardian' | 'protected' | 'relative' | 'cases' | 'settings' | 'stage';
 const names: Record<View, string> = { guardian: 'Mission Control', protected: 'Rosa’s phone', relative: 'Diego’s phone', cases: 'Case files', settings: 'Family settings', stage: 'Stage' };
@@ -39,7 +41,7 @@ function Shell({ view }: { view: View }) {
       <HeistFoiled at={state?.call.foiledAt}/>
       <main id="main" className="main-content">
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}
-        {!state ? <div className="loading-state"><BrandMark/><h1>Preparing your protection…</h1><p>Loading your family safety workspace.</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div> : <DetectiveBoard variant={view === 'settings' ? 'calm' : 'standard'}>
+        {!state ? <div className="loading-state"><BrandMark/><h1>Preparing your protection…</h1><p>Loading your family safety workspace.</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div> : <DetectiveBoard variant={view === 'settings' ? 'calm' : 'standard'} spotlight={view === 'guardian' ? commandSpotlight : undefined}>
           {view === 'guardian' && <MissionControl/>}{view === 'cases' && <Cases/>}{view === 'settings' && <Preferences/>}
         </DetectiveBoard>}
       </main>
