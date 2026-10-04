@@ -27,7 +27,7 @@ See [PRD v3](docs/PRD.md), the [demo runbook](docs/DEMO.md) (2:40 table demo and
 | Risk trigger | **Live** on Tiger Data: Rosa’s 12 months of payments are a hypertable; a continuous aggregate keeps her daily medians. One query on Send: new payee? how many times her typical payment? Trigger if over 5× **and** (new payee **or** instant transfer). Falls back to the same seed locally, labeled. | `server/tiger.ts`, `lib/risk.ts` |
 | Safety teller | **Live** Gemini 3.8 Live, native audio both ways, input+output transcription for captions, barge-in. Three tools: `call_trusted_contact` (non-blocking), `decide_payment`, `finish`. | `lib/teller-config.ts`, `lib/teller-session.ts` |
 | Ephemeral tokens | **Live.** The server mints a single-use token with the model, the system instruction (Rosa’s payment context), and the tools locked in. No API key and no editable prompt in the browser. | `server/gemini.ts` |
-| Scammer | **Live** ElevenLabs agent with a consented instant voice clone; dynamic variables; optional “coach mode” (“say it’s a car repair”). | `scripts/setup-agents.ts` |
+| Scammer | **Live** ElevenLabs agent with a consented instant voice clone; dynamic variables; optional “coach mode” (“say it’s a car repair”). | `lib/phone-agents.ts`, `scripts/setup-agent.ts` |
 | Verifier | **Live** ElevenLabs agent (stock voice) with dynamic variables and a `report_result` client tool that runs on Diego’s phone and posts to the server. The result is delivered into the still-open Gemini session. | `components/phone-call.tsx` |
 | Case file | **Live**: Gemini writes it with `finish` from what Rosa actually said; stored as a row in Tiger Data. If the teller is offline, Tripwire rules write it from Rosa’s captions (labeled). | `components/case-file.tsx`, `server/state.ts` |
 | Hosting | One long-running Node server on Vultr: every page, both agents, and the teller meet in the same process over SSE. It can’t be serverless. | `server/index.ts`, `docs/VULTR.md` |
@@ -40,7 +40,7 @@ Requires **Node.js 22.5+** (team version 22.22.0 in `.node-version`).
 npm ci
 cp .env.example .env     # GEMINI_API_KEY, ELEVENLABS_API_KEY, TIGER_DATABASE_URL
 npm run seed             # Tiger Data schema + Rosa's 12 months (prints ~29x for $2,500)
-npm run setup:agents     # needs ELEVENLABS_SCAMMER_VOICE_ID (consented clone); prints EL_AGENT_* ids
+npm run setup:agent      # verifier + scammer (needs the consented clone and docs/consent/voice-clone.md); saves EL_AGENT_* to .env
 npm run check:live       # real Gemini teller conversation, text mode: story -> call Diego -> hold -> case file
 npm run dev
 ```

@@ -15,7 +15,7 @@ Only Gemini, ElevenLabs, Tiger Data, Vultr, and the domain. Keys live in `.env` 
 ## ElevenLabs (two phone agents)
 
 - `npm run setup:agents` creates both agents and prints `EL_AGENT_SCAMMER_ID` / `EL_AGENT_VERIFIER_ID`. The scammer needs `ELEVENLABS_SCAMMER_VOICE_ID`, a consented instant clone ([consent form](CONSENT.md)).
-- `/call?who=...` asks the server for a signed URL for the ringing agent and starts `VoiceConversation` with the ring's dynamic variables (`grandma_name`, `contact_name`, `amount`, `claim_summary`, `payee`, `coach_instructions`).
+- `/call?who=...` asks the server for a signed URL for the ringing agent and starts `VoiceConversation` with the verifier's dynamic variables (`grandma_name`, `contact_name`, `amount`, `claim_summary`).
 - The verifier's `report_result` is a client tool: it runs in the browser on Diego's phone and POSTs `/api/result`, which reaches Rosa's teller over SSE.
 
 ## Tiger Data

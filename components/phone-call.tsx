@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { VoiceConversation } from '@elevenlabs/client';
 import { Phone, PhoneOff, ShieldCheck } from 'lucide-react';
+import { coachLine, scammerPrompt } from '@/lib/phone-agents';
 import type { VerifyStatus, Who } from '@/lib/types';
 import { api, useDemo } from './use-demo';
 
@@ -50,7 +51,8 @@ export function PhoneCall({ who }: { who: Who }) {
       await api('/ring/status', { id, status: 'answered' });
       const { signedUrl, variables } = await api<{ signedUrl: string; variables: Record<string, string> }>('/agent/session', { id });
       conversation.current = await VoiceConversation.startSession({
-        signedUrl, connectionType: 'websocket', dynamicVariables: variables,
+        signedUrl, connectionType: 'websocket',
+        ...(ring.agent === 'verifier' ? { dynamicVariables: variables } : variables.coach ? { overrides: { agent: { prompt: { prompt: `${scammerPrompt}\n${coachLine}` } } } } : {}),
         ...(ring.agent === 'verifier' ? { clientTools: {
           // The verifier reports back as soon as it knows; the teller speaks it mid-conversation.
           report_result: async (params: { status?: string; note?: string }) => {

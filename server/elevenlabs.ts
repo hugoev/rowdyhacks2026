@@ -2,13 +2,14 @@ import { z } from 'zod';
 import type { AgentKind } from '../lib/types';
 
 export function agentId(kind: AgentKind) {
-  return kind === 'scammer' ? process.env.EL_AGENT_SCAMMER_ID || '' : process.env.EL_AGENT_VERIFIER_ID || '';
+  // ELEVENLABS_AGENT_ID is the pre-v3 name for the scammer agent.
+  return kind === 'scammer' ? process.env.EL_AGENT_SCAMMER_ID || process.env.ELEVENLABS_AGENT_ID || '' : process.env.EL_AGENT_VERIFIER_ID || '';
 }
 /** Signed URL for one ElevenLabs agent conversation; the API key stays on the server. */
 export async function agentSignedUrl(kind: AgentKind) {
   const id = agentId(kind);
   if (!process.env.ELEVENLABS_API_KEY) throw new Error('ElevenLabs is not configured. Set ELEVENLABS_API_KEY.');
-  if (!id) throw new Error(`Set ${kind === 'scammer' ? 'EL_AGENT_SCAMMER_ID' : 'EL_AGENT_VERIFIER_ID'} (npm run setup:agents).`);
+  if (!id) throw new Error(`Configure the ${kind} agent with npm run setup:agent -- --role=${kind} (sets ${kind === 'scammer' ? 'EL_AGENT_SCAMMER_ID' : 'EL_AGENT_VERIFIER_ID'}).`);
   const started = Date.now();
   const response = await fetch(`https://api.elevenlabs.io/v1/convai/conversation/get-signed-url?agent_id=${encodeURIComponent(id)}`, {
     headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY }, signal: AbortSignal.timeout(8000),

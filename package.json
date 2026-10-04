@@ -21,7 +21,7 @@
     "deploy:vultr": "bash scripts/deploy-vultr.sh",
     "check:live": "node --import tsx scripts/check-live.ts",
     "seed": "node --import tsx scripts/seed.ts",
-    "setup:agents": "node --import tsx scripts/setup-agents.ts"
+    "setup:agent": "node --import tsx scripts/setup-agent.ts"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.26.0",

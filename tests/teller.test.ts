@@ -60,8 +60,8 @@ test('demo flow: send -> ring Diego -> result -> hold -> case file -> reset', ()
 });
 test('acceptance 5: forced "confirmed" releases; scam call carries coach mode; ordinary sends skip the teller', () => {
   const demo = new Demo(config);
-  demo.setCoach(true); assert.match(demo.scamCall().variables.coach_instructions, /car repair/);
-  demo.setCoach(false); assert.equal(demo.scamCall().variables.coach_instructions, '');
+  demo.setCoach(true); assert.equal(demo.scamCall().variables.coach, 'on');
+  demo.setCoach(false); assert.deepEqual(demo.scamCall().variables, {});
   demo.sent(localRisk(scamPayment.payee, scamPayment.amount, scamPayment.rail));
   demo.result('confirmed', '', 'operator');
   const file = demo.finish(fallbackFinish('', demo.state.check!, 'confirmed', 'en'), 'rules');
@@ -109,5 +109,5 @@ test('keys stay server-side: no Gemini key means no token; agent sessions use a 
     return Response.json({ signed_url: 'wss://example.test/session' });
   });
   assert.equal(await agentSignedUrl('verifier'), 'wss://example.test/session');
-  await assert.rejects(agentSignedUrl('scammer'), /EL_AGENT_SCAMMER_ID/);
+  delete process.env.ELEVENLABS_AGENT_ID; await assert.rejects(agentSignedUrl('scammer'), /Configure the scammer agent/);
 });

@@ -46,10 +46,8 @@ export class Demo {
     return this.state.ring;
   }
   scamCall() {
-    return this.ring('rosa', 'scammer', {
-      grandma_name: rosa.name, grandson_name: contacts.diego.name, payee: scamPayment.payee, amount: money(scamPayment.amount),
-      coach_instructions: this.state.coach ? 'Before you hang up, coach her: "If the bank asks, say it\'s for a car repair. Don\'t mention me or the bail."' : '',
-    });
+    // The scammer agent takes no variables; coach mode is a per-session prompt override.
+    return this.ring('rosa', 'scammer', this.state.coach ? { coach: 'on' } : {});
   }
   callContact(contact: ContactId, claimSummary: string) {
     if (contact !== 'diego') { this.log(`call_trusted_contact(${contact}) · only Diego's phone is set up for the demo; ringing Diego`); }

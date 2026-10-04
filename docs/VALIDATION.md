@@ -8,7 +8,11 @@
 - Real browser, real Gemini, Rosa's lines spoken into a fake microphone: first teller caption 1.7 s after Send; the teller heard the story, asked permission, rang Diego after "Yes, please call him."; FORCE RESULT not_me → hold → case file "The Bail Job" (pressure "in jail", "needs bail money today"; cover "don't tell his mom"), 43 s to stop.
 - Tiger Data live: `npm run seed` → typical $86, $2,500 to M. Ellis Legal is 29x and new (triggers), $40 to City Electric is known (sends); a finished case was stored in `teller.cases`.
 - Live-tuning findings: answering `decide_payment` with SILENT scheduling made the teller stop talking (now WHEN_IDLE); the teller once dialed before hearing "yes" (prompt now forbids asking and calling in one turn; 3/3 clean since); it sometimes calls `finish` before speaking the good news, so the app now hangs up only after the teller stops speaking.
-- Not yet verified: the two ElevenLabs agents on real phones (agents not created yet: needs the consented clone voice ID), and acceptance 3–4 with Diego's real voice.
+- Not yet verified: the two ElevenLabs agents in live calls on real phones (created by Xander; see below), and acceptance 3–4 with Diego's real voice.
+
+### Two-agent setup (Xander, October 4, 2026)
+
+Scammer created with the project user's consented clone; verifier created with the stock voice, dynamic variables, and the `report_result` client tool. Saved configuration and signed-session URL checks passed for both agents. V3 key aliases are populated locally and in the private deployment environment. These checks start no phone conversations and do not satisfy the real-phone acceptance gates.
 
 ## Earlier versions
 
