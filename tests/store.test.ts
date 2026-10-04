@@ -45,16 +45,35 @@ test('explicit secrecy escalates a medium payment', () => {
 test('safe words are bcrypt hashes; wrong answer is sticky and later matches do not lower risk', async () => {
   const store = new Store(':memory:'); await store.setSafeWord('Marigold');
   assert.match(store.get('safeWordHash')!, /^\$2[aby]\$/); assert.ok(!store.get('safeWordHash')!.includes('Marigold'));
-  store.startCall(); assert.equal(await store.verifyWord('wrong'), false); assert.equal(store.state.call.assessment.level, 'Critical');
+  store.startCall(); assert.equal(await store.verifyWord('wrong'), false); assert.ok(store.state.call.signals.some(s => s.lever === 'trust')); assert.equal(store.state.call.assessment.level, 'Critical');
   assert.equal(await store.verifyWord(' marigold '), true); assert.equal(store.state.call.safeWord, 'failed'); assert.equal(store.state.call.assessment.level, 'Critical');
   assert.ok(!JSON.stringify(store.snapshot('guardian', { demo: true, gemini: false, elevenlabs: false })).includes('$2b$')); store.db.close();
 });
-test('callback no sets Critical, and relative gets no payment or transcript data', () => {
-  const store = new Store(':memory:'); store.startCall(); store.addLine('Grandma, I am in jail.', 'scripted'); store.createPayment(gift);
-  const callback = store.requestCallback(); store.answerCallback(callback.id, 'no'); assert.equal(store.state.call.assessment.score, 100);
-  assert.throws(() => store.answerCallback(callback.id, 'yes'));
+test('Diego blocking denies the call’s payment, foils the case, speaks once, and Diego sees only his question', () => {
+  const store = new Store(':memory:'); store.startCall(); store.addLine('Grandma, I got arrested. Don’t tell Mom.', 'scripted');
+  const payment = store.createPayment(gift); assert.equal(payment.status, 'held');
+  const alert = store.state.call.alert!; assert.match(alert.summary, /\$2,500 in gift cards/);
+  store.guardianReply(alert.id, 'block'); assert.equal(payment.status, 'denied'); assert.equal(store.state.call.assessment.score, 100);
+  assert.ok(store.state.call.foiledAt); assert.match(store.state.call.speech!.text, /hasn’t moved/);
+  assert.equal(store.state.cases[0].outcome, 'foiled'); assert.ok(store.state.cases[0].levers!.some(l => l.lever === 'isolation'));
+  assert.throws(() => store.guardianReply(alert.id, 'release'));
   const relative = store.snapshot('relative', { demo: true, gemini: false, elevenlabs: false });
-  assert.equal(relative.payments.length, 0); assert.equal(relative.call.transcript.length, 0); assert.equal(relative.events.length, 0); assert.equal(relative.call.callback?.answer, 'no'); store.db.close();
+  assert.equal(relative.payments.length, 0); assert.equal(relative.call.transcript.length, 0); assert.equal(relative.call.signals.length, 0); assert.equal(relative.events.length, 0); assert.equal(relative.call.alert?.reply, 'block'); store.db.close();
+});
+test('Diego releasing lets the payment through and the model cannot speak first or twice', () => {
+  const store = new Store(':memory:'); store.startCall(); store.addLine('Grandma, don’t tell Mom.', 'scripted');
+  const payment = store.createPayment(gift);
+  assert.throws(() => store.speakFromModel('Hi', 'en'), /after the family replies/);
+  store.guardianReply(store.state.call.alert!.id, 'release'); assert.equal(payment.status, 'released');
+  assert.equal(store.speakFromModel('Second voice', 'en'), null); store.db.close();
+});
+test('the rule spotter lights levers once and stays quiet on an ordinary call', () => {
+  const store = new Store(':memory:'); store.startCall();
+  store.addLine('Hi Grandma, it’s Diego. Are we still on for dinner Sunday? I’ll bring the salad.', 'scripted');
+  assert.equal(store.state.call.signals.length, 0); assert.equal(store.state.call.assessment.score, 0);
+  store.addLine('Grandma, I got arrested. I need bail money right now. Don’t tell Mom.', 'scripted');
+  assert.deepEqual(store.state.call.signals.map(s => s.lever).sort(), ['emotion', 'isolation', 'payment', 'urgency']);
+  assert.ok(store.state.call.signals.every(s => s.source === 'rule')); assert.equal(store.state.call.assessment.level, 'Critical'); store.db.close();
 });
 test('transcripts are not persisted by default and clearing consent removes saved text', () => {
   const store = new Store(':memory:'); store.startCall(); store.addLine('Private words: Grandma I am in jail. Please hurry.', 'manual');

@@ -9,10 +9,9 @@ DATABASE_URL=postgres://USER:PASSWORD@HOST:PORT/tsdb?sslmode=require
 
 The server initializes only the dedicated `tripwire` schema. It creates a
 `risk_events` hypertable, a `risk_minute` continuous aggregate with real-time
-aggregation, and a minute refresh policy. For Scam Weather it adds a separate
-`scam_weather_reports` hypertable and `scam_weather_daily` continuous aggregate
-containing synthetic, seeded San Antonio counts only. Existing unrelated tables
-are untouched. The UI labels these values as demo data, not actual local reports.
+aggregation, and a minute refresh policy. It also creates `eval_runs`, which stores
+aggregate red-team results from `npm run eval:live` (no audio or transcripts).
+Existing unrelated tables are untouched.
 The database user needs permission to create those objects; TimescaleDB must be
 installed. Initialization is serialized and idempotent.
 

@@ -2,9 +2,9 @@
 
 ## Project Structure & Module Organization
 
-Tripwire is a RowdyHacks XII counter-scam prototype that combines call analysis with payment verification. The current scaffold uses Next.js, React, strict TypeScript, Tailwind CSS, and Socket.IO. Shared models live in `lib/types.ts`, deterministic scoring in `lib/risk.ts`, and scripted calls and scanner samples in `lib/scenarios.ts`. Static assets belong in `public/`.
+Tripwire is a RowdyHacks XII counter-scam prototype that combines call analysis with payment verification. The current scaffold uses Next.js, React, strict TypeScript, Tailwind CSS, and Socket.IO. Shared models live in `lib/types.ts`, deterministic scoring in `lib/risk.ts` and `lib/levers.ts`, the Gemini Live config and tools in `lib/live-config.ts`, and scripted calls in `lib/scenarios.ts`. Static assets belong in `public/`.
 
-Next.js views live in `app/`, shared UI in `components/`, the custom backend in `server/`, and unit and Playwright tests in `tests/`. Provider adapters and the call scheduler belong in `server/`. Keep protected-user, guardian, and relative views consistent through shared types and server events.
+Next.js views live in `app/`, shared UI in `components/`, the custom backend in `server/`, and unit and Playwright tests in `tests/`. Provider adapters and the call scheduler belong in `server/`. Keep Rosa (protected), Mission Control (guardian), and Diego (relative) views consistent through shared types and server events.
 
 ## Build, Test, and Development Commands
 
@@ -18,7 +18,7 @@ Use Node.js 22.22 or newer and npm:
 - `npm test`: run `tests/*.test.ts` with the Node test runner through tsx.
 - `npm run test:e2e`: run Playwright browser tests once configured.
 
-Use `npm run eval:gemini` only for an explicit live evaluation with synthetic fixtures and a server-side API key.
+Use `npm run check:live` to verify the Gemini Live gate and `npm run eval:live` only for an explicit red-team run with synthetic fixtures and server-side keys.
 
 ## Coding Style & Naming Conventions
 
@@ -26,7 +26,7 @@ Follow existing two-space indentation, single quotes, and semicolons. Use camelC
 
 ## Testing Guidelines
 
-Name unit tests `*.test.ts`. Cover risk thresholds, routine-payment friction, failed safe words, callback responses, and approval or timer enforcement. Use Playwright for the cross-view demo flow. No coverage percentage is defined. Target alerts within ten seconds and correct scanner verdicts on eight of ten prepared samples.
+Name unit tests `*.test.ts`. Cover risk thresholds, routine-payment friction, lever detection, failed or dodged family words, tool validation, Diego's replies, and approval or timer enforcement. Use Playwright for the cross-view demo flow. No coverage percentage is defined. Targets: all levers within three seconds of the trigger phrase, zero levers on benign calls, Diego's reply on Rosa's screen within two seconds.
 
 ## Commit & Pull Request Guidelines
 
@@ -45,4 +45,4 @@ The current team workflow is to commit and push directly to `main`, unless the u
 
 ## Scope & Configuration
 
-Prioritize MLH integrations while preserving the core payment, call, safe-word, callback, hold, and scanner flow. Label live versus simulated features explicitly. Copy `.env.example` to `.env`; never commit credentials or real personal data. Hash safe words, obtain listening consent, and use empathetic warnings that say "no red flags found" rather than "safe".
+Prioritize MLH integrations while preserving the core call, family-word, Teller, Diego, voice, and case-file flow. Label live versus simulated features explicitly. Copy `.env.example` to `.env`; never commit credentials or real personal data. Hash safe words, obtain listening consent, and use empathetic warnings that say "no red flags found" rather than "safe".

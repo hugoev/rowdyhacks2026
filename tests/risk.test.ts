@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { assessPayment, assessTranscript, levelFor } from '../lib/risk';
-import { scanSamples, scenarios } from '../lib/scenarios';
-import { inspect } from '../server/providers';
+import { scenarios } from '../lib/scenarios';
+import { leverScore, spotLevers } from '../lib/levers';
 
 test('friction boundaries are exact', () => {
   assert.deepEqual([0, 29, 30, 59, 60, 84, 85, 100].map(levelFor), ['Low', 'Low', 'Medium', 'Medium', 'High', 'High', 'Critical', 'Critical']);
@@ -30,8 +30,18 @@ test('secrecy and failed family verification independently trigger Critical', ()
 test('ordinary dinner call has no detected signals', () => {
   assert.equal(assessTranscript(scenarios.normal.lines.join(' ')).score, 0);
 });
-for (const sample of scanSamples) test('prepared sample: ' + sample.title, async () => {
-  const result = await inspect(sample.text);
-  assert.equal(result.score >= 30, sample.risky);
-  assert.ok(!/^safe$/i.test(result.verdict));
+test('demo script lights all four levers plus payment pressure', () => {
+  const levers = new Set(scenarios.grandson.lines.flatMap(line => spotLevers(line).map(hit => hit.lever)));
+  for (const lever of ['emotion', 'urgency', 'isolation', 'payment'] as const) assert.ok(levers.has(lever), lever);
+});
+test('Spanish script lights levers too', () => {
+  const levers = new Set(scenarios.nieto.lines.flatMap(line => spotLevers(line).map(hit => hit.lever)));
+  assert.ok(levers.has('isolation') && levers.has('payment') && levers.has('emotion'));
+});
+for (const benign of ['Hi Grandma, are we still on for dinner Sunday?', 'This is Dr. Patel’s office reminding you of your appointment Tuesday at 10.', 'Frost Bank alert: did you make a $40 purchase at H-E-B? Reply in the app. We will never ask for your password.', 'Grandma, I got an A on my test today! Love you.'])
+  test('benign call stays quiet: ' + benign.slice(0, 30), () => assert.deepEqual(spotLevers(benign), []));
+test('lever score: isolation with money pressure is Critical; failed family word and Diego’s block are decisive', () => {
+  assert.ok(leverScore(new Set(['isolation', 'payment']), false, false) >= 85);
+  assert.equal(leverScore(new Set(), true, false), 90); assert.equal(leverScore(new Set(), false, true), 100);
+  assert.ok(leverScore(new Set(['urgency']), false, false) < 30);
 });

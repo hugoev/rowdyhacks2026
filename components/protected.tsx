@@ -1,210 +1,142 @@
 'use client';
-import Link from 'next/link';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, ChevronDown, CreditCard, Headphones, KeyRound, LockKeyhole, Mic, Phone, PhoneOff, Play, Radio, ShieldCheck, Volume2 } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { CreditCard, KeyRound, Landmark, LockKeyhole, Phone, PhoneIncoming, PhoneOff, ShieldCheck } from 'lucide-react';
 import { scenarios } from '@/lib/scenarios';
 import type { Payment, Rail } from '@/lib/types';
-import { LiveTranscription } from '@/lib/live-transcription';
-import { connectScribe } from './scribe';
-import { CaseEducation } from './case-education';
-import { EscrowStatus } from './escrow-status';
+import { useCallEngine, type CallerSource } from './call-engine';
+import { HeistFoiled } from './heist';
 import { Presenter } from './presenter';
-import { Arrival, useArrival } from './motion';
-import { headers, useTripwire } from './context';
-import { Badge, Countdown, money, PaymentStatus, time } from './ui';
+import { useTripwire } from './context';
+import { Countdown, money } from './ui';
 
-type RecognitionEvent = { resultIndex: number; results: { length: number; [key: number]: { isFinal: boolean; 0: { transcript: string } } } };
-type Recognition = { continuous: boolean; interimResults: boolean; lang: string; onresult: ((e: RecognitionEvent) => void) | null; onerror: ((e: { error: string }) => void) | null; onend: (() => void) | null; start: () => void; stop: () => void };
+const t = {
+  en: { hello: 'Hello, Rosa.', calm: 'Tripwire is on. Nothing needs your attention.', bank: 'Open my bank app', incoming: 'Incoming call', unknown: 'Unknown caller', answer: 'Answer', decline: 'Decline', listening: 'Tripwire is listening to the caller with your permission.', asked: 'I asked', hang: 'Hang up', back: 'Back to the call', send: 'Send money', paused: 'Paused.', asking: 'We’ve asked Diego.', waiting: 'Waiting for Diego…', foiled: 'Your money hasn’t moved.', sent: 'Sent.', noFlags: 'No red flags found.' },
+  es: { hello: 'Hola, Rosa.', calm: 'Tripwire está activo. Nada necesita tu atención.', bank: 'Abrir mi banco', incoming: 'Llamada entrante', unknown: 'Número desconocido', answer: 'Contestar', decline: 'Rechazar', listening: 'Tripwire escucha a quien llama, con tu permiso.', asked: 'Ya le pregunté', hang: 'Colgar', back: 'Volver a la llamada', send: 'Enviar dinero', paused: 'En pausa.', asking: 'Le preguntamos a Diego.', waiting: 'Esperando a Diego…', foiled: 'Tu dinero no se ha movido.', sent: 'Enviado.', noFlags: 'No encontramos señales de alerta.' },
+};
+const railNames: Record<Rail, string> = { bill: 'Pay a bill', bank: 'Bank transfer', 'gift-card': 'Gift cards', wire: 'Wire transfer', crypto: 'Cryptocurrency' };
 
 export function Protected() {
-  const { state, request, setError, role } = useTripwire(); const s = state!;
-  const [task, setTask] = useState<'home' | 'call' | 'payment'>('home');
-  const [verification, setVerification] = useState<'word' | 'callback' | null>(null);
-  const taskHeading = useRef<HTMLHeadingElement>(null);
-  const previousTask = useRef(task);
-  useEffect(() => { if (previousTask.current !== task) taskHeading.current?.focus(); previousTask.current = task; }, [task]);
-  const [scenario, setScenario] = useState<keyof typeof scenarios>('grandson');
-  const [lineIndex, setLineIndex] = useState(0);
-  const [manual, setManual] = useState(''); const [busy, setBusy] = useState(false);
-  const [partial, setPartial] = useState('');
-  const [micMode, setMicMode] = useState<'elevenlabs' | 'browser' | null>(null);
-  const [micNotice, setMicNotice] = useState('');
-  const live = useRef<LiveTranscription | null>(null);
-  const mounted = useRef(true);
-  const microphoneGeneration = useRef(0);
-  const playbackGeneration = useRef(0);
-  const finishPlayback = useRef<(() => void) | null>(null);
-  const audioUrl = useRef<string | null>(null);
-  const [mic, setMic] = useState(false); const recognition = useRef<Recognition | null>(null);
-  const [code, setCode] = useState(''); const [codeResult, setCodeResult] = useState<string | null>(null);
-  const [voice, setVoice] = useState(true); const spoken = useRef<string | null>(null);
-  const [payee, setPayee] = useState('Emergency gift cards'); const [amount, setAmount] = useState('2500'); const [rail, setRail] = useState<Rail>('gift-card'); const [newPayee, setNewPayee] = useState(true); const [pasted, setPasted] = useState(false);
-  const [composingPayment, setComposingPayment] = useState(true);
-  const [selectedPayment, setSelectedPayment] = useState<string | null>(null);
-  const paymentHeading = useRef<HTMLHeadingElement>(null);
-  useEffect(() => { if (!composingPayment) paymentHeading.current?.focus(); }, [composingPayment, selectedPayment]);
-  const payment = s.payments.find(p => p.id === selectedPayment) || s.payments[0];
-  const paymentArrival = useArrival(`payment:${payment?.id}:${payment?.status}`);
-  const education = s.cases.find(c => c.paymentId === payment?.id)?.education;
-  const active = s.call.active; const assessment = s.call.assessment;
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const cancelAudio = useCallback(() => {
-    playbackGeneration.current++;
-    finishPlayback.current?.(); finishPlayback.current = null;
-    audioRef.current?.pause(); audioRef.current = null;
-    if (audioUrl.current) URL.revokeObjectURL(audioUrl.current); audioUrl.current = null;
-    if ('speechSynthesis' in window) speechSynthesis.cancel();
-  }, []);
-  const say = useCallback(async (text: string) => {
-    cancelAudio(); const generation = playbackGeneration.current;
-    const capture = live.current;
-    try { capture?.mute(); }
-    catch { capture?.stop(); setMic(false); setMicNotice('Microphone paused for this warning. Choose Resume microphone afterward.'); }
-    recognition.current?.stop();
-    const browserVoice = async () => {
-      if (!('speechSynthesis' in window)) throw new Error('Spoken warnings are unavailable. Read the warning on screen.');
-      await new Promise<void>(resolve => {
-        finishPlayback.current = resolve;
-        const utterance = new SpeechSynthesisUtterance(text); utterance.rate = .88;
-        utterance.onend = () => resolve(); utterance.onerror = () => { if (generation === playbackGeneration.current) setError('Browser voice could not play. Read the warning on screen.'); resolve(); };
-        speechSynthesis.speak(utterance);
-      });
-    };
-    try {
-      if (!state?.config.elevenlabs) await browserVoice();
-      else {
-        try {
-          const response = await fetch('/api/speak', { method: 'POST', headers: headers(role), body: JSON.stringify({ text }) });
-          if (generation !== playbackGeneration.current) return;
-          if (!response.ok || !response.headers.get('content-type')?.includes('audio')) throw new Error('Provider audio unavailable');
-          const blob = await response.blob();
-          if (generation !== playbackGeneration.current) return;
-          const url = URL.createObjectURL(blob); audioUrl.current = url;
-          const audio = new Audio(url); audioRef.current = audio;
-          await new Promise<void>((resolve, reject) => {
-            finishPlayback.current = resolve;
-            audio.onended = () => resolve(); audio.onerror = () => reject(new Error('Audio playback failed'));
-            void audio.play().catch(reject);
-          });
-        } catch {
-          if (generation !== playbackGeneration.current) return;
-          if (audioUrl.current) URL.revokeObjectURL(audioUrl.current); audioUrl.current = null;
-          setMicNotice('ElevenLabs voice is unavailable. Using browser voice for this warning.');
-          await browserVoice();
-        }
-      }
-    } catch (error) { if (mounted.current) setError(error instanceof Error ? error.message : 'Read the warning on screen.'); }
-    finally {
-      if (generation === playbackGeneration.current) {
-        finishPlayback.current = null;
-        if (audioUrl.current) URL.revokeObjectURL(audioUrl.current); audioUrl.current = null;
-        try { capture?.unmute(); } catch { capture?.stop(); setMic(false); }
-      }
-    }
-  }, [state?.config.elevenlabs, role, setError, cancelAudio]);
-  useEffect(() => {
-    if (voice && active && assessment.score >= 85 && spoken.current !== s.call.id) {
-      spoken.current = s.call.id; void say('Let’s pause. ' + assessment.advice + ' You did nothing wrong.');
-    }
-  }, [active, assessment.score, assessment.advice, voice, s.call.id, say]);
-  useEffect(() => {
-    mounted.current = true;
-    return () => { mounted.current = false; microphoneGeneration.current++; recognition.current?.stop(); live.current?.stop(); cancelAudio(); };
-  }, [cancelAudio]);
-  useEffect(() => { if (!active) { microphoneGeneration.current++; recognition.current?.stop(); live.current?.stop(); setMic(false); setPartial(''); cancelAudio(); } }, [active, cancelAudio]);
+  const { state, request, setError } = useTripwire(); const s = state!;
+  const copy = t[s.settings.language];
+  const engine = useCallEngine(state, request, setError);
+  const [screen, setScreen] = useState<'home' | 'ringing' | 'call' | 'teller'>('home');
+  const [ringSource, setRingSource] = useState<CallerSource>(s.config.agent ? 'agent' : 'script');
+  const [busy, setBusy] = useState(false);
+  const [payee, setPayee] = useState('Grandson bail · gift cards'); const [amount, setAmount] = useState('2500'); const [rail, setRail] = useState<Rail>('gift-card'); const [newPayee, setNewPayee] = useState(true);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
+  const [typed, setTyped] = useState('');
+  const call = s.call; const active = call.active;
+  const payment = s.payments.find(p => p.id === paymentId);
+  const whisper = call.whispers.at(-1);
   async function run(action: () => Promise<void>) { setBusy(true); try { await action(); } catch (e) { setError((e as Error).message); } finally { setBusy(false); } }
-  async function startScript() {
-    setTask('call');
-    const { callId } = await request<{ callId: string }>('/call/start', { consent: true }); setLineIndex(1); setCodeResult(null);
-    await request('/call/line', { callId, segmentId: crypto.randomUUID(), text: scenarios[scenario].lines[0], source: 'scripted' });
-  }
-  async function nextLine() {
-    const text = scenarios[scenario].lines[lineIndex]; if (!text) return;
-    await request('/call/line', { callId: s.call.id, segmentId: crypto.randomUUID(), text, source: 'scripted' }); setLineIndex(i => i + 1);
-  }
-  async function startMic(browserFallback = false) {
-    const useElevenLabs = s.config.elevenlabs && !browserFallback;
-    const browser = window as unknown as { SpeechRecognition?: new () => Recognition; webkitSpeechRecognition?: new () => Recognition };
-    const Constructor = browser.SpeechRecognition || browser.webkitSpeechRecognition;
-    if (!useElevenLabs && !Constructor) throw new Error('Browser transcription is unavailable. Use a supported browser or submit text for review.');
-    if (useElevenLabs && (!window.isSecureContext || !navigator.mediaDevices)) throw new Error('Live microphone capture requires HTTPS or localhost.');
-    const generation = ++microphoneGeneration.current;
-    let callId = s.call.id;
-    if (!active) callId = (await request<{ callId: string }>('/call/start', { consent: true })).callId;
-    if (!callId || !mounted.current) return;
-    // Starting the server session changes active state; an old start must not attach to a newer call.
-    const session = callId;
-    setLineIndex(0); setMicNotice(''); recognition.current?.stop(); live.current?.stop();
-    const submit = (text: string, source: 'browser' | 'elevenlabs') => {
-      if (!mounted.current || generation !== microphoneGeneration.current) return;
-      void request('/call/line', { callId: session, segmentId: crypto.randomUUID(), text, source }).catch(error => {
-        if (!mounted.current || generation !== microphoneGeneration.current) return;
-        live.current?.stop(); recognition.current?.stop(); setMic(false);
-        setError(error instanceof Error ? error.message : 'Transcript submission failed. Use pasted text or resume the microphone.');
-      });
-    };
-    if (useElevenLabs) {
-      live.current = new LiveTranscription(connectScribe);
-      const { token } = await request<{ token: string }>('/transcription/token', { callId: session });
-      if (!mounted.current || generation !== microphoneGeneration.current) return;
-      const interrupted = () => {
-        if (!mounted.current || generation !== microphoneGeneration.current) return;
-        setMic(false); setPartial(''); setMicNotice('ElevenLabs transcription stopped. Choose browser transcription, resume, or paste the caller’s words.');
-        void request('/transcription/status', { callId: session, state: 'degraded' }).catch(error => setError(error.message));
-      };
-      try {
-        await live.current.start(token, {
-          ready: () => {
-            if (!mounted.current || generation !== microphoneGeneration.current) return;
-            setMicMode('elevenlabs'); setMic(true);
-            void request('/transcription/status', { callId: session, state: 'working' }).catch(error => setError(error.message));
-          },
-          partial: text => { if (mounted.current && generation === microphoneGeneration.current) setPartial(text); },
-          committed: text => { setPartial(''); submit(text, 'elevenlabs'); }, error: interrupted, closed: interrupted,
-        });
-      } catch (error) { if (mounted.current && generation === microphoneGeneration.current) setMicNotice('Transcription could not start. Choose browser transcription or submit text.'); throw error; }
-    } else if (Constructor) {
-      const instance = new Constructor(); instance.continuous = true; instance.interimResults = false; instance.lang = 'en-US';
-      instance.onresult = event => {
-        for (let i = event.resultIndex; i < event.results.length; i++) if (event.results[i].isFinal) submit(event.results[i][0].transcript, 'browser');
-      };
-      instance.onerror = event => { if (mounted.current) { setMic(false); setError(`Browser transcription stopped (${event.error}). Use a scripted or pasted transcript.`); } };
-      instance.onend = () => { if (mounted.current) setMic(false); };
-      recognition.current = instance; instance.start(); setMicMode('browser'); setMic(true);
-    }
-  }
-  async function endCall() { microphoneGeneration.current++; recognition.current?.stop(); live.current?.stop(); cancelAudio(); setMic(false); setPartial(''); await request('/call/end'); }
-  function preset(normal: boolean) { setTask('payment'); setComposingPayment(true); setPayee(normal ? 'Utility company' : 'Emergency gift cards'); setAmount(normal ? '40' : '2500'); setRail(normal ? 'bill' : 'gift-card'); setNewPayee(!normal); setPasted(false); }
-  return <>
-    <div className="page-heading senior-heading"><div><h1 ref={taskHeading} tabIndex={-1}>{task === 'home' ? 'Hello, Rosa.' : task === 'call' ? 'Check a call' : 'Send money'}</h1></div></div>
-    <nav className="task-navigation" aria-label="Rosa’s tasks"><button aria-current={task === 'home' ? 'page' : undefined} onClick={() => setTask('home')}>Home</button><button aria-current={task === 'call' ? 'page' : undefined} onClick={() => setTask('call')}>Check a call{active && <span className="task-live-dot" aria-label="Guard is running"/>}</button><button aria-current={task === 'payment' ? 'page' : undefined} onClick={() => setTask('payment')}>Send money</button></nav>
-    {task === 'home' && <div className="task-home"><p>What would you like to check?</p><div className="task-choices"><button data-board-node="check-call" onClick={() => setTask('call')}><Headphones size={38}/><strong>Check a call</strong><span>{active ? 'Return to your running call guard' : 'Get help with a suspicious caller'}</span></button><button data-board-node="send-money" onClick={() => setTask('payment')}><CreditCard size={38}/><strong>Send money</strong><span>Check a payment before you send it</span></button></div>{payment?.status === 'held' && <button className="held-reminder" onClick={() => { setTask('payment'); setComposingPayment(false); }}><LockKeyhole size={24}/>{money(payment.amount)} payment on hold. View payment.</button>}</div>}
-    {active && task !== 'call' && <div className="call-continuity"><Radio size={22}/><span>{mic ? 'Your microphone is still listening.' : 'Call guard is running. Microphone is off.'}</span><button onClick={() => setTask('call')}>Return to call</button></div>}
-    <div className="senior-grid"><div className="senior-main">
-      <section data-board-node="call" hidden={task !== 'call'} className={'panel senior-call ' + (assessment.score >= 85 ? 'danger-panel' : '')}>
-        <div className="senior-panel-title"><div className="round-icon"><Headphones size={23}/></div><div><h2>Call guard</h2></div><Badge tone={active ? 'green' : 'neutral'}>{active ? 'GUARD IS ON' : 'GUARD IS OFF'}</Badge></div>
-        {active && <div className="listening-banner"><Radio size={18}/>{mic ? 'Microphone is listening. Call text is shared with your guardian.' : 'Reading submitted text. Your microphone is off.'}</div>}
-        {assessment.score > 0 ? <div className="senior-warning" aria-live="polite"><div><Badge tone={assessment.score >= 85 ? 'red' : 'amber'}>{assessment.level.toUpperCase()} · {assessment.score}/100</Badge><button className="icon-button" aria-label="Read warning aloud" onClick={() => void say(assessment.advice)}><Volume2 size={21}/></button></div><h3>{assessment.score >= 85 ? 'Let’s pause this conversation.' : 'Something needs a closer look.'}</h3><p>{assessment.advice}</p><p className="no-shame">You did nothing wrong. These callers are professionals.</p></div> : <p className="senior-intro">If someone calls asking for money, turn on your call guard. You can always stop.</p>}
-        {!active ? <div className="call-controls"><p className="consent-note">Starting shares the caller’s words with your guardian and our speech and analysis services. Tripwire does not save audio. Saving flagged transcripts is {s.settings.retainFlaggedTranscripts ? 'on' : 'off'}.</p><details className="privacy-details"><summary>How your words are used</summary><p>Microphone audio goes to {s.config.elevenlabs ? 'ElevenLabs' : 'your browser’s speech service'}. {s.config.gemini ? 'Gemini receives submitted text for analysis. Use synthetic examples on the free Gemini tier.' : 'Submitted text is checked by rules on this server.'} Scripted mode uses no microphone.</p></details><button className="button primary large" disabled={busy} onClick={() => void run(() => startMic())}><Mic size={20}/>Use microphone</button></div> : <>
-          <button className="button hangup full" disabled={busy} onClick={() => void run(endCall)}><PhoneOff size={24}/><span>Hang up on your phone<small>Tap here to stop the call guard</small></span></button><p className="consent-note">Tripwire cannot disconnect your telephone call. End it on your phone, then call back using a saved number.</p>
-          <details className="transcript-details"><summary>Read the transcript</summary><div className="live-transcript"><div className="transcript-heading"><span>WHAT THE CALLER SAID</span><Badge tone="outline">{mic ? micMode === 'elevenlabs' ? 'ELEVENLABS' : 'BROWSER TRANSCRIPTION' : 'SUBMITTED TEXT'}</Badge></div>{s.call.transcript.map(l => <p key={l.id}><span>{time(l.at)}</span>“{l.text}”</p>)}{partial && <p aria-live="polite" className="quiet-text">{partial}</p>}{!s.call.transcript.length && !partial && <p>Waiting for the first words…</p>}</div></details>
-          {!mic && <div className="button-row"><button className="button secondary" disabled={busy} onClick={() => void run(() => startMic())}>Resume microphone</button>{s.config.elevenlabs && <button className="button secondary" disabled={busy} onClick={() => void run(() => startMic(true))}>Use browser transcription</button>}</div>}
-          <details className="manual-transcript"><summary>Add spoken words manually<ChevronDown size={16}/></summary><form onSubmit={e => { e.preventDefault(); void run(async () => { await request('/call/line', { callId: s.call.id, segmentId: crypto.randomUUID(), text: manual, source: 'manual' }); setManual(''); }); }}><label>Caller’s words<textarea value={manual} onChange={e => setManual(e.target.value)} required maxLength={3000} placeholder="Paste a transcript or type what the caller said…"/></label><button className="button secondary" disabled={busy}>Check these words</button></form></details>
 
-        </>}
-        {micNotice && <p className="provider-note" role="status">{micNotice}</p>}<label className="check-row voice-toggle"><input type="checkbox" checked={voice} onChange={e => { setVoice(e.target.checked); if (!e.target.checked) { cancelAudio(); try { live.current?.unmute(); } catch { live.current?.stop(); setMic(false); } } }}/><span>Read critical warnings aloud</span></label>
-      </section>
-      <section data-board-node="payment" hidden={task !== 'payment'} className="panel senior-payment"><div className="senior-panel-title"><div className="round-icon"><CreditCard size={23}/></div><div><h2>Your payment</h2></div><Badge tone="outline">PAYMENT REVIEW</Badge></div><p className="senior-intro">We’ll review this request for warning signs before you continue. No funds are transferred from this app.</p><form hidden={!composingPayment} onSubmit={e => { e.preventDefault(); void run(async () => { const created = await request<Payment>('/payments', { payee, amount: Number(amount), rail, newPayee, pasted }); setSelectedPayment(created.id); setComposingPayment(false); }); }}><label>Who are you paying?<input value={payee} onChange={e => setPayee(e.target.value)} onPaste={() => setPasted(true)} required maxLength={100}/></label><div className="form-grid"><label>Amount ($)<input type="number" min="0.01" max="100000" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required/></label><label>Payment method<select value={rail} onChange={e => setRail(e.target.value as Rail)}><option value="bill">Pay a bill</option><option value="bank">Bank transfer</option><option value="gift-card">Gift cards</option><option value="wire">Wire transfer</option><option value="crypto">Cryptocurrency</option></select></label></div><label className="check-row"><input type="checkbox" checked={newPayee} onChange={e => setNewPayee(e.target.checked)}/><span>This is my first payment to them</span></label><button className="button primary large full" disabled={busy}><ShieldCheck size={21}/>{busy ? 'Checking…' : 'Review payment'}</button></form>
-        {payment && !composingPayment && <div className={'payment-result ' + payment.status + (paymentArrival ? ' payment-transition' : '')}><>{payment.escrow?.state === 'depositing' ? <Badge tone="amber">ESCROW PENDING</Badge> : <PaymentStatus payment={payment}/>}</><EscrowStatus payment={payment}/><h3 ref={paymentHeading} tabIndex={-1} aria-live="polite">{payment.status === 'held' ? 'Your money can wait.' : payment.status === 'denied' ? 'Elena stopped this payment.' : payment.status === 'review' ? 'One quick check first.' : 'Payment review complete.'}</h3><p>{money(payment.amount)} to {payment.payee}</p>{payment.status === 'held' && <><p>Elena can review this request. Otherwise it releases after the cooling-off period.</p>{payment.releaseAt && <div className="timer-display"><LockKeyhole size={22}/><Countdown until={payment.releaseAt}/><span>remaining</span></div>}</>}{payment.status === 'denied' && <><p>Nothing was sent. You did the right thing by pausing.</p>{education && <CaseEducation education={education}/>}</>}{payment.status === 'released' && <p>No payment was sent by this app. A completed review does not verify the recipient.</p>}{payment.reasons.length > 0 && <ul>{payment.reasons.map(reason => <li key={reason}>{reason}</li>)}</ul>}{payment.status === 'review' && <div className="review-question"><h4>Did the caller ask you to keep this a secret?</h4><div className="button-row"><button className="button primary" disabled={busy} onClick={() => void run(async () => { await request('/payments/review', { id: payment.id, secret: true }); })}>Yes, they did</button><button className="button secondary" disabled={busy} onClick={() => void run(async () => { await request('/payments/review', { id: payment.id, secret: false }); })}>No · I reviewed the warning</button></div></div>}</div>}
-        {!composingPayment && <button className="button secondary new-payment" onClick={() => setComposingPayment(true)}>Check another payment</button>}
-      </section>
-    </div><div className="senior-side" hidden={task !== 'call' || !active}>
-      <div className="verification-actions"><h2>Check who is calling</h2><button className="button secondary" aria-expanded={verification === 'word'} onClick={() => setVerification(verification === 'word' ? null : 'word')}><KeyRound size={23}/>Check the family word</button><button className="button secondary" aria-expanded={verification === 'callback'} onClick={() => setVerification(verification === 'callback' ? null : 'callback')}><Phone size={23}/>Ask Alex</button></div>
-      <section hidden={verification !== 'word'} className="panel verification-card"><div className="verification-icon"><KeyRound size={26}/></div><h2>Check the family word</h2><p>Ask the caller for the word your family agreed on. Never say it to them first.</p>{s.settings.safeWordConfigured ? <form onSubmit={e => { e.preventDefault(); void run(async () => { const result = await request<{ matched: boolean }>('/safe-word/verify', { word: code }); setCodeResult(result.matched ? 'The word matched. Still call back to verify the request.' : 'That word did not match. Please hang up and call Alex.'); setCode(''); }); }}><label>What word did they say?<input type="password" value={code} onChange={e => setCode(e.target.value)} autoComplete="off" required maxLength={100} disabled={!active}/></label><button className="button secondary full" disabled={!active || busy}>Check their answer</button></form> : <Link className="button secondary full" href="/settings">Set your family safe word</Link>}{codeResult && <p className={'verification-result ' + (s.call.safeWord === 'failed' ? 'red-text' : '')} role="status">{codeResult}</p>}<p className="small-note">A matching word is one clue. Call back to verify.</p></section>
-      <section hidden={verification !== 'callback'} className="panel verification-card callback-card"><div className="verification-icon green"><Phone size={25}/></div><h2>Ask the real Alex</h2><div className="contact-row"><div className="avatar alex">A</div><div><strong>Alex Garcia</strong><span>Your grandson · trusted contact</span></div></div><p>Ask the real Alex whether he’s calling you, using his separate family view.</p><button className="button primary full" disabled={!active || busy || !!(s.call.callback && !s.call.callback.answer)} onClick={() => void run(async () => { await request('/callback/request'); })}><Phone size={17}/>{s.call.callback && !s.call.callback.answer ? 'Waiting for Alex…' : 'Check with Alex'}</button>{s.call.callback?.answer && <Arrival id={`callback:${s.call.callback.id}:${s.call.callback.answer}`} className={'callback-answer ' + (s.call.callback.answer === 'no' ? 'negative' : '')} role="status"><Check size={20}/><p>{s.call.callback.answer === 'no' ? 'Alex says: “That isn’t me calling.” Hang up and call his saved number.' : 'Alex confirmed he is calling. Check the payment request with him separately.'}</p></Arrival>}<p className="small-note">The relative confirms through a separate paired browser view; no phone call or SMS is placed.</p></section>
+  // Return home only when a live call ends, not while a new one is still connecting.
+  const wasActive = useRef(active);
+  useEffect(() => { if (wasActive.current && !active) setScreen(current => current === 'call' ? 'home' : current); wasActive.current = active; }, [active]);
+  useResolutionVoice(s.call.speech, s.config.elevenlabs);
 
-    </div></div>
-    <Presenter><label className="field-label">Choose a practice scenario<select value={scenario} onChange={e => { setScenario(e.target.value as keyof typeof scenarios); setLineIndex(0); }}>{Object.entries(scenarios).map(([key, value]) => <option key={key} value={key}>{value.title}</option>)}</select></label><button className="button primary large" disabled={busy} onClick={() => void run(startScript)}><Play size={20}/>Start call practice</button>{!mic && lineIndex > 0 && lineIndex < scenarios[scenario].lines.length && <button className="button secondary large full" disabled={busy} onClick={() => void run(nextLine)}>Next caller statement <Play size={18}/></button>}<div className="preset-row"><button onClick={() => preset(true)}>Try a $40 bill</button><button onClick={() => preset(false)}>Try $2,500 in gift cards</button></div></Presenter>
-  </>;
+  async function answer() { setScreen('call'); await engine.start(ringSource); }
+  async function sendPayment() {
+    const created = await request<Payment>('/payments', { payee, amount: Number(amount), rail, newPayee });
+    setPaymentId(created.id); if (active) engine.paymentAttempt(created);
+  }
+  function preset(normal: boolean) { setPayee(normal ? 'CPS Energy bill' : 'Grandson bail · gift cards'); setAmount(normal ? '40' : '2500'); setRail(normal ? 'bill' : 'gift-card'); setNewPayee(!normal); setPaymentId(null); setScreen('teller'); }
+
+  return <div className={'rosa-phone' + (call.foiledAt ? ' is-foiled' : '')} data-screen={screen}>
+    <HeistFoiled at={call.foiledAt}/>
+    {active && screen === 'teller' && <button className="call-pill" onClick={() => setScreen('call')}><Phone size={22}/>{copy.back}</button>}
+
+    {screen === 'home' && <section className="rosa-screen rosa-home">
+      <h1>{copy.hello}</h1><p className="rosa-calm"><ShieldCheck size={30}/>{copy.calm}</p>
+      <button className="rosa-big secondary" onClick={() => setScreen('teller')}><Landmark size={34}/>{copy.bank}</button>
+    </section>}
+
+    {screen === 'ringing' && <section className="rosa-screen rosa-ringing" aria-live="assertive">
+      <PhoneIncoming size={64} className="ring-icon"/><p className="rosa-label">{copy.incoming}</p><h1>{copy.unknown}</h1><p className="rosa-sub">(210) 555-0147</p>
+      <div className="ring-actions"><button className="rosa-round decline" aria-label={copy.decline} onClick={() => setScreen('home')}><PhoneOff size={34}/></button><button className="rosa-round accept" disabled={busy} onClick={() => void run(answer)}><Phone size={34}/><span>{copy.answer}</span></button></div>
+      <p className="rosa-consent">{copy.listening}</p>
+    </section>}
+
+    {screen === 'call' && <section className="rosa-screen rosa-call">
+      <p className="rosa-label">{active ? <CallTimer since={call.startedAt}/> : 'Connecting…'}</p><h1>{copy.unknown}</h1>
+      <p className="rosa-listening"><span className="live-dot"/>{engine.guardStatus === 'live' ? 'Gemini Live' : engine.guardStatus === 'connecting' || engine.guardStatus === 'reconnecting' ? 'Connecting…' : 'Tripwire rules'} · {copy.listening}</p>
+      {whisper && <div key={whisper.id} className={'whisper' + (whisper.kind === 'family-word' ? ' family' : '')} role="status">
+        {whisper.kind === 'family-word' && <KeyRound size={28}/>}<p>{whisper.text}</p>
+        {whisper.kind === 'family-word' && call.safeWord === 'unchecked' && <button className="rosa-big" disabled={busy} onClick={() => void run(engine.askedFamilyWord)}>{copy.asked}</button>}
+        {whisper.kind === 'family-word' && call.safeWord === 'asked' && <p className="whisper-sub">Listening for the answer…</p>}
+        {call.safeWord === 'failed' && <p className="whisper-sub red">That wasn’t your family word. Please don’t send money.</p>}
+        {call.safeWord === 'matched' && <p className="whisper-sub">The word matched. Still check any money request.</p>}
+      </div>}
+      {whisper?.kind === 'family-word' && call.safeWord === 'asked' && !s.config.gemini && <form className="typed-word" onSubmit={e => { e.preventDefault(); void run(async () => { await request('/safe-word/verify', { word: typed }); setTyped(''); }); }}><label>What did they say?<input type="password" value={typed} onChange={e => setTyped(e.target.value)} autoComplete="off"/></label><button className="rosa-big secondary" disabled={busy}>Check</button></form>}
+      <div className="rosa-call-actions"><button className="rosa-big secondary" onClick={() => setScreen('teller')}><Landmark size={30}/>{copy.bank}</button><button className="rosa-big hangup" disabled={busy} onClick={() => void run(async () => { await engine.hangUp(); setScreen('home'); })}><PhoneOff size={30}/>{copy.hang}</button></div>
+    </section>}
+
+    {screen === 'teller' && <section className="rosa-screen teller">
+      <header className="teller-head"><Landmark size={28}/><strong>My Bank</strong><span>Checking ···4417</span></header>
+      {!payment ? <form onSubmit={e => { e.preventDefault(); void run(sendPayment); }}>
+        <h1>{copy.send}</h1>
+        <label>To<input value={payee} onChange={e => setPayee(e.target.value)} required maxLength={100}/></label>
+        <label>Amount ($)<input inputMode="decimal" type="number" min="0.01" max="100000" step="0.01" value={amount} onChange={e => setAmount(e.target.value)} required/></label>
+        <label>How<select value={rail} onChange={e => setRail(e.target.value as Rail)}>{Object.entries(railNames).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label>
+        <label className="teller-check"><input type="checkbox" checked={newPayee} onChange={e => setNewPayee(e.target.checked)}/>First time paying them</label>
+        <button className="rosa-big" disabled={busy}><CreditCard size={28}/>{busy ? '…' : `${copy.send} ${amount ? money(Number(amount)) : ''}`}</button>
+      </form> : <PaymentResult payment={payment} copy={copy} onNew={() => setPaymentId(null)}/>}
+    </section>}
+
+    {call.speech && <p className="subtitle" lang={call.speech.language}>{call.speech.text}</p>}
+
+    <Presenter>
+      <label className="field-label">Caller channel<select value={ringSource} onChange={e => setRingSource(e.target.value as CallerSource)}>
+        <option value="agent" disabled={!s.config.agent}>ElevenLabs scammer agent (full arc){!s.config.agent ? ' · not configured' : ''}</option>
+        <option value="agent-short" disabled={!s.config.agent}>ElevenLabs scammer agent (short arc)</option>
+        <option value="mic">Operator microphone (live fallback)</option>
+        <option value="script">Typed lines (no audio)</option>
+      </select></label>
+      <button className="button primary large" disabled={active} onClick={() => setScreen('ringing')}><PhoneIncoming size={20}/>Ring Rosa’s phone</button>
+      {engine.source === 'script' && <><label className="field-label">Script<select value={engine.scriptKey} onChange={e => engine.setScriptKey(e.target.value as keyof typeof scenarios)}>{Object.entries(scenarios).map(([key, value]) => <option key={key} value={key}>{value.title}</option>)}</select></label>
+        <button className="button secondary" disabled={engine.scriptIndex >= scenarios[engine.scriptKey].lines.length} onClick={engine.nextScripted}>Next caller line ({engine.scriptIndex}/{scenarios[engine.scriptKey].lines.length})</button></>}
+      {engine.source?.startsWith('agent') && <p className="small-note">Scammer agent {engine.agentSpeaking ? 'speaking' : 'listening'} · consented clone, demo only.</p>}
+      <div className="preset-row"><button onClick={() => preset(true)}>$40 bill</button><button onClick={() => preset(false)}>$2,500 gift cards</button></div>
+      <label className="field-label">Rosa’s language<select value={s.settings.language} onChange={e => void request('/settings', { language: e.target.value })}><option value="en">English</option><option value="es">Español</option></select></label>
+    </Presenter>
+  </div>;
+}
+
+function PaymentResult({ payment, copy, onNew }: { payment: Payment; copy: typeof t.en; onNew: () => void }) {
+  const { state, request, setError } = useTripwire(); const call = state!.call;
+  const isolation = payment.evidence?.find(e => e.lever === 'isolation');
+  const failedWord = call.id === payment.callId && call.safeWord === 'failed';
+  const why = [isolation && 'The caller asked you to keep this secret from your family', failedWord && 'refused your family word'].filter(Boolean).join(' and ');
+  if (payment.status === 'denied') return <div className="teller-result foiled"><LockKeyhole size={48}/><h1>{copy.foiled}</h1><p>Diego confirmed it wasn’t him. Nothing was sent.</p><p className="no-shame">You did nothing wrong. These callers are professionals.</p><button className="rosa-big secondary" onClick={onNew}>Done</button></div>;
+  if (payment.status === 'released') return <div className="teller-result sent"><ShieldCheck size={48}/><h1>{copy.sent}</h1><p>{money(payment.amount)} to {payment.payee}.</p><p>{call.alert?.reply === 'release' && call.id === payment.callId ? 'Diego confirmed it’s him.' : copy.noFlags}</p><p className="small-note">Demo payment. No money moves.</p><button className="rosa-big secondary" onClick={onNew}>Done</button></div>;
+  if (payment.status === 'review') return <div className="teller-result review"><h1>One quick check.</h1><ul>{payment.reasons.map(r => <li key={r}>{r}</li>)}</ul><h2>Did the caller ask you to keep this a secret?</h2><div className="rosa-call-actions"><button className="rosa-big" onClick={() => void request('/payments/review', { id: payment.id, secret: true }).catch(e => setError(e.message))}>Yes, they did</button><button className="rosa-big secondary" onClick={() => void request('/payments/review', { id: payment.id, secret: false }).catch(e => setError(e.message))}>No</button></div></div>;
+  return <div className="teller-result held" aria-live="polite">
+    <LockKeyhole size={48}/><h1>{copy.paused}</h1>
+    <p className="held-why">{why ? `${why}.` : 'This payment matches warning signs from your call.'} {call.alert ? copy.asking : ''}</p>
+    {payment.evidence?.length ? <ul className="held-quotes">{payment.evidence.slice(0, 3).map(e => <li key={e.lever}><q>{e.quote}</q></li>)}</ul> : <ul>{payment.reasons.slice(0, 3).map(r => <li key={r}>{r}</li>)}</ul>}
+    {call.alert && !call.alert.reply && <p className="waiting"><span className="live-dot"/>{copy.waiting}</p>}
+    {!call.alert && payment.releaseAt && <p className="small-note">Released automatically in <Countdown until={payment.releaseAt}/> unless your family stops it.</p>}
+    <p className="no-shame">You did nothing wrong. These callers are professionals.</p>
+  </div>;
+}
+
+function CallTimer({ since }: { since: number | null }) {
+  const [now, setNow] = useState(Date.now());
+  useEffect(() => { const i = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(i); }, []);
+  const s = Math.max(0, Math.floor((now - (since ?? now)) / 1000));
+  return <>{String(Math.floor(s / 60)).padStart(2, '0')}:{String(s % 60).padStart(2, '0')}</>;
+}
+
+/** Plays Tripwire's single resolution message: ElevenLabs stream, browser voice as fallback. */
+function useResolutionVoice(speech: { id: string; text: string; language: 'en' | 'es' } | null, elevenlabs: boolean) {
+  const played = useRef<string | null>(null);
+  useEffect(() => {
+    if (!speech || played.current === speech.id) return;
+    played.current = speech.id;
+    const browser = () => { if (!('speechSynthesis' in window)) return; const u = new SpeechSynthesisUtterance(speech.text); u.lang = speech.language === 'es' ? 'es-US' : 'en-US'; u.rate = .92; speechSynthesis.speak(u); };
+    if (!elevenlabs) { browser(); return; }
+    const audio = new Audio(`/api/speak/stream?role=protected&id=${encodeURIComponent(speech.id)}`);
+    audio.onerror = browser; void audio.play().catch(browser);
+    return () => audio.pause();
+  }, [speech, elevenlabs]);
 }

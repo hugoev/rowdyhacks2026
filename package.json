@@ -21,7 +21,6 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test.mjs",
     "test:e2e": "playwright test",
-    "eval:gemini": "node --import tsx scripts/eval-gemini.ts",
     "setup:tiger": "node --import tsx scripts/check-tiger.ts --setup",
     "setup:solana": "node --import tsx scripts/setup-solana.ts",
     "build:solana": "node scripts/build-solana.mjs",
@@ -30,10 +29,14 @@
     "setup:vultr": "node --import tsx scripts/setup-vultr.ts",
     "check:vultr": "node --import tsx scripts/check-vultr.ts",
     "check:vultr:e2e": "node --import tsx scripts/check-vultr-e2e.ts",
-    "deploy:vultr": "bash scripts/deploy-vultr.sh"
+    "deploy:vultr": "bash scripts/deploy-vultr.sh",
+    "eval:live": "node --import tsx scripts/eval-live.ts",
+    "setup:agent": "node --import tsx scripts/setup-agent.ts",
+    "check:live": "node --import tsx scripts/check-live.ts"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.26.0",
+    "@google/genai": "^2.27.0",
     "@solana/web3.js": "^1.99.0",
     "bcryptjs": "^3.0.2",
     "bs58": "^6.0.0",

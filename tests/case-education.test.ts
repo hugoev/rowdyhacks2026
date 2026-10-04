@@ -8,8 +8,8 @@ test('denial explains original evidence, verification, and outcome without keepi
   await store.setSafeWord('synthetic-family-word'); store.startCall();
   store.addLine('Grandma, I am in jail. Keep this secret. Buy gift cards right now. Private detail 12345.', 'manual');
   const payment = store.createPayment(gift);
-  await store.verifyWord('incorrect'); const callback = store.requestCallback(); store.answerCallback(callback.id, 'no');
-  store.decidePayment(payment.id, 'deny');
+  await store.verifyWord('incorrect'); store.guardianReply(store.state.call.alert!.id, 'block');
+  assert.equal(payment.status, 'denied');
   const education = store.state.cases[0].education!;
   assert.match(education.whatHappened, /relative in trouble/);
   assert.equal(education.clues.length, 3); assert.equal(education.source, 'rules');
@@ -25,7 +25,7 @@ test('later calls cannot supply evidence for an earlier denied payment', t => {
   const store = new Store(':memory:'); t.after(() => store.db.close());
   store.startCall(); store.addLine('IRS warrant, buy gift cards immediately.', 'manual');
   const payment = store.createPayment(gift); store.endCall(); store.startCall();
-  store.addLine('Grandma, keep this secret.', 'manual'); const callback = store.requestCallback(); store.answerCallback(callback.id, 'no');
+  store.addLine('Grandma, keep this secret.', 'manual'); const alert = store.raiseAlert('Is this you?', 'block', 'rules'); store.guardianReply(alert.id, 'block');
   store.decidePayment(payment.id, 'deny'); const file = store.state.cases[0];
   assert.match(file.education!.whatHappened, /government/);
   assert.ok(!file.education!.protections.some(p => p.includes('relative')));
@@ -42,8 +42,8 @@ test('verification stays with its payment when the original call ends before den
   const store = new Store(':memory:'); t.after(() => store.db.close());
   store.startCall(); store.addLine('Grandma, buy gift cards urgently.', 'manual');
   const payment = store.createPayment(gift);
-  const callback = store.requestCallback(); store.answerCallback(callback.id, 'no');
-  store.endCall(); store.startCall(); store.decidePayment(payment.id, 'deny');
+  store.guardianReply(store.state.call.alert!.id, 'block'); assert.equal(payment.status, 'denied');
+  store.endCall(); store.startCall();
   assert.ok(store.state.cases[0].education!.protections.some(p => p.includes('not the person calling')));
 });
 test('older denied cases get a conservative explanation on restart', t => {

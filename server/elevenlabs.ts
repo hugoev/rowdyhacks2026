@@ -1,19 +1,21 @@
 import { z } from 'zod';
+import type { Language } from '../lib/types';
 import { configureProvider, providerFailure, providerSuccess } from './provider-status';
 
 export function voiceModel() { return process.env.ELEVENLABS_TTS_MODEL || 'eleven_flash_v2_5'; }
 export function configureElevenLabs() {
   configureProvider('elevenlabsVoice', !!process.env.ELEVENLABS_API_KEY, voiceModel());
-  configureProvider('elevenlabsTranscription', !!process.env.ELEVENLABS_API_KEY, 'scribe_v2_realtime');
+  configureProvider('elevenlabsAgent', !!process.env.ELEVENLABS_API_KEY && !!process.env.ELEVENLABS_AGENT_ID, 'conversational agent');
 }
-async function call(path: string, capability: 'elevenlabsVoice' | 'elevenlabsTranscription', body?: unknown) {
+type Capability = 'elevenlabsVoice' | 'elevenlabsAgent';
+async function call(path: string, capability: Capability, init: { method?: string; body?: unknown } = {}) {
   configureElevenLabs();
-  if (!process.env.ELEVENLABS_API_KEY) throw new Error('ElevenLabs is not configured. Choose browser voice or transcription.');
+  if (!process.env.ELEVENLABS_API_KEY) throw new Error('ElevenLabs is not configured. Use browser voice or the operator microphone.');
   const started = Date.now();
   try {
     const response = await fetch('https://api.elevenlabs.io/v1/' + path, {
-      method: 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
-      ...(body ? { body: JSON.stringify(body) } : {}), signal: AbortSignal.timeout(10000),
+      method: init.method || 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY, 'Content-Type': 'application/json' },
+      ...(init.body ? { body: JSON.stringify(init.body) } : {}), signal: AbortSignal.timeout(10000),
     });
     if (!response.ok) throw new Error(response.status === 429 ? 'quota limited' : response.status === 401 || response.status === 403 ? 'authentication failed' : 'provider unavailable');
     console.info(JSON.stringify({ provider: 'elevenlabs', capability, latencyMs: Date.now() - started }));
@@ -23,21 +25,25 @@ async function call(path: string, capability: 'elevenlabsVoice' | 'elevenlabsTra
     const category = error instanceof Error && known.includes(error.message) ? error.message : error instanceof Error && ['TimeoutError', 'AbortError'].includes(error.name) ? 'timeout' : 'network failure';
     providerFailure(capability, category);
     console.warn(JSON.stringify({ provider: 'elevenlabs', capability, latencyMs: Date.now() - started, error: category }));
-    throw new Error(`ElevenLabs ${category}. Choose the browser fallback or scripted demo.`);
+    throw new Error(`ElevenLabs ${category}. Use the browser fallback.`);
   }
 }
-export async function transcriptionToken() {
-  const response = await call('single-use-token/realtime_scribe', 'elevenlabsTranscription');
-  const parsed = z.object({ token: z.string().min(1) }).safeParse(await response.json());
-  if (!parsed.success) { providerFailure('elevenlabsTranscription', 'invalid response'); throw new Error('ElevenLabs returned an invalid token. Choose browser transcription.'); }
-  // Token issuance alone does not prove a live Scribe session works.
-  return parsed.data.token;
+export function voiceFor(language: Language) {
+  return (language === 'es' && process.env.ELEVENLABS_VOICE_ID_ES) || process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb';
 }
-export async function speak(text: string) {
+/** Low-latency streaming TTS: the response body starts flowing before synthesis ends. */
+export async function speakStream(text: string, language: Language) {
   if (!process.env.ELEVENLABS_API_KEY) return null;
-  const response = await call(`text-to-speech/${encodeURIComponent(process.env.ELEVENLABS_VOICE_ID || 'JBFqnCBsd6RMkjVDRZzb')}`, 'elevenlabsVoice', { text, model_id: voiceModel() });
-  if (!response.headers.get('content-type')?.startsWith('audio/')) { providerFailure('elevenlabsVoice', 'invalid response'); throw new Error('Warning audio unavailable. Use browser voice.'); }
-  const audio = Buffer.from(await response.arrayBuffer());
-  if (!audio.length) { providerFailure('elevenlabsVoice', 'invalid response'); throw new Error('Warning audio was empty. Use browser voice.'); }
-  providerSuccess('elevenlabsVoice'); return audio;
+  const response = await call(`text-to-speech/${encodeURIComponent(voiceFor(language))}/stream?output_format=mp3_44100_64&optimize_streaming_latency=3`, 'elevenlabsVoice', { body: { text, model_id: voiceModel(), language_code: language } });
+  if (!response.headers.get('content-type')?.startsWith('audio/') || !response.body) { providerFailure('elevenlabsVoice', 'invalid response'); throw new Error('Tripwire voice unavailable. Use browser voice.'); }
+  providerSuccess('elevenlabsVoice'); return response.body;
+}
+/** Signed URL for the consented scammer voice agent (demo adversary and red-team only). */
+export async function agentSignedUrl() {
+  const agent = process.env.ELEVENLABS_AGENT_ID;
+  if (!agent) throw new Error('Set ELEVENLABS_AGENT_ID (run npm run setup:agent) or use the operator microphone.');
+  const response = await call(`convai/conversation/get-signed-url?agent_id=${encodeURIComponent(agent)}`, 'elevenlabsAgent', { method: 'GET' });
+  const parsed = z.object({ signed_url: z.string().url() }).safeParse(await response.json());
+  if (!parsed.success) { providerFailure('elevenlabsAgent', 'invalid response'); throw new Error('ElevenLabs returned an invalid agent session.'); }
+  providerSuccess('elevenlabsAgent'); return parsed.data.signed_url;
 }

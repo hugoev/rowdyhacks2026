@@ -1,132 +1,48 @@
-# Tripwire: Project Overview and Demo Guide
+# Tripwire demo runbook (3:00, fully live, no video)
 
-This is the team's single handoff guide: what we are building, what works, and how to demonstrate it.
+“Tripwire listens for the con, not the voice, and stops the payment before the money moves.”
 
-## What we are building
+## Setup (once)
 
-Tripwire is a family scam-protection app. It helps someone recognize a suspicious call or message, check with a real relative, and involve a trusted guardian before sending money. Rosa is our older-adult demo user; Elena is her guardian and Alex is her grandson. These are fictional characters.
+1. `npm ci`, `cp .env.example .env`, add `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`.
+2. `npm run check:live` must print `PASS` (token mint, Live session, tool calls).
+3. Record Diego’s written consent and voice sample; create the instant voice clone; set `ELEVENLABS_SCAMMER_VOICE_ID`; run `npm run setup:agent`; set `ELEVENLABS_AGENT_ID`.
+4. Optional: `npm run eval:live` to fill the eval card with measured numbers (the card says “No measured run yet” until then).
+5. `npm run build && npm start`. Set the family word in **Family settings** (for example “Marigold”).
 
-Today it is one mobile-friendly website with connected family views. The product direction is a standalone family companion plus protection that a bank or payment provider could embed at checkout. **The payment screen demonstrates that future integration. Tripwire cannot stop transfers through an unrelated banking app.**
+## Screens
 
-One-liner: "Tripwire asks whether the account holder should really be making this payment, then replaces a generic confirmation with a warning, trusted verification, and a family second key."
+| Device | URL |
+|---|---|
+| Big screen | `/stage` (Rosa left, Mission Control right) |
+| Rosa’s device (headset mic) | `/protected` (Operator drawer at the bottom is for the operator) |
+| Diego’s phone | `/relative` |
+| Operator laptop | `/guardian` and Rosa’s Operator drawer |
 
-## Screens and responsibilities
+## Beats
 
-| Screen | Route | Purpose |
-| --- | --- | --- |
-| Rosa's shield | `/protected` | Check a call, family word, callback, and simulated payment |
-| Elena's command center | `/guardian` | See risk signals, payment details, and approve or deny |
-| Alex's reply | `/relative` | Confirm whether Alex is calling; no payment or transcript access |
-| Inspector | `/inspector` | Check suspicious text or screenshots |
-| Case files | `/cases` | Review warning signs and payment outcomes |
-| Family settings | `/settings` | Safe word, consent, co-sign limit, and provider status |
+| Time | Beat | What should happen |
+|---|---|---|
+| 0:00 | Hook | Narrator. |
+| 0:15 | Operator: Caller channel = **ElevenLabs scammer agent (full arc)** → **Ring Rosa’s phone**. Rosa taps **Answer**. | Status shows “Gemini Live”. |
+| | Clone: “Grandma, it’s me. I got arrested… don’t tell Mom.” | Con Meter tumblers click in with quotes and latencies; surveillance log scrolls; risk dial climbs. |
+| | Whisper on Rosa’s screen: “Ask him for your family word.” Rosa asks out loud, then taps **I asked**. | Clone dodges → `check_family_word → no answer (dodged)`, Trust tumbler turns red. |
+| 1:10 | Clone: “Send it from your bank app, as gift cards.” Rosa: **Open my bank app** → **Send money $2,500**. | “Paused. The caller asked you to keep this secret from your family and refused your family word. We’ve asked Diego.” Diego’s phone buzzes. |
+| 1:45 | Diego reads the card aloud, taps **Not me, block**. | Laser sweep + HEIST FOILED on all screens; Tripwire voice: “Rosa, Diego just confirmed he’s safe and it wasn’t him…”; case file appears. |
+| 2:15 | Reveal: the voice was a live, consented AI clone. | |
+| 2:35 | Mission Control → **Proof points**. | Eval card (real numbers only). |
 
-Optional extras: `/drill` offers scripted scam practice; `/weather` shows explicitly synthetic San Antonio scam trends.
+## Failure drills (rehearse every one)
 
-## How the technology fits
+- **Agent goes off-script:** hang up, choose **ElevenLabs scammer agent (short arc)**, ring again (30 s).
+- **Agent or Wi-Fi fails:** choose **Operator microphone**; the operator speaks the lines. Same demo, minus the clone reveal.
+- **Gemini slow or down:** the rule spotter keeps the Con Meter moving (tagged RULE) and prompts the family word; the Teller and Diego’s loop are deterministic.
+- **No audio at all:** choose **Typed lines**, press **Next caller line**; lines go to the rules and, as text, to Gemini.
+- **Network down:** phone hotspot; all surfaces run on one laptop as separate windows.
+- **Reset between runs:** Operator drawer → **Clear activity**.
 
-The browser sends actions to our Node server. Socket.IO sends updates to the family views. Next.js and React provide the interface.
+## Q&A anchors
 
-| Technology | Job in Tripwire |
-| --- | --- |
-| Deterministic rules | Immediately score warning signs and enforce payment holds |
-| Gemini | Add call analysis, inspect screenshots, explain held payments, and simplify denied-payment lessons |
-| ElevenLabs | Transcribe microphone audio with Scribe and speak warnings using a stock voice |
-| SQLite | Persist settings, payment holds, case records, and pending analytics events |
-| Tiger Data | Store risk metadata and power the guardian's historical chart |
-| Solana | Optional native devnet escrow with a guardian signature or cooling-off deadline |
-| Vultr | Host the app and backend; Caddy supplies HTTPS |
-
-Risk levels are Low (0-29), Medium (30-59), High (60-84), and Critical (85-100). Critical payments, or payments above the family's co-sign limit, are held. AI cannot erase existing call risk or approve payments. Rules and local explanations remain available during AI failures.
-
-## Start locally or use the hosted app
-
-Hosted address: <https://tripwire.64.177.46.134.sslip.io>. Use role access codes shared privately by the team; never commit them here.
-
-Locally, use the team-recommended Node.js **22.22 or newer**:
-
-```sh
-npm ci
-npm run dev
-```
-
-Open <http://localhost:3000>. Run `npm ci` after pulling dependency changes; this fixes missing-package errors such as `Cannot find package '@solana/web3.js'`.
-
-The scripted demo works without API keys. For integrations, copy `.env.example` to `.env`, add your own credentials, save, and restart. On PowerShell use `Copy-Item .env.example .env`; on macOS/Linux use `cp .env.example .env`. Keep secrets private.
-
-For the simplest local presentation, set `DEMO_MODE=true` and leave `SOLANA_PROGRAM_ID` and `SOLANA_GUARDIAN_PUBLIC_KEY` empty. This uses SQLite holds without a wallet. Do not change hosted configuration just for rehearsal.
-
-## Prepare the presentation
-
-1. Open `/protected`, `/guardian`, and `/relative` on the **same hostname**. Three tabs work; three devices show the family interaction better. Check each live-connection indicator. On phones, use the hosted URL; `localhost` refers to the phone itself.
-2. Check Family settings for provider and Solana status. If Solana is enabled, Elena needs the configured guardian wallet in a wallet-enabled browser such as Phantom. Arrange this with the wallet owner first.
-3. Use **Reset demo** in the guardian view if available. It requires demo mode and refuses while chain-backed escrows remain unsettled. Never reset mid-story. Otherwise create a fresh payment and use its newest queue entry.
-4. Optionally configure the family safe word in `/settings`. Only the guardian can replace an existing word. Never put the actual word in a transcript.
-5. In Rosa's **Check a call** screen, turn off **Read critical warnings aloud** for a quiet presentation, or test the speaker control first.
-
-## Main demo: about three minutes
-
-### 1. Introduce the problem
-
-Say: "A scammer can convince the real account holder to send money. Tripwire gives Rosa a second set of ears and her family a second key. The payment screen simulates a banking integration."
-
-### 2. Show the suspicious call
-
-On Rosa's `/protected`, choose **Check a call**, expand **Presenter controls**, select **The Grandson Job**, and click **Start scripted demo**. Click **Next scripted line** twice to reach the secrecy and gift-card request.
-
-Show Elena's risk dial and signals. Say: "Tripwire names the pressure tactics: a family emergency, urgency, and a request to keep the money secret."
-
-**Scripted mode uses submitted text, not the microphone.** The microphone-off message is expected. Rules react immediately; Gemini enrichment follows asynchronously when configured.
-
-### 3. Verify identity through family
-
-Optional: open **Check the family word**, enter an incorrect caller answer, and click **Check their answer**. Show the failed check.
-
-Open **Ask Alex**, then click **Check with Alex**. On `/relative`, Alex clicks **No, that's not me**. Return to Rosa and show his reply.
-
-Say: "A familiar voice isn't proof. The real Alex replies through a separate family screen. This is a browser callback, not an SMS or phone call."
-
-### 4. Hold the payment
-
-Switch Rosa to **Send money**. Use **Try $2,500 in gift cards** in **Presenter controls** if needed, then click **Check & send demo payment**. The guard stays active while Rosa changes tasks.
-
-Show **Your money can wait.** Say: "The check combines call warning signs with a new recipient and a risky payment method. The request waits for a family check rather than another 'Are you sure?' button."
-
-### 5. Have Elena deny it
-
-On `/guardian`, expand **Payment details** for the newest request. Click **Deny payment** and confirm.
-
-- **Local hold:** denial immediately updates both screens.
-- **Solana hold:** wait for the devnet **HELD** status, then connect the configured guardian wallet and sign the denial transaction. Pending deposits disable decision buttons. Show the explorer link and wait for confirmed refund.
-
-Each Solana hold uses **0.001 devnet SOL**, plus rent and fees, regardless of the displayed $2,500. Those dollars never become a bank transfer. Attached escrows cannot bypass signing through the local approval endpoint.
-
-Show **Elena stopped this payment** and **HEIST FOILED**. A rejected signature or RPC failure leaves the payment held; do not claim a refund until confirmed.
-
-### 6. Show the lesson
-
-After a local denial, Rosa's result includes **What happened**, **What gave us pause**, **How your family helped**, and **Your next step**. Show the matching case on `/cases`. Gemini may simplify the explanation; recorded checks and next actions remain controlled by the app.
-
-The chain refund path records the outcome but currently may show the warning-label case view rather than that expanded lesson. Show the recorded signals and trusted-number next step instead.
-
-Say: "We explain the pattern without blaming Rosa, so she can recognize the next attempt. You did nothing wrong by taking time to check."
-
-### 7. Inspect a message and close
-
-Open `/inspector`, choose **Romance · plane ticket**, and click **Inspect this message**. Show its warning signs and next action. For an image demonstration, upload a prepared screenshot from `public/inspector-samples/`; images require working Gemini configuration.
-
-Close: "Tripwire detects, interrupts, protects, and educates. AI helps identify the pattern; trusted family verification makes the next step clear."
-
-## Optional contrasts and recovery
-
-- **Normal payment:** reset demo risk or start an ordinary-call scenario, then choose **Try a $40 bill** and submit. Stopping a Critical call alone does not clear its sticky risk. If an old result is showing, choose **Check another payment**.
-- **Live voice:** choose **Use microphone**, grant permission, and have a teammate speak nearby or on speakerphone. This does not access ordinary telephone calls directly. Use scripted or pasted text if transcription fails.
-- **Image unavailable:** demonstrate a pasted-text sample instead; never claim the fallback inspected a picture.
-- **Solana pending:** ask the Solana teammate to check funding, wallet identity, and RPC status. Rehearse the local fallback separately; do not disable or delete an attached escrow.
-- **No connection:** ensure devices use the same running server and correct role codes. Save changed `.env` settings and restart locally.
-
-## Honest boundaries
-
-Dollar payments and practice dialogue are simulated; Scam Weather is synthetic. Solana uses devnet only. Presage was dropped. Tripwire cannot hang up a real call, send a real SMS, freeze another app's transfer, or guarantee a request is legitimate. Its least alarming verdict is **no red flags found**.
-
-Transcript retention is off by default. Live text is shared with the guardian, microphone/provider processing is external when enabled, and screenshot checks send the supplied image to Gemini. Use only synthetic personal information during public demonstrations.
+- Why not detect deepfakes? Detection is an arms race. The con’s structure doesn’t change.
+- Privacy? Listening starts only when Rosa answers with Tripwire on; only the caller is heard; audio isn’t stored; only flagged case files are kept; the family word never reaches the model.
+- False positives? Normal payments see nothing; friction appears only with call context or strong anomalies; the family can always release.

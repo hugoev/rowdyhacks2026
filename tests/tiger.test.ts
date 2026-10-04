@@ -46,12 +46,7 @@ test('successful persistence acknowledges outbox events and reads raw history pl
   assert.equal(store.pendingRiskCount(), 0); assert.equal(analytics.status().source, 'tiger');
   assert.equal(analytics.history('guardian')?.total, 2); assert.equal(analytics.history('guardian')?.peak, 100);
   assert.ok(mock.calls.some(c => c.sql === TIGER_MIGRATION)); assert.ok(mock.calls.some(c => c.sql.includes('ON CONFLICT')));
-  assert.ok(mock.calls.some(c => c.sql.includes('INSERT INTO tripwire.scam_weather_reports')));
-  assert.ok(mock.calls.some(c => c.sql.includes('CALL refresh_continuous_aggregate')));
-  const weather = await analytics.scamWeather();
-  assert.equal(weather.source, 'tiger-seeded-demo');
-  assert.equal(weather.days.at(-1)?.byType.find(item => item.type === 'Government impostor')?.count, 8);
-  assert.ok(TIGER_MIGRATION.includes('scam_weather_daily'));
+  assert.ok(TIGER_MIGRATION.includes('tripwire.eval_runs'));
   assert.equal(analytics.history('protected'), undefined); store.db.close();
 });
 test('cloud failures preserve the durable outbox and retry idempotently after backoff', async () => {

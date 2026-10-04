@@ -1,8 +1,7 @@
 import pg, { type PoolConfig } from 'pg';
-import type { AnalyticsEvent, AnalyticsStatus, RiskHistory, Role } from '../lib/types';
+import type { AnalyticsEvent, AnalyticsStatus, EvalSummary, RiskHistory, Role } from '../lib/types';
 import { Store } from './store';
 import { TIGER_MIGRATION } from './tiger-schema';
-import { makeScamWeather, scamWeatherTypes, type ScamWeatherReport } from '../lib/scam-weather';
 
 export type SqlClient = { query: (sql: string, values?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>; end: () => Promise<void> };
 const timestamp = (value: unknown) => value instanceof Date ? value.getTime() : new Date(String(value)).getTime();
@@ -34,7 +33,6 @@ export class TigerAnalytics {
   private retryAt = 0;
   private cached: RiskHistory | undefined;
   private cachedStream: string | undefined;
-  private weatherSeedDay: string | undefined;
   private statusValue: AnalyticsStatus;
   onChange: () => void = () => {};
   constructor(private store: Store, connectionString = '', client?: SqlClient, private now: () => number = Date.now) {
@@ -56,26 +54,12 @@ export class TigerAnalytics {
     const points = this.store.state.events.slice(-60);
     return { source: 'local', points, minutes: [], peak: Math.max(0, ...points.map(p => p.score)), total: points.length };
   }
-  async scamWeather(): Promise<ScamWeatherReport> {
-    const fallback = makeScamWeather(this.now());
-    if (!this.client || this.statusValue.state !== 'working') return fallback;
-    try {
-      const result = await this.client.query(`SELECT bucket, scam_type, reports FROM tripwire.scam_weather_daily WHERE market='San Antonio' AND source='seeded-demo' AND bucket > now() - INTERVAL '30 days' ORDER BY bucket, scam_type`);
-      if (!result.rows.length) return fallback;
-      const counts = new Map<string, Map<string, number>>();
-      for (const row of result.rows) {
-        const date = new Date(timestamp(row.bucket)).toISOString().slice(0, 10);
-        const day = counts.get(date) || new Map<string, number>();
-        day.set(String(row.scam_type), Number(row.reports)); counts.set(date, day);
-      }
-      const days = fallback.days.map(day => {
-        const observed = counts.get(day.date);
-        const byType = scamWeatherTypes.map(type => ({ type, count: observed?.get(type) || 0 }));
-        return { date: day.date, byType, total: byType.reduce((sum, item) => sum + item.count, 0) };
-      });
-      const totals = scamWeatherTypes.map(type => ({ type, count: days.reduce((sum, day) => sum + (day.byType.find(item => item.type === type)?.count || 0), 0) }));
-      return { market: 'San Antonio', source: 'tiger-seeded-demo', generatedAt: this.now(), days, totals };
-    } catch { return fallback; }
+  /** Stores one measured red-team run (aggregate numbers only, no audio or transcripts). */
+  async recordEval(summary: EvalSummary) {
+    if (!this.client) return false;
+    if (!this.initialized) { await this.client.query(TIGER_MIGRATION); this.initialized = true; }
+    await this.client.query('INSERT INTO tripwire.eval_runs(ran_at,model,total,scams,benign,caught,false_alarms,median_first_flag_ms,summary) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (ran_at,model) DO NOTHING', [new Date(summary.ranAt), summary.model, summary.total, summary.scams, summary.benign, summary.caught, summary.falseAlarms, summary.medianFirstFlagMs, JSON.stringify(summary)]);
+    return true;
   }
   private degraded(error: unknown) {
     this.statusValue = { ...this.statusValue, state: 'degraded', source: 'local', error: category(error) };
@@ -89,17 +73,6 @@ export class TigerAnalytics {
         const extension = await this.client.query("SELECT extversion FROM pg_extension WHERE extname='timescaledb'");
         if (!extension.rows.length) throw new Error('TimescaleDB extension is unavailable');
         await this.client.query(TIGER_MIGRATION); this.initialized = true;
-      }
-      const seed = makeScamWeather(this.now()); const seedDay = seed.days[seed.days.length - 1].date;
-      if (this.weatherSeedDay !== seedDay) {
-        const values: unknown[] = [];
-        const rows = seed.days.flatMap(day => day.byType.map(item => {
-          const offset = values.length; values.push(new Date(`${day.date}T00:00:00.000Z`), seed.market, item.type, item.count, 'seeded-demo');
-          return '(' + Array.from({ length: 5 }, (_, i) => '$' + (offset + i + 1)).join(',') + ')';
-        }));
-        await this.client.query(`INSERT INTO tripwire.scam_weather_reports(reported_at,market,scam_type,report_count,source) VALUES ${rows.join(',')} ON CONFLICT (reported_at,market,scam_type,source) DO NOTHING`, values);
-        await this.client.query(`CALL refresh_continuous_aggregate('tripwire.scam_weather_daily', now() - INTERVAL '31 days', now())`);
-        this.weatherSeedDay = seedDay;
       }
       // Bound each flush so an offline backlog cannot monopolize the server.
       for (let batch = 0; batch < 5; batch++) {

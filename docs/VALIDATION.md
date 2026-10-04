@@ -1,5 +1,24 @@
 # Demo validation
 
+## PRD v2 (October 4, 2026)
+
+- Production build, strict TypeScript: pass.
+- Unit tests: 51 passing, including Live tool validation, quote latency, dodged and
+  wrong family words, the model's inability to release or speak first, invented
+  close_case quotes being dropped, Diego's block/release, the $40 bill, benign calls
+  staying quiet, and the Spanish script.
+- Browser tests: 6 passing, including three consecutive hero flows across Rosa,
+  Mission Control, and Diego (rule-spotter mode, no provider keys), role permissions,
+  and the $40 bill.
+- `npm run check:live` against the real Gemini API: ephemeral token minted in
+  311 ms; one synthetic caller line produced five `report_signal` calls (all
+  levers), a family-word `whisper`, and `update_risk` 99 within about 2.7 s.
+- Not yet verified live: the ElevenLabs scammer agent and streaming voice (no
+  ElevenLabs key configured locally), real caller audio into Gemini, and the eval
+  harness. The eval card shows no numbers until `npm run eval:live` runs.
+
+## Earlier P0 validation (v1 features, some since removed)
+
 Local verification on Node.js 22.22.0 (the team-recommended version):
 
 - Production build: passes (`next build --webpack`).

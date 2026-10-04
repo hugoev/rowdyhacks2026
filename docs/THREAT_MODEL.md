@@ -1,4 +1,4 @@
-# Tripwire P0 threat model
+# Tripwire threat model (PRD v2)
 
 ## Protected boundary
 
@@ -9,7 +9,7 @@ The server, database, host clock, pairing codes, and the guardian’s device are
 ## Attacker-controlled inputs
 
 - Anything a caller says, including instructions directed at the AI.
-- Pasted messages, URLs, and image content.
+- Gemini Live tool calls. They originate from a model that hears the caller and are relayed by Rosa’s browser, so they are untrusted input.
 - Payment details and review answers entered by a coached protected user.
 - HTTP requests and forged browser state sent without a valid guardian session.
 
@@ -18,15 +18,16 @@ The server, database, host clock, pairing codes, and the guardian’s device are
 | Threat | Control | Remaining limit |
 | --- | --- | --- |
 | Caller pressures a transfer | Named tells, deterministic risk floor, review step, co-sign limit | Heuristics have false positives and false negatives |
-| Caller imitates family | Salted bcrypt safe word, sticky failure, out-of-band callback | Shared secrets can leak; successful verification never means “safe” |
+| Caller imitates family (including a perfect voice clone) | Salted bcrypt family word never sent to the model; dodge counts as failure; sticky failure; the impersonated person (Diego) confirms out of band | Shared secrets can leak; a match never means “safe” |
+| Prompt injection steers the live agent | Tools are Zod-validated on the server; the model can add evidence, hold, alert, and speak once after Diego replies; it can never release a payment or lower risk; close_case drops quotes never heard on the call | A manipulated model could stay silent, which the deterministic rule spotter and payment rules backstop |
+| API key theft from the browser | Browser receives single-use ephemeral Live tokens (1 use, 2-minute start window, 30-minute life) locked to model and config | A token can be replayed within its window by the same browser |
+| Family word leaks via the model | Model sends heard_phrase; server compares to the hash and returns only match/no-match; phrase is never logged or stored | The phrase transits Gemini as caller audio, as any spoken word does |
 | User changes the browser countdown | Server owns the 24-hour deadline | Host clock must be correct |
 | User bypasses a held payment via the review endpoint | Review only accepts `review` state; Critical evidence is rechecked before release | Other financial apps are outside scope |
 | User impersonates guardian role | Role-bound signed HttpOnly cookie; server permission checks | Demo mode intentionally permits role selection |
 | Replay after denial or approval | Terminal decision checks prevent a second transition | There is no real ledger or settlement network |
 | Scammer coaches an immediate limit increase | Limit changes are delayed 24 hours | An authorized user can eventually change their policy |
-| Callback recipient sees unrelated data | Server strips transcripts, payments, cases, risk history | The relative still learns that Rosa requested verification |
-| Prompt injection in transcript or image | Provider prompt treats content as data; Zod validates shape; AI cannot lower risk or approve | Model advice can still be imperfect; no autonomous tool access is provided |
-| URL attempts to reach internal services | Links are never fetched | No reputation lookups or destination analysis |
+| Diego’s view sees unrelated data | Server strips transcripts, signals, payments, cases, risk history | Diego learns the alert summary and outcome |
 | Cross-origin mutation | Origin check, SameSite cookies, custom mutation header | Trusted origin compromise is out of scope |
 | Excessive guessing or API use | Endpoint and address-based rate limits | Single-process rate limits; not a DDoS protection service |
 | Accidental retention | Audio never stored; transcript persistence opt-in; keys/data gitignored | Events, labels, payment records, and opted-in data require a retention policy before real deployment |

@@ -10,7 +10,7 @@ function snapshot(state: PublicState) {
     ...state.events.map(event => `event:${event.id}`),
     ...state.call.assessment.tells.map(tell => `tell:${state.call.id}:${tell.id}`),
     ...state.payments.filter(payment => payment.status === 'denied' || (payment.status === 'held' && (!payment.escrow || payment.escrow.state === 'held'))).map(payment => `payment:${payment.id}:${payment.status}`),
-    ...(state.call.callback?.answer ? [`callback:${state.call.callback.id}:${state.call.callback.answer}`] : []),
+    ...(state.call.alert?.reply ? [`alert:${state.call.alert.id}:${state.call.alert.reply}`] : []),
   ]);
 }
 

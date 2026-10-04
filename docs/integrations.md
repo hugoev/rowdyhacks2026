@@ -18,46 +18,43 @@ defaults in `.env.example`: Flash-Lite for rolling call analysis and guardian
 summaries, Flash for screenshot inspection. `GEMINI_MODEL` is an optional legacy
 override; task-specific values take precedence.
 
-Use synthetic examples on the free tier: Google may use submitted content to
-improve its products. Review actual project quotas in AI Studio and lower
-`GEMINI_MAX_REQUESTS_PER_MINUTE` if needed. This limit is per model and shared by
-calls, scans, and summaries. Call analysis is coalesced to one request every six
-seconds. Quota errors pause that model for at least a minute; rules and holds
-continue operating. Provider settings distinguish configured keys from successful
-requests and degraded service.
+Tripwire uses one Gemini Live session per call (`GEMINI_LIVE_MODEL`, default
+`gemini-3.8-live`). The server mints a single-use ephemeral token locked to the
+model, system instruction, and tool declarations; the browser connects with it.
+Only the caller's audio is streamed (16 kHz PCM). The model's audio output is
+discarded; it acts only through the eight tools in `lib/live-config.ts`, which the
+server validates and executes in `server/live-tools.ts`. Input transcription feeds
+the caller transcript and the deterministic rule spotter. A text `CHECKPOINT` is
+sent every 8 seconds while audio flows, and session resumption reconnects up to
+three times. Run `npm run check:live` as the hour-0 gate.
 
-Run `npm run eval:gemini` explicitly to compare three models using ten generated
-synthetic screenshots (including two romance examples) and three call scripts.
-It requires a Playwright Chromium installation. It makes up to 39 API requests;
-quota errors are reported as incomplete evaluations, not successful detections.
-No model is switched automatically: record results, then change task-specific
-environment settings if the selected model fails accuracy or latency targets.
+Use synthetic calls on the free tier: Google may use submitted content to improve
+its products.
+
+Run `npm run eval:live` explicitly for the red-team numbers: ElevenLabs voices
+speak 22 synthetic scripts (6 scam types and benign calls, English and Spanish)
+for about 50 calls, streamed in real time into Gemini Live. A call counts as
+flagged at risk 60+ or two distinct levers. Results go to
+`data/eval-results.json` (and Tiger Data when configured); the eval card shows
+only those measured numbers.
 
 ## ElevenLabs
 
-Set `ELEVENLABS_API_KEY`, select a stock `ELEVENLABS_VOICE_ID`, and keep
-`ELEVENLABS_TTS_MODEL=eleven_flash_v2_5` for prompt warnings. Confirm your account
-includes Scribe Realtime and enough credits in the ElevenLabs dashboard; 130,000
-credits do not imply a fixed number of transcription minutes across plans.
-
-Choose Use microphone on Rosa's screen. The protected-role endpoint issues a
-single-use token only after a consented call starts. The browser SDK sends audio
-directly to ElevenLabs; committed text goes to Tripwire and, when configured,
-Gemini. Partial text stays in the browser. Capture ends on call end or navigation
-and is muted during spoken warnings. HTTPS or localhost is required. If Scribe
-fails, choose browser transcription, resume the microphone, or paste text; no
-other recording service starts automatically. Browser audio is the voice fallback.
-
-Token issuance is only configuration evidence. A connected session or committed
-transcript marks live transcription working. Warning audio marks voice working.
-Settings show last success and degraded service separately for each capability.
+- **Tripwire's voice:** `ELEVENLABS_VOICE_ID` (and optional `ELEVENLABS_VOICE_ID_ES`)
+  with `eleven_flash_v2_5` streaming TTS. It speaks once per call, only after
+  Diego replies. Browser speech is the fallback.
+- **Scammer agent:** record written consent, create an instant voice clone, set
+  `ELEVENLABS_SCAMMER_VOICE_ID`, then `npm run setup:agent` and copy the printed
+  `ELEVENLABS_AGENT_ID`. The protected-role endpoint returns a signed URL; the
+  agent's PCM output streams to Gemini, so venue noise never reaches the model.
+  The "short arc" option overrides the prompt per session.
 
 ## Verification
 
 Run `npm test`, `npm run typecheck`, `npm run build`, and `npm run test:e2e` before
 merging. Automated tests use mocks or no-key fallbacks and do not consume credits.
-For a live smoke test, scan a synthetic screenshot and confirm `GEMINI` provenance,
-start a prepared scam call, and inspect the guardian's held-payment summary.
+For a live smoke test, run `npm run check:live`, then ring Rosa's phone with the
+agent and confirm GEMINI-tagged tumblers in Mission Control.
 Rehearse all three family views three times and confirm provider failures cannot
 release payments or erase critical warnings.
 

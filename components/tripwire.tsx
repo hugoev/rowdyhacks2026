@@ -2,94 +2,78 @@
 import Link from 'next/link';
 import { Sidebar } from './sidebar';
 import { BrandMark } from './brand-mark';
-import { useEffect, useState } from 'react';
-import { Activity, ArrowUpRight, Bell, Check, ChevronRight, CircleHelp, LockKeyhole, Menu, Radio, RotateCcw, Shield, ShieldCheck, Users, X } from 'lucide-react';
+import { useState } from 'react';
+import { ChevronRight, LockKeyhole, Menu, Radio, RotateCcw, Shield, ShieldCheck, X } from 'lucide-react';
 import { Provider, useTripwire } from './context';
-import { Badge, Confirm, Countdown, Empty, money, PaymentStatus, RiskChart, RiskDial, SectionTitle, time, ViewLink } from './ui';
-import { Protected } from './protected';
+import { Badge, Confirm, Countdown, Empty, money, PaymentStatus, RiskDial, SectionTitle, time } from './ui';
 import { ProtectedShell } from './protected-shell';
 import { MotionProvider } from './motion';
-import { CaseEducation } from './case-education';
-import { Inspector, Preferences, Relative } from './views';
+import { Preferences, Relative } from './views';
 import type { Payment } from '@/lib/types';
 import { signGuardianDecision } from './solana-wallet';
 import { EscrowStatus } from './escrow-status';
-import { DetectiveBoard, type BoardConnection, type BoardSpotlight } from './detective-board';
-import { HeistDrill } from './heist-drill';
-import { ScamWeather } from './scam-weather';
+import { DetectiveBoard } from './detective-board';
+import { CaseFileCard, ConMeter, EvalCard, HeistFoiled, ToolTimeline, stamp } from './heist';
 
-export type View = 'guardian' | 'protected' | 'relative' | 'inspector' | 'cases' | 'settings' | 'drill' | 'weather';
-const names: Record<View, string> = { guardian: 'Command center', protected: 'Rosa’s shield', relative: 'Family callback', inspector: 'The Inspector', cases: 'Case files', settings: 'Family settings', drill: 'Heist Drill', weather: 'Scam Weather' };
-const boardConnections: Partial<Record<View, readonly BoardConnection[]>> = {
-  guardian: [['lookout', 'payment-queue'], ['payment-queue', 'family']],
-  inspector: [['inspector-input', 'inspector-result']],
-  settings: [['safe-word', 'payment-limit']],
-};
-const commandSpotlight: BoardSpotlight = { targets: ['money', 'attention', 'inner-circle'] };
+export type View = 'guardian' | 'protected' | 'relative' | 'cases' | 'settings' | 'stage';
+const names: Record<View, string> = { guardian: 'Mission Control', protected: 'Rosa’s phone', relative: 'Diego’s phone', cases: 'Case files', settings: 'Family settings', stage: 'Stage' };
 export default function Tripwire({ view }: { view: View }) {
+  if (view === 'stage') return <Stage/>;
   const role = view === 'protected' || view === 'settings' ? 'protected' : view === 'relative' ? 'relative' : 'guardian';
   if (view === 'protected') return <Provider key={view} role={role}><div className="rosa-surface"><MotionProvider><ProtectedShell/></MotionProvider></div></Provider>;
+  if (view === 'relative') return <Provider key={view} role={role}><main id="main" className="diego-surface"><Relative/></main></Provider>;
   return <Provider key={view} role={role}><Shell view={view}/></Provider>;
+}
+/** Big screen for judges: Rosa's device on the left, Mission Control on the right. */
+function Stage() {
+  return <main className="stage"><iframe title="Rosa’s phone" src="/protected?embed=1"/><iframe title="Mission Control" src="/guardian?embed=1"/></main>;
 }
 function Shell({ view }: { view: View }) {
   const { state, error, setError } = useTripwire(); const [menu, setMenu] = useState(false);
   const urgent = state?.payments.filter(p => p.status === 'held').length || 0;
-  const critical = state?.call.assessment.level === 'Critical' || urgent > 0;
-  return <div className={`app-shell ${view === 'protected' || view === 'relative' ? 'simple-surface' : ''}`}>
+  return <div className="app-shell">
     <a className="skip-link" href="#main">Skip to main content</a>
     <Sidebar view={view} menu={menu} urgent={urgent} onClose={() => setMenu(false)}/>
     <div className="workspace">
       <header className="topbar"><div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Open navigation" onClick={() => setMenu(!menu)}><Menu size={22}/></button><span>GARCIA FAMILY</span><ChevronRight size={13}/><strong>{names[view]}</strong></div></header>
-      {critical && <div className="laser-sweep" aria-hidden="true"/>}
+      <HeistFoiled at={state?.call.foiledAt}/>
       <main id="main" className="main-content">
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}
-        {!state ? <div className="loading-state"><BrandMark/><h1>Preparing your protection…</h1><p>Loading your family safety workspace.</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div> : <DetectiveBoard variant={view === 'relative' || view === 'settings' ? 'calm' : 'standard'} connections={boardConnections[view]} spotlight={view === 'guardian' ? commandSpotlight : undefined}>
-          {view === 'guardian' && <Dashboard/>}{view === 'protected' && <Protected/>}{view === 'relative' && <Relative/>}{view === 'inspector' && <Inspector/>}{view === 'cases' && <Cases/>}{view === 'settings' && <Preferences/>}{view === 'drill' && <HeistDrill/>}{view === 'weather' && <ScamWeather/>}
+        {!state ? <div className="loading-state"><BrandMark/><h1>Preparing your protection…</h1><p>Loading your family safety workspace.</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div> : <DetectiveBoard variant={view === 'settings' ? 'calm' : 'standard'}>
+          {view === 'guardian' && <MissionControl/>}{view === 'cases' && <Cases/>}{view === 'settings' && <Preferences/>}
         </DetectiveBoard>}
       </main>
-      <footer className="footer"><span><Shield size={13}/> BUILT FOR PEOPLE. BACKED BY THEIR PEOPLE.</span><span>ROWDYHACKS XII <i/> SAN ANTONIO, TX <i/> 2026</span></footer>
+      <footer className="footer"><span><Shield size={13}/> TRIPWIRE LISTENS FOR THE CON, NOT THE VOICE.</span><span>ROWDYHACKS XII <i/> SAN ANTONIO, TX <i/> 2026</span></footer>
     </div>
   </div>;
 }
-function CaseboardHeading() {
-  const [revealed, setRevealed] = useState(false);
-  useEffect(() => {
-    const timeout = setTimeout(() => setRevealed(true), 500);
-    return () => clearTimeout(timeout);
-  }, []);
-  return <h1 className={revealed ? undefined : 'caseboard-heading'} onAnimationEnd={() => setRevealed(true)}>Every second counts<span>.</span></h1>;
-}
 
-function Dashboard() {
-  const { state, request } = useTripwire(); const s = state!;
-  const [reset, setReset] = useState(false);
-  const held = s.payments.filter(p => p.status === 'held');
-  const blocked = s.payments.filter(p => p.status === 'denied').reduce((sum, p) => sum + p.amount, 0);
-  const protectedMoney = blocked + held.reduce((sum, p) => sum + p.amount, 0);
-  const [tab, setTab] = useState<'signals' | 'transcript'>('signals');
+function MissionControl() {
+  const { state, request } = useTripwire(); const s = state!; const call = s.call;
+  const [reset, setReset] = useState(false); const [showEval, setShowEval] = useState(false);
+  const currentCase = s.cases.find(c => c.evidence?.callId && c.evidence.callId === call.id);
   return <>
-    <div className="page-heading"><div><p className="eyebrow"><span className="red-dash"/> THE COUNTER-HEIST CREW</p><CaseboardHeading/><p>Your family’s safety net, before the money moves.</p></div><Link className="button primary" href="/protected"><Radio size={16}/>Open Rosa’s shield<ArrowUpRight size={16}/></Link></div>
-    <div className="overview-grid"><div className="stat-card" data-board-node="money" tabIndex={0}><div className="stat-top"><span>MONEY INTERRUPTED</span><ShieldCheck size={18}/></div><strong>{money(protectedMoney)}<span className="stat-unit">USD</span></strong><p><span className="green-dot"/>{money(blocked)} blocked · {money(protectedMoney - blocked)} on hold</p></div><div className="stat-card" data-board-node="attention" tabIndex={0}><div className="stat-top"><span>NEEDS YOUR ATTENTION</span><Bell size={18}/></div><strong>{String(held.length).padStart(2, '0')}<span className="stat-note">{held.length ? 'Your second key is needed' : 'You’re all caught up'}</span></strong><p>{held.length ? 'Review the payment queue below' : 'We’ll flag requests that need a closer look'}</p></div><div className="stat-card family-stat" data-board-node="inner-circle" tabIndex={0}><div className="stat-top"><span>YOUR INNER CIRCLE</span><Users size={18}/></div><div className="family-avatars"><div className="avatar rosa">R</div><div className="avatar elena">E</div><div className="avatar alex">A</div><div><strong>3 family members</strong><small>Rosa, Elena & Alex</small></div></div><p>Different roles. The same side.</p></div></div>
-    <div className="dashboard-columns"><div className="left-column">
-      <section className="panel lookout-panel" data-board-node="lookout"><SectionTitle index="01" title="The Lookout" right={<Badge tone={s.call.active ? 'green' : 'neutral'}><span className={s.call.active ? 'live-dot' : ''}/>{s.call.active ? 'CALL GUARD ACTIVE' : 'STANDING BY'}</Badge>}/><div className="lookout-body"><div className="risk-summary"><RiskDial score={s.call.assessment.score} level={s.call.assessment.level}/><div className="risk-copy"><p className="eyebrow">ROSA’S CALL GUARD</p><h3>{s.call.assessment.score >= 85 ? 'Something isn’t adding up.' : s.call.active ? 'Listening for the tells.' : 'A little backup. A lot of peace of mind.'}</h3><p>{s.call.active || s.call.assessment.score ? s.call.assessment.advice : 'When Rosa starts the call guard, you’ll see warning signs here as they happen.'}</p><div className="source-label"><Activity size={13}/>{s.call.assessment.source === 'gemini' ? 'Gemini + deterministic rules' : 'Deterministic risk engine'}<span>•</span>{s.call.active ? 'Call in progress' : 'No active call'}</div></div></div><div className="chart-heading"><span>RISK OVER TIME</span><span className="critical-key">— CRITICAL AT 85</span></div><RiskChart events={s.events}/></div><div className="lookout-tabs"><button className={tab === 'signals' ? 'selected' : ''} onClick={() => setTab('signals')}>Detected signals <span>{s.call.assessment.tells.length}</span></button><button className={tab === 'transcript' ? 'selected' : ''} onClick={() => setTab('transcript')}>Transcript</button></div><div className="signal-area">{tab === 'signals' ? s.call.assessment.tells.length ? <div className="tell-chips">{s.call.assessment.tells.map(t => <span key={t.id}><span className="signal-dot"/>{t.label}</span>)}</div> : <p className="quiet-text">No signals yet. Start a practice call in Rosa’s shield to see the Lookout in action.</p> : <div className="transcript-mini">{s.call.transcript.length ? s.call.transcript.map(l => <p key={l.id}><time>{time(l.at)}</time>{l.text}</p>) : <p className="quiet-text">Call text will appear here with the protected user’s consent. It is not saved by default.</p>}</div>}</div></section>
-      <section className="panel" data-board-node="payment-queue"><SectionTitle index="02" title="The Two-Key Rule" right={<Badge tone="outline">PAYMENT QUEUE</Badge>}/><div className="queue-description"><LockKeyhole size={15}/><span>A moment to pause. A person to check with.</span></div><PaymentQueue/></section>
-    </div><div className="right-column">
-      <section className="demo-card" data-board-node="practice"><div className="demo-card-top"><span className="eyebrow">FAMILY SAFETY / CALL PROTECTION</span><span className="target-symbol">⊕</span></div><h2>Make space<br/>to verify.</h2><p>A family emergency can feel urgent. A calm callback can reveal what’s real.</p><Link href="/protected" className="button paper">Review a family emergency<ArrowUpRight size={17}/></Link><div className="demo-fine"><span/>PRACTICE SCENARIO · NO PHONE CALL PLACED</div></section>
-      <section className="panel activity-panel" data-board-node="activity"><SectionTitle index="03" title="The wire" right={<span className="mono-small">ACTIVITY</span>}/><div className="activity-list">{s.events.length ? s.events.slice(-6).reverse().map((event, i) => <div className="activity-event" key={event.id}><div className={'event-node ' + (i === 0 ? 'latest' : '')}>{event.kind === 'payment' ? <LockKeyhole size={13}/> : event.kind === 'verification' ? <Check size={13}/> : <Radio size={13}/>}</div><div><p>{event.label}</p><time>{time(event.at)} <span>·</span> {event.kind.toUpperCase()}</time></div></div>) : <div className="activity-waiting"><Radio size={23}/><p>The wire is quiet.</p><span>Calls, checks, and payment decisions will appear here.</span></div>}</div></section>
-      <div className="empathy-note"><CircleHelp size={19}/><p>“You did nothing wrong.<br/>These callers are professionals.”<span>EMPATHY IS THE STRATEGY.</span></p></div>
-    </div></div>
-    <section className="family-strip" data-board-node="family"><div><div className="avatar rosa">R</div><span><strong>Rosa Garcia</strong><small>Protected member</small></span><Badge tone="neutral">{s.call.active ? 'CALL GUARD ON' : 'READY WHEN NEEDED'}</Badge></div><div><Users size={20}/><p>The best alarm is a familiar voice.</p></div><ViewLink href="/relative">Open Alex’s callback view</ViewLink></section>
-    <div className="demo-bottom"><p className="demo-disclosure">Payment requests are reviewed here; funds are not transferred from this app.</p>{s.config.demo && <button className="text-link" onClick={() => setReset(true)}><RotateCcw size={12}/>Clear activity</button>}</div>
-    <Confirm open={reset} title="Clear recent activity?" label="Clear activity" onClose={() => setReset(false)} action={async () => { await request('/demo/reset'); }}><p>This removes recent calls, payment requests, and case files. Your family safe word stays configured.</p></Confirm>
+    <div className="page-heading mc-heading"><div><p className="eyebrow"><span className="red-dash"/> MISSION CONTROL · THE COUNTER-HEIST</p><h1>Listening for the con<span>.</span></h1></div>
+      <div className="mc-status"><Badge tone={call.active ? 'green' : 'neutral'}><span className={call.active ? 'live-dot' : ''}/>{call.active ? (call.live === 'gemini' ? 'GEMINI LIVE' : 'RULE SPOTTER') : 'STANDING BY'}</Badge><button className="button secondary" onClick={() => setShowEval(!showEval)}>{showEval ? 'Back to the call' : 'Proof points'}</button></div></div>
+    {showEval ? <EvalCard summary={s.eval}/> : <div className="mc-grid">
+      <section className="panel mc-meter" data-board-node="meter"><SectionTitle index="01" title="The Con Meter" right={<span className="mono-small">{call.signals.length} SIGNALS</span>}/><ConMeter call={call}/></section>
+      <section className="panel mc-risk" data-board-node="risk"><SectionTitle index="02" title="Risk"/><div className="risk-summary"><RiskDial score={call.assessment.score} level={call.assessment.level}/><div className="risk-copy"><p className="eyebrow">{call.assessment.scamType.toUpperCase()}</p><h3>{call.assessment.score >= 85 ? 'Something isn’t adding up.' : call.active ? 'Listening for the tells.' : 'Waiting for a call.'}</h3><p>{call.assessment.advice}</p><p className="small-note">Family word: <b>{call.safeWord === 'failed' ? 'FAILED' : call.safeWord === 'matched' ? 'matched' : call.safeWord === 'asked' ? 'asked…' : 'not asked'}</b>{call.alert && <> · Diego: <b>{call.alert.reply ? (call.alert.reply === 'block' ? 'NOT ME' : 'IT’S ME') : 'asked…'}</b></>}</p></div></div></section>
+      <section className="panel mc-transcript" data-board-node="transcript"><SectionTitle index="03" title="Caller transcript" right={<span className="mono-small">CALLER ONLY</span>}/><div className="transcript-mini">{call.transcript.length ? call.transcript.slice(-12).map(l => <p key={l.id}><time>{stamp(l.at, call.startedAt)}</time>{l.text}<small>{l.source === 'gemini' ? '' : ` · ${l.source}`}</small></p>) : <p className="quiet-text">Caller words appear here as Gemini hears them.</p>}</div></section>
+      <section className="panel mc-log" data-board-node="log"><SectionTitle index="04" title="Surveillance log" right={<span className="mono-small">TOOL CALLS</span>}/><ToolTimeline tools={call.tools} start={call.startedAt}/></section>
+      <section className="panel mc-money" data-board-node="money"><SectionTitle index="05" title="The Teller" right={<span className="mono-small">PAYMENTS</span>}/><PaymentQueue/></section>
+      <section className="mc-case" data-board-node="case">{currentCase && currentCase.outcome !== 'open' ? <CaseFileCard file={currentCase} start={call.startedAt}/> : <div className="kraft-file pending"><div className="kraft-tab">CASE FILE</div><p>The case file opens when the family decides.</p></div>}</section>
+    </div>}
+    <div className="demo-bottom"><p className="demo-disclosure">Payments are simulated. Signals tagged RULE come from the deterministic backup spotter.</p>{s.config.demo && <button className="text-link" onClick={() => setReset(true)}><RotateCcw size={12}/>Clear activity</button>}<Link className="text-link" href="/stage">Open stage view</Link></div>
+    <Confirm open={reset} title="Clear recent activity?" label="Clear activity" onClose={() => setReset(false)} action={async () => { await request('/demo/reset'); }}><p>This removes calls, payments, and case files. The family word stays configured.</p></Confirm>
   </>;
 }
 export function PaymentQueue() {
   const { state, request } = useTripwire(); const [decision, setDecision] = useState<{ payment: Payment; action: 'approve' | 'deny' } | null>(null);
-  const payments = state!.payments.slice(0, 6);
-  return <><div className="payment-queue">{payments.length ? payments.map(p => <article className={'payment-item ' + p.status} key={p.id}><div className="payment-item-top"><div className="payment-symbol"><LockKeyhole size={21}/></div><div className="payment-who"><h3>{p.payee}</h3><p>{p.rail.replace('-', ' ')} <span>·</span> {time(p.createdAt)}</p></div><strong>{money(p.amount)}</strong></div><div className="payment-meta"><PaymentStatus payment={p}/>{p.status === 'held' && p.releaseAt && <span>Cooling off <Countdown until={p.releaseAt}/></span>}</div><details className="payment-details"><summary><span>Payment details</span><ChevronRight size={18} aria-hidden="true"/></summary><div className="payment-details-body"><p className="payment-summary">{p.summary}</p><span className="source-label">{p.summarySource === 'gemini' ? 'Gemini guardian summary' : 'Rules summary'}</span></div></details><EscrowStatus payment={p}/>{(p.status === 'held' || p.status === 'review') && <div className="button-row"><button className="button primary" disabled={p.escrow?.state === 'depositing'} onClick={() => setDecision({ payment: p, action: 'deny' })}><ShieldCheck size={15}/>Deny payment</button><button className="button secondary" disabled={p.escrow?.state === 'depositing'} onClick={() => setDecision({ payment: p, action: 'approve' })}>Approve after verifying</button></div>}</article>) : <Empty title="No payments need a second key.">Risky requests will wait here for your decision. Routine payments can carry on.</Empty>}</div><Confirm open={!!decision} title={decision?.action === 'deny' ? 'Stop this payment?' : 'Have you verified this request?'} label={decision?.action === 'deny' ? 'Deny payment' : 'Approve payment'} onClose={() => setDecision(null)} action={async () => { if (decision) { if (decision.payment.escrow) await signGuardianDecision(request, decision.payment.id, decision.action); else await request('/payments/decide', { id: decision.payment.id, decision: decision.action }); } }}><p>{decision?.payment.escrow ? 'Your guardian wallet must sign this devnet transaction. The request status changes after on-chain confirmation. No displayed dollar amount moves.' : decision?.action === 'deny' ? `This stops the ${money(decision.payment.amount)} request to ${decision.payment.payee}. Rosa will see your decision immediately.` : 'Call Rosa on a number you trust first. Your approval records the decision in Tripwire; it does not send funds from this app.'}</p></Confirm></>;
+  const payments = state!.payments.slice(0, 4);
+  return <><div className="payment-queue">{payments.length ? payments.map(p => <article className={'payment-item ' + p.status} key={p.id}><div className="payment-item-top"><div className="payment-symbol"><LockKeyhole size={21}/></div><div className="payment-who"><h3>{p.payee}</h3><p>{p.rail.replace('-', ' ')} <span>·</span> {time(p.createdAt)}</p></div><strong>{money(p.amount)}</strong></div><div className="payment-meta"><PaymentStatus payment={p}/>{p.status === 'held' && p.releaseAt && <span>Cooling off <Countdown until={p.releaseAt}/></span>}</div>{p.evidence?.length ? <ul className="held-quotes small">{p.evidence.slice(0, 3).map(e => <li key={e.lever}><q>{e.quote}</q></li>)}</ul> : null}<EscrowStatus payment={p}/>{(p.status === 'held' || p.status === 'review') && !state!.call.alert && <div className="button-row"><button className="button primary" disabled={p.escrow?.state === 'depositing'} onClick={() => setDecision({ payment: p, action: 'deny' })}><ShieldCheck size={15}/>Deny</button><button className="button secondary" disabled={p.escrow?.state === 'depositing'} onClick={() => setDecision({ payment: p, action: 'approve' })}>Approve after verifying</button></div>}</article>) : <Empty title="No payments yet.">A $40 bill goes straight through. A coached payment pauses here.</Empty>}</div><Confirm open={!!decision} title={decision?.action === 'deny' ? 'Stop this payment?' : 'Have you verified this request?'} label={decision?.action === 'deny' ? 'Deny payment' : 'Approve payment'} onClose={() => setDecision(null)} action={async () => { if (decision) { if (decision.payment.escrow) await signGuardianDecision(request, decision.payment.id, decision.action); else await request('/payments/decide', { id: decision.payment.id, decision: decision.action }); } }}><p>{decision?.action === 'deny' ? `This stops the ${money(decision.payment.amount)} request to ${decision.payment.payee}.` : 'Call Rosa on a number you trust first. Approval does not send funds from this app.'}</p></Confirm></>;
 }
 function Cases() {
   const { state } = useTripwire(); const s = state!; const [filter, setFilter] = useState('all');
   const cases = s.cases.filter(c => filter === 'all' || c.outcome === filter);
-  return <><div className="page-heading"><div><p className="eyebrow">EVIDENCE / EDUCATION / A LITTLE CLOSURE</p><h1>The case files<span>.</span></h1><p>Know the playbook. Recognize the next attempt.</p></div><Badge tone="outline">{s.cases.length} FILES ON RECORD</Badge></div><div className="filter-tabs">{['all', 'open', 'foiled', 'reviewed'].map(f => <button className={filter === f ? 'selected' : ''} key={f} onClick={() => setFilter(f)}>{f === 'all' ? 'All files' : f === 'foiled' ? 'Heists foiled' : f}</button>)}</div><div className="case-grid">{cases.map((c, i) => <article className="case-card" data-board-node={`case-${c.id}`} key={c.id}><div className="case-tab">CONFIDENTIAL · FAMILY COPY</div><div className="case-card-top"><span className="eyebrow">FILE {String(s.cases.length - s.cases.indexOf(c)).padStart(3, '0')}</span><Badge tone={c.outcome === 'foiled' ? 'green' : 'neutral'}>{c.outcome}</Badge></div><h2>{c.title}</h2><p className="case-date">{new Date(c.openedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} / {time(c.openedAt)}</p><div className="case-divider"/><>{c.education ? <CaseEducation education={c.education}/> : <><p className="eyebrow">THE TELLS</p><ul>{c.tells.map(t => <li key={t}>{t}</li>)}</ul><div className="case-lesson"><Shield size={18}/><p>Next time: pause, check with someone you trust, and call back using a saved number.</p></div></>}</>{c.outcome === 'foiled' && <div className="foiled-stamp">HEIST FOILED</div>}<span className="case-number" aria-hidden="true">{String(i + 1).padStart(2, '0')}</span></article>)}</div>{!cases.length && <section className="panel" data-board-node="case-empty"><Empty title="A clean slate.">Review a practice scenario in Rosa’s shield. A flagged request creates a case file with the patterns to recognize next time.</Empty></section>}</>;
+  return <><div className="page-heading"><div><p className="eyebrow">THE FAMILY’S CASE HISTORY</p><h1>The case files<span>.</span></h1><p>Know the playbook. Recognize the next attempt.</p></div><Badge tone="outline">{s.cases.length} FILES ON RECORD</Badge></div><div className="filter-tabs">{['all', 'open', 'foiled', 'reviewed'].map(f => <button className={filter === f ? 'selected' : ''} key={f} onClick={() => setFilter(f)}>{f === 'all' ? 'All files' : f === 'foiled' ? 'Heists foiled' : f}</button>)}</div><div className="case-grid">{cases.map(c => <CaseFileCard key={c.id} file={c}/>)}</div>{!cases.length && <section className="panel"><Empty title="A clean slate.">A paused payment creates a case file with the caller’s own words.</Empty></section>}<div className="demo-bottom"><Link className="text-link" href="/guardian"><Radio size={12}/>Back to Mission Control</Link></div></>;
 }
