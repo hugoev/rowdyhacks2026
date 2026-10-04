@@ -2,7 +2,7 @@
 .detective-board {
   position: relative;
   isolation: isolate;
-  padding: 98px 28px 30px;
+  padding: 44px 28px 30px;
   border: 1px solid #97724e;
   border-radius: 7px;
   background-color: #ddc3a2;
@@ -13,6 +13,7 @@
   background-position: center, 0 0;
   box-shadow: inset 0 0 0 5px #c8a27a, inset 0 0 0 6px #97724e80, 0 5px 18px #30251c12;
 }
+.detective-board--spotlight { padding-top: 98px; }
 .detective-board::before, .detective-board::after {
   content: '';
   position: absolute;
@@ -150,7 +151,7 @@
 .detective-board--calm[data-spotlight='pointer'] > .board-beam,
 .detective-board--calm[data-spotlight='keyboard'] > .board-beam { opacity: .45; }
 .detective-board--calm [data-board-lit] { background-image: radial-gradient(circle 240px at var(--spot-x, 50%) var(--spot-y, 0%), #fff0b36b, transparent 75%); }
-.rosa-surface .detective-board { padding: 90px 24px 28px; }
+.rosa-surface .detective-board { padding: 44px 24px 28px; }
 .rosa-surface .detective-board .task-choices { gap: 30px; }
 .rosa-surface .detective-board .task-choices button { border-radius: 4px; padding-top: 36px; }
 .rosa-surface .detective-board .senior-grid p,
@@ -177,7 +178,8 @@
   .detective-board .family-stat { grid-column: 1 / -1; }
 }
 @media (max-width: 760px) {
-  .detective-board, .rosa-surface .detective-board { padding: 78px 18px 22px; }
+  .detective-board, .rosa-surface .detective-board { padding: 44px 18px 22px; }
+  .detective-board--spotlight { padding-top: 78px; }
   .board-lamp { width: 100px; height: 75px; left: calc(50% - 50px); }
   .detective-board > .board-beam { display: none; }
   .board-thread { display: none; }

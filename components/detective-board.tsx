@@ -3,16 +3,20 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 
 export type BoardConnection = readonly [from: string, to: string];
+export type BoardSpotlight = { targets: readonly string[] };
 type Anchor = { id: string; x: number; y: number; width: number; height: number };
+type LightInput = 'pointer' | 'keyboard' | 'idle';
 const noConnections: readonly BoardConnection[] = [];
 
 /** Decorations are independent of application state and never intercept input. */
-export function DetectiveBoard({ children, variant = 'standard', connections = noConnections }: {
+export function DetectiveBoard({ children, variant = 'standard', connections = noConnections, spotlight }: {
   children: ReactNode;
   variant?: 'standard' | 'calm';
   connections?: readonly BoardConnection[];
+  spotlight?: BoardSpotlight;
 }) {
   const root = useRef<HTMLDivElement>(null);
+  const lamp = useRef<HTMLDivElement>(null);
   const beam = useRef<SVGPolygonElement>(null);
   const pool = useRef<SVGEllipseElement>(null);
   const [geometry, setGeometry] = useState<{ width: number; height: number; anchors: Anchor[] }>({ width: 1, height: 1, anchors: [] });
@@ -25,8 +29,11 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
     let bounds = board.getBoundingClientRect();
     let anchors = new Map<HTMLElement, Anchor>();
     let active: HTMLElement | null = null;
-    let source: 'pointer' | 'keyboard' | 'idle' = 'idle';
-    let pointer = { x: 0, y: 0 };
+    let source: LightInput = 'idle';
+    let intent: LightInput = 'idle';
+    let pointer: { x: number; y: number } | null = null;
+    let lampVisible = false;
+    const targets = new Set(spotlight?.targets);
     let frame = 0;
     let dirty = true;
     let disposed = false;
@@ -34,17 +41,16 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
     function nodeFor(target: EventTarget | null) {
       if (!(target instanceof Element)) return null;
       const node = target.closest<HTMLElement>('[data-board-node]');
-      return node && board.contains(node) && anchors.has(node) ? node : null;
+      return node && board.contains(node) && anchors.has(node) && targets.has(node.dataset.boardNode!) ? node : null;
     }
 
-    function activate(node: HTMLElement | null, input: typeof source) {
+    function activate(node: HTMLElement | null, input: LightInput) {
       if (active !== node) {
         active?.removeAttribute('data-board-lit');
         active = node;
         active?.setAttribute('data-board-lit', 'true');
       }
       source = node ? input : 'idle';
-      schedule();
     }
 
     function measure() {
@@ -58,7 +64,8 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       });
       anchors.forEach((_, node) => { if (!next.has(node)) resize.unobserve(node); });
       anchors = next;
-      if (active && !anchors.has(active)) activate(null, 'idle');
+      const lampBounds = lamp.current?.getBoundingClientRect();
+      lampVisible = !!lampBounds && lampBounds.top >= 0 && lampBounds.left >= 0 && lampBounds.bottom <= window.innerHeight && lampBounds.right <= window.innerWidth;
       const nextGeometry = { width: bounds.width, height: bounds.height, anchors: [...anchors.values()] };
       setGeometry(previous => JSON.stringify(previous) === JSON.stringify(nextGeometry) ? previous : nextGeometry);
       dirty = false;
@@ -68,15 +75,21 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       frame = 0;
       if (disposed) return;
       if (dirty) measure();
+      // Scrolling and layout changes can move a different card under a stationary
+      // cursor. Keep input intent while hidden, but never retain a stale highlight.
+      const target = intent === 'pointer' && pointer && finePointer.matches
+        ? document.elementFromPoint(pointer.x, pointer.y)
+        : intent === 'keyboard' ? document.activeElement : null;
+      activate(lampVisible ? nodeFor(target) : null, intent);
       board.dataset.spotlight = source;
       const anchor = active && anchors.get(active);
       if (!active || !anchor) {
         board.style.setProperty('--lamp-angle', '0deg');
         return;
       }
-      const tracksCursor = source === 'pointer' && finePointer.matches && !reducedMotion.matches;
-      const localX = tracksCursor ? Math.max(0, Math.min(anchor.width, pointer.x - bounds.left - anchor.x)) : anchor.width / 2;
-      const localY = tracksCursor ? Math.max(0, Math.min(anchor.height, pointer.y - bounds.top - anchor.y)) : anchor.height / 2;
+      const tracksCursor = source === 'pointer' && pointer && finePointer.matches && !reducedMotion.matches;
+      const localX = tracksCursor ? Math.max(0, Math.min(anchor.width, pointer!.x - bounds.left - anchor.x)) : anchor.width / 2;
+      const localY = tracksCursor ? Math.max(0, Math.min(anchor.height, pointer!.y - bounds.top - anchor.y)) : anchor.height / 2;
       active.style.setProperty('--spot-x', `${localX}px`);
       active.style.setProperty('--spot-y', `${localY}px`);
       const x = anchor.x + localX;
@@ -94,51 +107,56 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
     function move(event: PointerEvent) {
       if (event.pointerType === 'touch' || !finePointer.matches) return;
       pointer = { x: event.clientX, y: event.clientY };
-      activate(nodeFor(event.target), 'pointer');
+      intent = 'pointer';
+      schedule();
     }
-    function leave() { activate(nodeFor(document.activeElement), 'keyboard'); }
-    function focus(event: FocusEvent) { activate(nodeFor(event.target), 'keyboard'); }
-    function blur(event: FocusEvent) { activate(nodeFor(event.relatedTarget), 'keyboard'); }
-    function preferencesChanged() { activate(null, 'idle'); refresh(); }
+    function focus() { intent = 'keyboard'; schedule(); }
     const resize = new ResizeObserver(refresh);
     const mutation = new MutationObserver(refresh);
     resize.observe(board);
     mutation.observe(board, { childList: true, subtree: true, attributes: true, attributeFilter: ['hidden', 'data-board-node'] });
-    board.addEventListener('pointermove', move);
-    board.addEventListener('pointerleave', leave);
-    board.addEventListener('focusin', focus);
-    board.addEventListener('focusout', blur);
+    const visibility = spotlight ? new IntersectionObserver(refresh, { threshold: [0, 1] }) : null;
+    if (lamp.current) visibility?.observe(lamp.current);
+    if (spotlight) {
+      board.addEventListener('pointermove', move);
+      board.addEventListener('pointerleave', focus);
+      board.addEventListener('focusin', focus);
+      board.addEventListener('focusout', focus);
+      finePointer.addEventListener('change', refresh);
+      reducedMotion.addEventListener('change', refresh);
+    }
     window.addEventListener('resize', refresh);
     window.addEventListener('scroll', refresh, { passive: true, capture: true });
-    finePointer.addEventListener('change', preferencesChanged);
-    reducedMotion.addEventListener('change', preferencesChanged);
     schedule();
     return () => {
       disposed = true;
       cancelAnimationFrame(frame);
       resize.disconnect();
       mutation.disconnect();
+      visibility?.disconnect();
       active?.removeAttribute('data-board-lit');
+      board.dataset.spotlight = 'idle';
+      board.style.setProperty('--lamp-angle', '0deg');
       board.removeEventListener('pointermove', move);
-      board.removeEventListener('pointerleave', leave);
+      board.removeEventListener('pointerleave', focus);
       board.removeEventListener('focusin', focus);
-      board.removeEventListener('focusout', blur);
+      board.removeEventListener('focusout', focus);
       window.removeEventListener('resize', refresh);
       window.removeEventListener('scroll', refresh, true);
-      finePointer.removeEventListener('change', preferencesChanged);
-      reducedMotion.removeEventListener('change', preferencesChanged);
+      finePointer.removeEventListener('change', refresh);
+      reducedMotion.removeEventListener('change', refresh);
     };
-  }, []);
+  }, [spotlight]);
 
   const byId = new Map(geometry.anchors.map(anchor => [anchor.id, anchor]));
-  return <div ref={root} className={`detective-board detective-board--${variant}`} data-spotlight="idle">
-    <div className="board-lamp" aria-hidden="true">
+  return <div ref={root} className={`detective-board detective-board--${variant}${spotlight ? ' detective-board--spotlight' : ''}`} data-spotlight="idle">
+    {spotlight && <div ref={lamp} className="board-lamp" aria-hidden="true">
       <svg viewBox="0 0 120 90" focusable="false"><path d="M60 0V43" stroke="#493527" strokeWidth="3"/><g className="board-lamp-shade"><path d="M48 40h24l8 15 25 17H15l25-17Z" fill="#30251c"/><path d="M43 54h34" stroke="#70583e" strokeWidth="2"/><ellipse cx="60" cy="72" rx="44" ry="5" fill="#c8a27a"/><path d="M47 72a13 10 0 0 0 26 0" fill="#fff2bb"/></g></svg>
-    </div>
-    <svg className="board-beam" viewBox={`0 0 ${geometry.width} ${geometry.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+    </div>}
+    {spotlight && <svg className="board-beam" viewBox={`0 0 ${geometry.width} ${geometry.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
       <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff2b9" stopOpacity=".55"/><stop offset="1" stopColor="#fff5d6" stopOpacity=".08"/></linearGradient></defs>
       <polygon ref={beam} fill={`url(#${gradientId})`}/><ellipse ref={pool} ry="22" fill="#fff5d6" opacity=".24"/>
-    </svg>
+    </svg>}
     <svg className="board-strings" viewBox={`0 0 ${geometry.width} ${geometry.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
       {connections.map(([from, to], index) => {
         const a = byId.get(from); const b = byId.get(to);
