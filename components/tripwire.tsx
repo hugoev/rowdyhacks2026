@@ -63,7 +63,7 @@ function MissionControl() {
       <section className="panel mc-money" data-board-node="money"><SectionTitle index="05" title="The Teller" right={<span className="mono-small">PAYMENTS</span>}/><PaymentQueue/></section>
       <section className="mc-case" data-board-node="case">{currentCase && currentCase.outcome !== 'open' ? <CaseFileCard file={currentCase} start={call.startedAt}/> : <div className="kraft-file pending"><div className="kraft-tab">CASE FILE</div><p>The case file opens when the family decides.</p></div>}</section>
     </div>}
-    <div className="demo-bottom"><p className="demo-disclosure">Payments are simulated. Signals tagged RULE come from the deterministic backup spotter.</p>{s.config.demo && <button className="text-link" onClick={() => setReset(true)}><RotateCcw size={12}/>Clear activity</button>}<Link className="text-link" href="/stage">Open stage view</Link></div>
+    <div className="demo-bottom"><p className="demo-disclosure">Payments are simulated. Signals tagged RULE come from the deterministic backup spotter.</p>{s.config.demo && <button className="text-link" onClick={() => setReset(true)}><RotateCcw size={12}/>Clear activity</button>}<Link className="text-link stage-view-link" href="/stage">Open stage view</Link></div>
     <Confirm open={reset} title="Clear recent activity?" label="Clear activity" onClose={() => setReset(false)} action={async () => { await request('/demo/reset'); }}><p>This removes calls, payments, and case files. The family word stays configured.</p></Confirm>
   </>;
 }

@@ -1,6 +1,6 @@
 /* PRD v2 surfaces: Rosa's calm phone, Diego's push card, Mission Control heist board, stage. */
 :root { --tw-paper: #C8A27A; --tw-red: #B3261E; --tw-ink: #1E1E1E; --tw-card: #F5F1EA; --tw-laser: #FF3B3B; }
-html.embed :is(.sidebar, .topbar, .footer, .presenter-drawer, .family-return, .skip-link) { display: none !important; }
+html.embed :is(.sidebar, .topbar, .footer, .presenter-drawer, .family-return, .skip-link, .stage-view-link) { display: none !important; }
 html.embed .workspace { margin-left: 0; width: 100%; }
 
 /* ---------- Rosa's phone: huge type, one action per screen, no heist styling ---------- */
