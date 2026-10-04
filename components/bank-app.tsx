@@ -270,7 +270,9 @@ function useTeller(state: DemoState | null) {
     // The verifier reports mid-call, then says goodbye. Wait for it to hang up (at most 8 s)
     // so the teller's good news never talks over Diego's call.
     const waited = Date.now() - result.at;
-    if (diegoOnCall && waited < 8000) { const t = setTimeout(() => setTick(n => n + 1), Math.min(500, 8000 - waited)); return () => clearTimeout(t); }
+    // Only when the verifier actually got through; a forced result (backup) is delivered at once.
+    const verifierTalking = state?.ring?.who === 'diego' && state.ring.status === 'answered' && result.source === 'verifier';
+    if (verifierTalking && waited < 8000) { const t = setTimeout(() => setTick(n => n + 1), Math.min(500, 8000 - waited)); return () => clearTimeout(t); }
     delivered.current = result.at;
     if (session.current) session.current.muted = false;
     const teller = session.current;
