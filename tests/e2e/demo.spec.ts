@@ -68,9 +68,38 @@ test('Inspector flags a romance sample and does not mislabel an ordinary message
   await page.getByRole('button', { name: 'Dinner plans', exact: true }).click(); await page.getByRole('button', { name: 'Inspect this message' }).click();
   await expect(page.getByRole('heading', { name: 'No red flags found' })).toBeVisible();
 });
+test('Heist Drill returns a scorecard for protective choices', async ({ page }) => {
+  await page.goto('/drill'); await expect(page.getByRole('heading', { name: 'Heist Drill.' })).toBeVisible();
+  await page.getByRole('button', { name: 'Start practice' }).click();
+  await expect(page.getByText('A possible tell: Unverified family emergency')).toBeVisible();
+  await page.getByRole('button', { name: /End the conversation and verify/ }).click();
+  await page.getByRole('button', { name: /Pause and bring in someone I trust/ }).click();
+  await page.getByRole('button', { name: /Stop\. I will not send money/ }).click();
+  await expect(page.getByText('100/100', { exact: true })).toBeVisible();
+  await expect(page.getByText('3 of 3 protective choices.')).toBeVisible();
+});
+test('student mode opens with a fake-job check scenario and student-specific safety guidance', async ({ page }) => {
+  await page.goto('/student');
+  await expect(page.getByRole('heading', { name: 'Check the offer.' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Student tasks' })).toBeVisible();
+  await expect(page.getByText('Never send part of a check back to a new contact.')).toBeVisible();
+  await page.getByRole('navigation', { name: 'Student tasks' }).getByRole('button', { name: 'Check a call' }).click();
+  await expect(page.getByLabel('Try a practice call')).toHaveValue('fakeJob');
+});
+test('Scam Weather clearly labels its 30-day synthetic aggregates', async ({ page, request }) => {
+  const response = await request.get('/api/scam-weather', { headers: headers('guardian') });
+  expect(response.ok()).toBeTruthy(); const report = await response.json();
+  expect(report.source).toBe('seeded-demo'); expect(report.days).toHaveLength(30); expect(report.market).toBe('San Antonio');
+  expect(JSON.stringify(report)).not.toContain('reporter');
+  await login(request, 'relative');
+  expect((await request.get('/api/scam-weather', { headers: headers('relative') })).status()).toBe(403);
+  await page.goto('/weather'); await expect(page.getByRole('heading', { name: 'Scam Weather.' })).toBeVisible();
+  await expect(page.getByText('SEEDED DEMO DATA — NOT LIVE CRIME REPORTS')).toBeVisible();
+  await expect(page.getByRole('img', { name: /synthetic scam report counts/ })).toBeVisible();
+});
 test('phone layouts have no horizontal overflow and navigation works', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const route of ['/guardian', '/protected', '/relative', '/inspector', '/settings', '/cases']) {
+  for (const route of ['/guardian', '/protected', '/relative', '/inspector', '/settings', '/cases', '/drill', '/weather']) {
     await page.goto(route); await expect(page.locator('main h1')).toBeVisible(); await expect(page.getByText('Live connection', { exact: true })).toBeAttached();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
@@ -118,5 +147,5 @@ test('Rosa header returns home and other screens retain the existing theme', asy
   await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.locator('.footer')).toBeVisible();
-  await expect(page.locator('body')).toHaveCSS('font-family', /Inter/);
+  await expect(page.locator('body')).toHaveCSS('font-family', 'Inter, "Inter Fallback", Arial, Helvetica, sans-serif');
 });

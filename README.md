@@ -28,7 +28,7 @@ A working RowdyHacks XII P0 prototype: a calm payment and call screen for a prot
 
 ## Run locally
 
-Requires **Node.js 22.22 or newer** (the ElevenLabs dependency requires it; the server also uses built-in `node:sqlite`).
+Requires **Node.js 22.5 or newer** (the server uses built-in `node:sqlite`). Node.js **22.22.0** is the team-recommended version and is recorded in `.node-version` and `.nvmrc`.
 
 ```sh
 npm ci
@@ -37,7 +37,7 @@ npm run dev
 
 Open [localhost:3000](http://localhost:3000). No API keys are needed for the scripted demo, payment holds, callbacks, family safe word, text scanner, or browser voice.
 
-The same npm commands work on **Windows, macOS, and Linux**. The team version is **22.22.0**, recorded in `.node-version` and `.nvmrc`; newer supported Node versions also work. Built-in SQLite does not need a separate SQLite install or C++ compiler. Run `node --version` if startup fails. On Windows, reopen PowerShell or Command Prompt after installing/upgrading Node, then run `npm ci` to install dependencies for that machine. Do not copy `node_modules` from another operating system.
+The same npm commands work on **Windows, macOS, and Linux**. The minimum is **22.5.0**; the team version is **22.22.0**, recorded in `.node-version` and `.nvmrc`. Built-in SQLite does not need a separate SQLite install or C++ compiler. Run `node --version` if startup fails. On Windows, reopen PowerShell or Command Prompt after installing/upgrading Node, then run `npm ci` to install dependencies for that machine. Do not copy `node_modules` from another operating system.
 
 An `.env` file is optional for the local demo. To configure providers, copy `.env.example` to `.env`:
 
@@ -61,10 +61,13 @@ The server prints an experimental SQLite warning on some Node 22 versions; this 
 | --- | --- | --- |
 | Guardian command center | `/` or `/guardian` | Risk dial, live chart, signals, transcript, payment decisions, demo reset |
 | Rosa’s shield | `/protected` | Consent-based call guard, scripted, ElevenLabs, and browser transcripts, safe word, callback, mock payments |
+| Student shield | `/student` | Student-focused fake-job / overpayment-check scenario and transfer preset, still protected by the same risk and co-sign flow |
 | Alex’s callback | `/relative` | Answer whether the caller is really Alex; receives no payments or transcript |
 | Inspector | `/inspector` | Text/link inspection, optional Gemini screenshot analysis, 10 prepared samples |
 | Case files | `/cases` | Explain attempted scams and guardian outcomes |
 | Family settings | `/settings` | Safe word, delayed co-sign limit changes, transcript retention |
+| Heist Drill | `/drill` | Timed, scripted scam-practice scenarios with a protective-choice scorecard |
+| Scam Weather | `/weather` | 30 days of explicitly synthetic San Antonio scam-pattern data |
 
 ## Two-minute demo
 
@@ -75,6 +78,8 @@ The server prints an experimental SQLite warning on some Node 22 versions; this 
 5. Switch to **Send money**. Use the prefilled **$2,500 gift-card payment**, then **Check & send demo payment**. Its hold is enforced by the server. The guardian chooses **Deny payment** and confirms. Both views update; the case file is marked **HEIST FOILED**.
 6. Inspect a prepared romance or phishing message in `/inspector`. With a Gemini key, upload a screenshot instead.
 7. For the normal-payment contrast, use **Reset demo** in the guardian view, then expand **Presenter controls** and choose **Try a $40 bill** in Rosa’s view. It completes without friction. Reset preserves the safe word but clears demo activity and preferences.
+8. Open **Heist Drill** for a timed practice scenario. Choose protective actions and review the scorecard. If Gemini is configured, it adds coaching from action categories only; caller lines are scripted and no microphone is used.
+9. Open **Scam Weather** to show the 30-day chart. Its San Antonio counts are synthetic seeded demo data, never live crime reports.
 
 The demo uses **manual next-line controls**, so venue noise and timing cannot break the presentation. Scripted mode never turns on the microphone. The browser cannot hang up a telephone call; the hang-up control explicitly tells the user to end the call on their phone and stops Tripwire’s guard.
 
@@ -92,11 +97,13 @@ The demo uses **manual next-line controls**, so venue noise and timing cannot br
 | Inspector | Rules-based text/link checks. Gemini image understanding and richer text checks when configured. Image-only scans explicitly fail when image analysis is unavailable. |
 | Cases / risk chart | Working local events and payment case files, not seeded outcome metrics. |
 | Tiger Data | PostgreSQL risk-event hypertable, minute continuous aggregate, and cloud-backed guardian chart. Durable local retry queue and local chart fallback. See [Tiger setup](docs/TIGER.md). |
+| Heist Drill | Six scripted scam scenarios, a two-minute timer, ElevenLabs/browser spoken caller lines, and a rules-based scorecard. Optional Gemini coaching receives scenario/action categories only. It is a practice simulation, not a real caller or microphone session. |
+| Scam Weather | Thirty days of deterministic synthetic San Antonio aggregates. Tiger Data stores seeded counts in a continuous aggregate; local generated counts are the fallback. The chart is labeled as simulated and does not represent real incidents. |
+| Student mode | Student-focused protected-user screen with a fake-job / overpayment-check practice call and transfer preset. Uses the same consent, risk checks, guardian hold, and scanner as the family demo. |
 | Vultr | Deployed with Caddy HTTPS, Socket.IO, paired role access, and persistent SQLite storage. See [deployment details](docs/VULTR.md). |
-| Solana | Native Rust escrow program and wallet-signing integration implemented. Program compiled and tested on an isolated validator; devnet deployment and production activation still require a funded deployment wallet and guardian public address. See [Solana setup](docs/SOLANA.md). |
-| Presage | Not integrated. Tiger does not move or hold money. |
-| Heist Drill / Scam Weather | Not implemented. |
-| PWA | App manifest, standalone display, custom icon. No offline service worker; connected family flows require the server. |
+| Solana | Native Rust escrow is deployed on devnet and the hosted app is configured with a guardian wallet and funded runtime payer. Dollar payments remain simulated; the program is not audited or ready for mainnet funds. See [Solana setup](docs/SOLANA.md). |
+| Presage | Intentionally out of scope for this build. |
+| PWA | App manifest, standalone display, custom icon, and a minimal offline shell. Family state, calls, payments, and decisions are never cached; connected flows require the server. |
 
 The initial household names are fictional demo fixtures. Dashboard totals reflect actual demo holds/denials, not invented dollars saved. The prepared scanner examples are fixtures, not independently sampled accuracy evidence.
 
@@ -185,4 +192,4 @@ tests/               Unit and browser regression tests
 docs/                Threat model, demo handoff, hosting example
 ```
 
-The PRD’s P1/P2 integrations are next steps after this P0 demo is stable. Sponsor features should only be claimed after their real integrations are implemented and demonstrated.
+The camera-based Presage feature is intentionally excluded. Community scam counts and all payment totals are explicitly simulated. Sponsor integrations should only be claimed after their real integrations are implemented and demonstrated.

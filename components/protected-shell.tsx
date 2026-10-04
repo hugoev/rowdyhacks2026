@@ -5,7 +5,7 @@ import { useTripwire } from './context';
 import { Protected } from './protected';
 import { Badge } from './ui';
 
-export function ProtectedShell() {
+export function ProtectedShell({ student = false }: { student?: boolean }) {
   const { state, error, setError, online } = useTripwire();
   return <div className="app-shell simple-surface">
     <a className="skip-link" href="#main">Skip to main content</a>
@@ -16,7 +16,7 @@ export function ProtectedShell() {
       </header>
       <main id="main" className="main-content">
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}
-        {state ? <Protected/> : <div className="loading-state"><div className="brand-mark">T<span/></div><h1>Connecting your crew…</h1><p>Preparing the family shield.</p><button className="button secondary" onClick={() => window.location.reload()}>Retry connection</button></div>}
+        {state ? <Protected student={student}/> : <div className="loading-state"><div className="brand-mark">T<span/></div><h1>Connecting your crew…</h1><p>Preparing the family shield.</p><button className="button secondary" onClick={() => window.location.reload()}>Retry connection</button></div>}
       </main>
     </div>
   </div>;

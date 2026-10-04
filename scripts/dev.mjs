@@ -7,6 +7,7 @@ let child;
 let timer;
 let restarting = false;
 let stopping = false;
+let watching = true;
 
 function start() {
   child = spawn(process.execPath, ['--import', 'tsx', 'server/index.ts'], { cwd: root, env: process.env, stdio: 'inherit' });
@@ -27,10 +28,17 @@ function restart() {
 // generated .next files from restarting the server during page compilation.
 const watchers = ['server', 'lib'].map(directory => {
   const watcher = watch(new URL('../' + directory + '/', import.meta.url), { recursive: true }, (_event, filename) => {
+    if (!watching) return;
     if (filename && !/\.(?:ts|tsx|json)$/.test(filename)) return;
     clearTimeout(timer); timer = setTimeout(restart, 200);
   });
-  watcher.on('error', error => { console.error('Backend file watching failed:', error.message, '\nTry: node --import tsx server/index.ts'); shutdown(1); });
+  watcher.on('error', error => {
+    if (!watching) return;
+    watching = false;
+    clearTimeout(timer);
+    watchers.forEach(item => item.close());
+    console.error('Backend auto-restart is unavailable:', error.message, '\nThe app will keep running; restart the dev server after backend changes.');
+  });
   return watcher;
 });
 function shutdown(code = 0) {

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { analyzeCall, analyzeScan, geminiModel, summarizePayment, summarizeCase } from '../server/gemini';
+import { analyzeCall, analyzeScan, geminiModel, summarizePayment, summarizeCase, coachDrill } from '../server/gemini';
 import { providerStatuses } from '../server/provider-status';
 import { inspect } from '../server/providers';
 import { Store } from '../server/store';
@@ -41,6 +41,15 @@ test('Gemini schemas, evidence, summaries, and explicit failures', async t => {
   const education = structuredClone(store.state.cases[0].education);
   assert.match(await summarizeCase(store.state.cases[0]), /warning signs/);
   assert.deepEqual(store.state.cases[0].education, education);
+  process.env.GEMINI_DRILL_MODEL = 'test-drill';
+  fetchMock.mock.mockImplementation(async (_url, options) => {
+    const body = JSON.parse(String(options?.body)); const evidence = body.contents[0].parts[0].text;
+    assert.ok(evidence.includes('The Family Emergency')); assert.ok(evidence.includes('independent-check'));
+    assert.ok(!evidence.includes('transcript') && !evidence.includes('personal name'));
+    return response({ feedback: 'You paused before acting.', nextTime: 'Call a saved number.' });
+  });
+  assert.deepEqual(await coachDrill('The Family Emergency', ['independent-check', 'pause']), { feedback: 'You paused before acting.', nextTime: 'Call a saved number.' });
+  assert.equal(providerStatuses().geminiDrill?.state, 'working');
   fetchMock.mock.mockImplementation(async () => response({ whatHappened: '' }));
   await assert.rejects(summarizeCase(store.state.cases[0]), /invalid response/);
   process.env.GEMINI_CALL_MODEL = ''; process.env.GEMINI_MODEL = 'legacy'; assert.equal(geminiModel('call'), 'legacy');

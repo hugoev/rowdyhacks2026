@@ -4,14 +4,14 @@ import { levelFor } from '../lib/risk';
 import type { Assessment, CaseFile, Payment } from '../lib/types';
 import { configureProvider, providerFailure, providerSuccess } from './provider-status';
 
-type Task = 'call' | 'scan' | 'summary';
+type Task = 'call' | 'scan' | 'summary' | 'drill';
 export type ImageInput = { data: string; mimeType: string };
-const capabilities = { call: 'geminiCall', scan: 'geminiScan', summary: 'geminiSummary' } as const;
+const capabilities = { call: 'geminiCall', scan: 'geminiScan', summary: 'geminiSummary', drill: 'geminiDrill' } as const;
 export function geminiModel(task: Task) {
   return process.env[`GEMINI_${task.toUpperCase()}_MODEL`] || process.env.GEMINI_MODEL || (task === 'scan' ? 'gemini-3.8-flash' : 'gemini-3.5-flash-lite');
 }
 export function configureGemini() {
-  for (const task of ['call', 'scan', 'summary'] as const) configureProvider(capabilities[task], !!process.env.GEMINI_API_KEY, geminiModel(task));
+  for (const task of ['call', 'scan', 'summary', 'drill'] as const) configureProvider(capabilities[task], !!process.env.GEMINI_API_KEY, geminiModel(task));
 }
 export class GeminiError extends Error {
   constructor(public category: string) { super(`Gemini ${category}. Local protection remains active.`); }
@@ -91,4 +91,10 @@ export async function summarizeCase(file: CaseFile) {
   if (!file.education || file.outcome !== 'foiled') throw new Error('A denied payment case is required.');
   const result = await generate('summary', 'Explain this denied demo payment to an older adult in at most two short sentences. Use familiar words and no blame. Describe suspected patterns, not a proven scam or identity. Use only the supplied explanation and warning labels. Do not add names, amounts, quotes, verification results, guarantees, or instructions. Return whatHappened. The application supplies the recorded protections and next step separately.', { explanation: file.education.whatHappened, warningSigns: file.education.clues }, caseSchema);
   return result.whatHappened;
+}
+
+const drillFeedbackSchema = z.object({ feedback: z.string().trim().min(1).max(450), nextTime: z.string().trim().min(1).max(220) });
+export async function coachDrill(scenario: string, actions: string[]) {
+  const result = await generate('drill', 'Give concise, empathetic feedback after a scam-awareness practice. The user made only the supplied multiple-choice decisions; do not infer their identity, intent, or real-world behavior. Name no more than two choices, give no blame, never say a payment or caller is safe, and give one practical next action: pause, end contact, and verify through a trusted number. Return feedback and nextTime.', { scenario, actions }, drillFeedbackSchema);
+  return result;
 }

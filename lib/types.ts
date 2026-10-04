@@ -20,7 +20,7 @@ export type State = {
   payments: Payment[]; events: RiskEvent[]; cases: CaseFile[];
   settings: { coSignLimit: number; pendingLimit: { value: number; effectiveAt: number } | null; retainFlaggedTranscripts: boolean; safeWordConfigured: boolean };
 };
-export type ProviderCapability = 'geminiCall' | 'geminiScan' | 'geminiSummary' | 'elevenlabsTranscription' | 'elevenlabsVoice';
+export type ProviderCapability = 'geminiCall' | 'geminiScan' | 'geminiSummary' | 'geminiDrill' | 'elevenlabsTranscription' | 'elevenlabsVoice';
 export type ProviderStatus = { state: 'unconfigured' | 'configured' | 'working' | 'degraded'; model: string; lastSuccessAt: number | null; error?: string };
 export type AnalyticsStatus = { state: 'unconfigured' | 'configured' | 'working' | 'degraded'; source: 'local' | 'tiger'; lastSuccessAt: number | null; pendingEvents: number; error?: string };
 export type RiskHistory = { source: 'local' | 'tiger'; points: RiskEvent[]; minutes: { at: number; peak: number; average: number; samples: number }[]; peak: number; total: number };

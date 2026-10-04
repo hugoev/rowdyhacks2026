@@ -4,6 +4,7 @@ import './globals.css';
 import './protected.css';
 import './transitions.css';
 import { PageTransition } from '@/components/page-transition';
+import { ServiceWorker } from '@/components/service-worker';
 const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
 const syne = Syne({ subsets: ['latin'], display: 'swap', variable: '--font-syne' });
 export const metadata: Metadata = {
@@ -12,5 +13,5 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.svg' },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={`${inter.variable} ${syne.variable}`}><body><PageTransition>{children}</PageTransition></body></html>;
+  return <html lang="en" className={`${inter.variable} ${syne.variable}`}><body><PageTransition>{children}</PageTransition><ServiceWorker/></body></html>;
 }

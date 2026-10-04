@@ -19,6 +19,8 @@ Use three windows with the same origin: `/protected`, `/guardian`, `/relative`. 
 3. Switch to **Send money** and attempt the $2,500 gift-card payment. The call guard keeps running while Rosa switches tasks. Show the held payment and the server-owned cooling-off deadline.
 4. Elena denies it. Show **HEIST FOILED**, then its case file and the concrete tells.
 5. Inspect a romance example. If Gemini is configured and has been checked, inspect a screenshot.
+6. For an optional second beat, run a scenario in `/drill` and show its scored protective choices. The voices are scripted; this does not use the microphone.
+7. Open `/weather` and point out the seeded-data disclosure before showing the 30-day San Antonio chart.
 
 “AI is a tool; empathy is the strategy. You did nothing wrong by pausing.”
 
@@ -30,6 +32,12 @@ Use three windows with the same origin: `/protected`, `/guardian`, `/relative`. 
 - **What does AI do?** With a key, Gemini enriches call signals and inspects screenshots. Payment enforcement remains deterministic; Gemini can asynchronously add a guardian summary for held payments.
 - **What if APIs fail?** Text rules, scripted calls, local holds, callback, and browser voice still work. Image-only analysis reports unavailable rather than inventing a verdict.
 - **Does it hang up the call?** No. It tells Rosa to hang up on her phone and stops the guard.
-- **What comes next?** Tiger is live on Vultr. Solana devnet escrow is implemented but awaiting funded program deployment and the guardian wallet. Presage remains optional; real bank payments are not connected.
+- **What is simulated?** Dollar payments, the practice-call dialogue, and Scam Weather counts. The on-chain escrow is devnet only. No ordinary phone call, SMS, or bank rail is connected. Presage is intentionally out of scope; real bank payments are not connected.
+
+## Student mode
+
+Open `/student` for the same protected-user shield with student-focused copy,
+a fake-job / overpayment-check practice script, and a $2,400 wire-transfer
+preset. It is still a mock payment; no check or bank transfer is created.
 
 Avoid citing unverified loss statistics or claiming sponsor prizes are qualified by integrations that are not connected.
