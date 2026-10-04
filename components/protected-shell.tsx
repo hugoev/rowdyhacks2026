@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { Wordmark } from './wordmark';
 import { ArrowLeft, X } from 'lucide-react';
 import { useTripwire } from './context';
 import { Protected } from './protected';
@@ -13,7 +14,7 @@ export function ProtectedShell() {
     <a className="skip-link" href="#main">Skip to main content</a>
     <div className="workspace">
       <header className="topbar">
-        <div className="breadcrumb"><Link className="family-brand" href="/">tripwire<span>.</span></Link></div>
+        <div className="breadcrumb"><Link className="family-brand" href="/"><Wordmark/></Link></div>
         <div className="topbar-right"><Link className="family-settings-link" href="/settings">Settings</Link></div>
       </header>
       <main id="main" className="main-content">

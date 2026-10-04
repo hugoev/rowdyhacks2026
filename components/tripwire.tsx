@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { Wordmark } from './wordmark';
 import { useState } from 'react';
 import { Activity, ArrowUpRight, Bell, Check, ChevronRight, CircleHelp, CloudSun, Crosshair, FileSearch, FolderOpen, LayoutDashboard, LockKeyhole, Menu, Radio, RotateCcw, Settings, Shield, ShieldCheck, Users, X } from 'lucide-react';
 import { Provider, useTripwire } from './context';
@@ -37,7 +38,7 @@ function Shell({ view }: { view: View }) {
     <a className="skip-link" href="#main">Skip to main content</a>
     {menu && <button className="sidebar-scrim" aria-label="Close navigation" onClick={() => setMenu(false)}/>}
     <aside className={'sidebar ' + (menu ? 'open' : '')}>
-      <Link className="brand" href="/"><div className="brand-mark">T<span/></div><span>tripwire<span className="brand-period">.</span><small>BEFORE THE MONEY MOVES</small></span></Link>
+      <Link className="brand" href="/"><div className="brand-mark">T<span/></div><span className="brand-name"><Wordmark/></span><small>BEFORE THE MONEY MOVES</small></Link>
       <div className="sidebar-family"><div className="avatar rosa">R</div><div><strong>The Garcia family</strong><small>Protected household</small></div><ShieldCheck size={17}/></div>
       <div className="nav-label">CASEBOARD</div>
       <nav aria-label="Main navigation">
