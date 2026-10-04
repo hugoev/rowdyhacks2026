@@ -14,18 +14,18 @@
 | Time | Beat | Operator | What should happen |
 |---|---|---|---|
 | 0:00 | Hook | **START SCAM CALL** at the end | Narrator: “Swivel showed us this…” |
-| 0:15 | Scam call | — | Rosa's phone rings, caller ID “Diego”. Cloned voice: arrested, $2,500 bail, M. Ellis Legal, don't tell Mom. Rosa hangs up. |
+| 0:15 | Scam call | **RING ROSA** | Rosa's phone rings, caller ID “Diego”. Rosa answers on speaker; a teammate (off to the side) plays the scammer live: arrested, $2,500 bail, M. Ellis Legal, don't tell Mom. Rosa hangs up. |
 | 0:50 | The teller | — | Rosa: Send money → (prefilled $2,500, M. Ellis Legal, instant) → **Send $2,500**. Screen softens; the teller speaks first: “about 29 times what you usually send… what's it for?” Rosa tells the story; the teller asks to call Diego; Rosa: “Yes, please.” Status: “Calling Diego…” |
 | 1:35 | The call back | (FORCE RESULT · not me if the verifier fails) | Diego's phone rings: “Tripwire · Rosa's bank”. Verifier asks; Diego: “What? No! I'm fine.” Seconds later the teller tells Rosa he's safe. Screen: “Your $2,500 is safe.” |
 | 2:05 | Case file | — | Monitor: laser sweep, FILE 00N // THE BAIL JOB, FOILED stamp. |
-| 2:20 | Reveal | — | “That first call was a live AI clone of Diego's voice, made with his permission…” |
+| 2:20 | Close | — | “Today a voice clone makes that call sound exactly like Diego. Tripwire doesn't care: it never tries to detect the voice. It calls the real Diego.” |
 | after | “Want to be Grandma?” | **RESET** | Hand the judge the headset. RESET returns to Home in under a second. |
 
 Flexes (only if rehearsed): **FORCE RESULT · it's me** (release path), **Language → Español** before Send (the teller starts in Spanish and follows Rosa), **Scammer coach mode** (the caller tells Rosa to say it's a car repair; the teller asks why a legal firm).
 
 ## Failure plan
 
-- Scam call doesn't connect → START SCAM CALL again; if ElevenLabs is down, a teammate reads the scammer lines on speaker.
+- The scam call is always a teammate (ElevenLabs' safety review blocks scam-impersonation agents). If Rosa's phone page misbehaves, the teammate just speaks the lines in person.
 - Verifier fails or Diego's phone is silent → **FORCE RESULT · not me**; Diego says his line out loud. The teller still delivers the result. If the teller doesn't respond within 12 s, Tripwire rules hold the payment and write the case file.
 - Teller can't connect → Rosa's screen says her money stays put; **CALL DIEGO (manual)**, then FORCE RESULT. The session auto-reconnects twice and re-sends the conversation so far.
 - Loud room → operator turns on **Push-to-talk**; Rosa holds the big button while she talks.

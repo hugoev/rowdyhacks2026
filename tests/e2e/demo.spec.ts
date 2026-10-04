@@ -44,15 +44,16 @@ for (let run = 1; run <= 3; run++) test(`acceptance 2-6 (teller offline): Tripwi
   await context.close();
 });
 
-test('START SCAM CALL rings Rosa’s phone with Diego as the caller ID', async ({ browser }) => {
+test('RING ROSA rings Rosa’s phone with Diego as the caller ID', async ({ browser }) => {
   const context = await browser.newContext({ permissions: ['microphone'] });
   const phone = await context.newPage(); const operator = await context.newPage();
   await phone.goto('/call?who=rosa'); await phone.getByRole('button', { name: 'Ready' }).click();
-  await operator.goto('/operator'); await operator.getByRole('button', { name: 'START SCAM CALL' }).click();
+  await operator.goto('/operator'); await operator.getByRole('button', { name: /RING ROSA/ }).click();
   await expect(phone.getByText('Incoming call')).toBeVisible(); await expect(phone.getByRole('heading', { name: 'Diego' })).toBeVisible();
-  // Agents aren't configured in tests: answering explains the fallback instead of hanging.
+  // A teammate plays the scammer live: answering just shows the call, no agent session.
   await phone.getByRole('button', { name: 'Answer' }).click();
-  await expect(phone.getByText(/EL_AGENT_SCAMMER_ID|ElevenLabs is not configured/)).toBeVisible();
+  await expect(phone.getByRole('button', { name: 'Hang up' })).toBeVisible();
+  await expect(phone.getByText(/operator can use FORCE RESULT/)).toHaveCount(0);
   await context.close();
 });
 

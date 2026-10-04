@@ -15,12 +15,12 @@ export function Operator() {
     <header><h1>Operator</h1><span className={online ? 'ok' : 'bad'}>{online ? 'live' : 'offline'}</span></header>
     <p className="providers">
       <span className={c.gemini ? 'ok' : 'bad'}>Gemini Live</span>
-      <span className={c.scammer ? 'ok' : 'bad'}>Scammer agent</span>
+      <span className="ok">Scammer: live teammate</span>
       <span className={c.verifier ? 'ok' : 'bad'}>Verifier agent</span>
       <span className={c.tiger ? 'ok' : 'warn'}>{c.tiger ? 'Tiger Data' : 'Tiger: local data'}</span>
     </p>
     <section className="controls">
-      <button className="go" onClick={() => run('/operator/scam')}>START SCAM CALL</button>
+      <button className="go" onClick={() => run('/operator/scam')}>RING ROSA (teammate plays the scammer)</button>
       <button onClick={() => run('/operator/call-diego')}>CALL DIEGO (manual)</button>
       <button className="warn" onClick={() => run('/operator/force', { status: 'not_me' })}>FORCE RESULT · not me</button>
       <button onClick={() => run('/operator/force', { status: 'confirmed' })}>FORCE RESULT · it’s me</button>
@@ -29,7 +29,7 @@ export function Operator() {
     </section>
     <section className="toggles">
       <label>Language <select value={state.language} onChange={e => run('/operator/language', { language: e.target.value })}><option value="en">English</option><option value="es">Español</option></select></label>
-      <label><input type="checkbox" checked={state.coach} onChange={e => run('/operator/coach', { coach: e.target.checked })}/> Scammer coach mode (“say it’s a car repair”)</label>
+      <label><input type="checkbox" checked={state.coach} onChange={e => run('/operator/coach', { coach: e.target.checked })}/> Coach mode reminder (teammate tells Rosa “say it’s a car repair”)</label>
       <label><input type="checkbox" checked={state.pushToTalk} onChange={e => run('/operator/push-to-talk', { on: e.target.checked })}/> Push-to-talk (loud room)</label>
       <label>Operator key <input type="password" value={key} onChange={e => { setKey(e.target.value); try { localStorage.setItem('tripwire-operator-key', e.target.value); } catch { /* storage blocked */ } }} placeholder="only if OPERATOR_KEY is set"/></label>
     </section>

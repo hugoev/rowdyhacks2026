@@ -49,6 +49,9 @@ export function PhoneCall({ who }: { who: Who }) {
     setInCall({ id, since: Date.now(), caller: ring.callerName });
     try {
       await api('/ring/status', { id, status: 'answered' });
+      // The scam call is played live by a teammate (ElevenLabs blocks scam-impersonation agents),
+      // so Rosa's phone just shows the call; only the verifier runs as an ElevenLabs agent.
+      if (ring.agent === 'scammer') return;
       const { signedUrl, variables } = await api<{ signedUrl: string; variables: Record<string, string> }>('/agent/session', { id });
       conversation.current = await VoiceConversation.startSession({
         signedUrl, connectionType: 'websocket',
