@@ -19,7 +19,7 @@
   will-change: transform;
 }
 .vault-door-left { left: 0; z-index: 2; animation: vault-door-left 820ms cubic-bezier(.65, 0, .25, 1) both; }
-.vault-door-right { right: 0; z-index: 1; animation: vault-door-right 820ms cubic-bezier(.65, 0, .25, 1) both; }
+.vault-door-right { right: 0; animation: vault-door-right 820ms cubic-bezier(.65, 0, .25, 1) both; }
 .vault-door-inset {
   position: absolute;
   inset: clamp(24px, 5vw, 72px);
@@ -55,24 +55,26 @@
   .vault-transition { display: none; }
 }
 
-.vault-scan-line {
-  --scan-start: 70px;
-  position: absolute;
-  top: var(--scan-start);
-  left: 220px;
+/* Xander's laser sweep: page-level, above the page and under the vault doors
+   (z 22 < 80), so it is revealed as the doors part and keeps sweeping after. */
+.vault-laser {
+  position: fixed;
+  left: var(--laser-left, 220px);
   right: 0;
+  top: var(--laser-top, 70px);
   height: 2px;
-  z-index: 0;
   background: #ff3b3b;
   box-shadow: 0 0 10px #ff3b3b, 0 0 20px #ff3b3b60;
-  animation: vault-scan 820ms ease-in-out both;
+  pointer-events: none;
+  z-index: 22;
+  animation: vault-laser 1.2s ease-in-out forwards;
 }
-@keyframes vault-scan {
-  0% { top: var(--scan-start); opacity: 0; }
+@keyframes vault-laser {
+  0% { top: var(--laser-top, 70px); opacity: 0; }
   15% { opacity: 1; }
   85% { opacity: .9; }
   100% { top: 100vh; opacity: 0; }
 }
-@media (max-width: 760px) {
-  .vault-scan-line { --scan-start: 61px; left: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .vault-laser { display: none; }
 }
