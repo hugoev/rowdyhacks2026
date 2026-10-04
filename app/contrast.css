@@ -34,7 +34,7 @@
   font-size: 16px;
   font-weight: 700;
   line-height: 1.5;
-  color: #fff2dc;
+  color: #30251c;
 }
 .workspace :is(input:not([type='checkbox']), textarea, select) { border-color: #877057; }
 .workspace :is(input, textarea)::placeholder { color: #66513f; opacity: 1; }
@@ -48,9 +48,9 @@
 .workspace .critical-key { color: #963429; }
 
 .sidebar :is(.brand small, .nav-label, .sidebar-family small, .sidebar-user small, .crew-note p) {
-  color: #ead8bb;
+  color: #49392b;
 }
-.sidebar .crew-note strong { color: #fff2dc; }
+.sidebar .crew-note strong { color: #30251c; }
 
 .workspace .detective-board .stat-top {
   align-items: flex-start;
@@ -94,4 +94,18 @@
 .workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #203947; }
 .workspace .detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
   color: #fff2dc;
+}
+
+/* One warm paper family around the cork, with poster-style case headings. */
+:root, .rosa-surface { --back: #eee8dc; }
+body, .workspace, .rosa-surface { background-color: #eee8dc; }
+.sidebar { border-right-color: #b7a58d; }
+.sidebar :is(.brand, .brand-name, .sidebar-user strong, .mini-cross) { color: #30251c; }
+.sidebar .sidebar-family > svg { color: #456d54; }
+.sidebar .nav-item:focus-visible { outline-color: #7e2527; }
+.topbar, .rosa-topbar { background-color: #eee8dc; }
+body :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-bebas-neue), 'Arial Narrow', sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: .7px !important;
 }

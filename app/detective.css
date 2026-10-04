@@ -155,7 +155,7 @@
 .confirm-dialog .icon-button { min-height: 44px; min-width: 44px; }
 
 /* Upright ink labels on torn masking tape. */
-.sidebar { background: #30251c; padding: 28px 14px 0; width: 220px; }
+.sidebar { background: #ddd2be; color: #30251c; padding: 28px 14px 0; width: 220px; }
 .workspace { margin-left: 220px; width: calc(100% - 220px); }
 .sidebar nav { display: grid; gap: 10px; }
 .sidebar .nav-item {
@@ -197,8 +197,8 @@
 .sidebar .tape-label { font-family: var(--mono); font-size: 14px; letter-spacing: -.4px; }
 .sidebar .nav-count { margin-left: auto; }
 .sidebar .nav-item:focus-visible { outline: 3px solid #ffe4a1; outline-offset: 3px; }
-.sidebar .nav-label { color: #d8c39d; }
-.sidebar .sidebar-family, .sidebar .sidebar-user, .sidebar .crew-note { border-color: #765d45; }
+.sidebar .nav-label { color: #49392b; }
+.sidebar .sidebar-family, .sidebar .sidebar-user, .sidebar .crew-note { border-color: #b7a58d; }
 .detective-board [data-board-node].demo-card { background-color: #a5c0cb; border-color: #617f8d; background-image: none; color: #203947; }
 .detective-board .demo-card > p, .detective-board .demo-card .eyebrow,
 .detective-board .demo-card .demo-fine { color: #203947; }
