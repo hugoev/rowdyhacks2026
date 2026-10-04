@@ -23,6 +23,19 @@
 ) { color: #49392b; }
 
 .workspace :is(.breadcrumb > span, .breadcrumb > svg, .connection) { color: #574635; }
+.workspace .breadcrumb > span {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: .5px;
+  color: #241b14;
+}
+.sidebar .sidebar-family strong {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #fff2dc;
+}
 .workspace :is(input:not([type='checkbox']), textarea, select) { border-color: #877057; }
 .workspace :is(input, textarea)::placeholder { color: #66513f; opacity: 1; }
 .workspace :is(.button.secondary, .badge.outline, .upload-zone, .preset-row button) {
