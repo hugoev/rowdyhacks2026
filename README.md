@@ -24,14 +24,13 @@ same conversation, holds or releases the mock payment, and creates a heist case 
 
 The brief has changed; the running app has **not yet been rebuilt for v3**.
 Current code still uses SQLite, Socket.IO, paired roles, caller listening,
-family words, Mission Control, and optional Solana devnet escrow. Existing
-`setup:agent` creates only the older scammer agent. The v3 bank app, speaking
+family words, Mission Control, and optional Solana devnet escrow. The two-agent
+`setup:agent` now creates the v3 scammer and verifier. The v3 bank app, speaking
 teller, verifier agent flow, SSE routes, transaction seed, and new case schema
 remain to be implemented. Earlier docs are [archived](docs/archive/v2/ARCHIVE.md).
 
-The next setup work is the consented Diego clone, separate scammer and verifier
-agents, and server environment configuration. Do not treat the new key names
-or routes as already supported by the current code.
+The consented clone and both agent configurations are prepared. The next build
+work is the v3 phone pages and the speaking teller/result loop. V3 key aliases are supported; the new routes are not implemented yet.
 
 ## Run the current checkout
 
@@ -46,8 +45,7 @@ npm run dev
 
 Open http://localhost:3000. Copy `.env.example` to an ignored `.env` for current
 provider configuration. The v3 key contract is documented in
-[environment setup](docs/integrations.md); templates and runtime will migrate
-with implementation. Never commit credentials or use public-prefixed API keys.
+[environment setup](docs/integrations.md); templates and server adapters now support the new names with legacy fallbacks. Never commit credentials or use public-prefixed API keys.
 
 ```sh
 npm run typecheck

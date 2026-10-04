@@ -95,8 +95,8 @@ const summary: EvalSummary = {
 };
 writeFileSync(evalPath(), JSON.stringify({ summary, runs, errors: runs.length - valid.length }, null, 2));
 console.log('\nSUMMARY', JSON.stringify(summary));
-if (process.env.DATABASE_URL) {
-  const store = new Store(':memory:'); const tiger = new TigerAnalytics(store, process.env.DATABASE_URL);
+if (process.env.TIGER_DATABASE_URL || process.env.DATABASE_URL) {
+  const store = new Store(':memory:'); const tiger = new TigerAnalytics(store, process.env.TIGER_DATABASE_URL || process.env.DATABASE_URL);
   try { console.log((await tiger.recordEval(summary)) ? 'Recorded in Tiger Data.' : 'Tiger not configured.'); } catch (error) { console.warn('Tiger record failed:', (error as Error).message); }
   await tiger.close(); store.db.close();
 }

@@ -43,3 +43,11 @@ Optional only after core passes: confirmed release, Spanish, coach mode, Ana
 retry, reconnect/context recovery, PTT. Do not claim cooling-off release until
 its duration and behavior are specified and tested. Target five clean runs and
 15+ rehearsals with strangers before aiming for 30+ expo repetitions.
+
+## Two-agent setup - October 4, 2026
+
+Scammer created with the project user's consented clone; verifier created with
+stock voice, dynamic variables, and report_result client tool. Saved configuration
+and signed-session URL checks passed for both agents. V3 key aliases are populated
+locally and in the private deployment environment. These checks start no phone
+conversations and do not satisfy the v3 real-phone acceptance gates.

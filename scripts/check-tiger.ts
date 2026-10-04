@@ -4,7 +4,7 @@ import pg from 'pg';
 import { Store } from '../server/store';
 import { TigerAnalytics, tigerPoolConfig } from '../server/tiger';
 
-const connectionString = process.env.DATABASE_URL;
+const connectionString = process.env.TIGER_DATABASE_URL || process.env.DATABASE_URL;
 if (!connectionString) { console.error('Set DATABASE_URL in your ignored .env file first.'); process.exit(1); }
 const pool = new pg.Pool(tigerPoolConfig(connectionString, process.env.TIGER_CA_CERT));
 pool.on('error', () => {});

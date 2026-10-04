@@ -1,8 +1,9 @@
 # PRD v3 provider and environment setup
 
-This is the next setup brief. Current code still implements v2. No new agents,
-voice clones, keys, provider resources, or production secrets are created by
-this documentation update.
+This is the next setup brief. Current code still implements v2. Agent setup is now implemented. Two ElevenLabs agents were created on October 4,
+2026; signed sessions and configuration reads passed. The scammer uses the project
+user's consented clone; the verifier uses the stock brand voice. The v3 phone
+pages and callback-result flow are still pending.
 
 ## Target environment contract
 
@@ -10,10 +11,10 @@ this documentation update.
 | --- | --- | --- |
 | `GEMINI_API_KEY` | Server-side ephemeral-token minting | Already consumed |
 | `ELEVENLABS_API_KEY` | Server-side agent session setup | Already consumed |
-| `EL_AGENT_SCAMMER_ID` | ElevenLabs Agent A, consented clone | New; runtime not wired |
-| `EL_AGENT_VERIFIER_ID` | ElevenLabs Agent B, stock voice | New; runtime not wired |
-| `TIGER_DATABASE_URL` | Transaction and case PostgreSQL database | New name; current runtime uses DATABASE_URL |
-| `PUBLIC_BASE_URL` | Canonical HTTPS origin for bank and call pages | New name; current runtime uses APP_ORIGIN |
+| `EL_AGENT_SCAMMER_ID` | ElevenLabs Agent A, consented clone | Configured; server adapter supports this ID |
+| `EL_AGENT_VERIFIER_ID` | ElevenLabs Agent B, stock voice | Configured; server adapter supports this ID |
+| `TIGER_DATABASE_URL` | Transaction and case PostgreSQL database | Supported; DATABASE_URL remains a compatibility fallback |
+| `PUBLIC_BASE_URL` | Canonical HTTPS origin for bank and call pages | Supported; APP_ORIGIN remains a compatibility fallback |
 
 Keep all keys and DB credentials server-side, in ignored `.env` locally and
 `.env.vultr`/GitHub `VULTR_ENV` for deployment. PUBLIC_BASE_URL is a public origin,
@@ -23,8 +24,8 @@ Use `TIGER_CA_CERT` only if the connection needs an explicit CA certificate.
 Infrastructure still needs its domain, certificate email, host/port, and SSH
 settings; these are not additional application services.
 
-Do not rename existing private keys before runtime support lands. Current
-`.env.example` and `deploy/vultr/env.example` describe the current implementation.
+Both environment templates include the v3 names. Local and private Vultr
+configuration are populated; legacy values are preserved during migration.
 `ELEVENLABS_AGENT_ID` is the old single-agent key, not a verifier configuration.
 Voice IDs select voices during agent setup; agent IDs identify configured agents.
 Never put API keys in `NEXT_PUBLIC_` values, browser events, URLs, or logs.
@@ -48,9 +49,25 @@ Never put API keys in `NEXT_PUBLIC_` values, browser events, URLs, or logs.
 7. Synchronize the complete VULTR_ENV secret, preserving unrelated infrastructure
    values; deploy and run v3 acceptance three times. Do not upload a partial file.
 
-Existing `npm run setup:agent` creates the old scammer using
-ELEVENLABS_SCAMMER_VOICE_ID and prints ELEVENLABS_AGENT_ID. It does not create
-Agent B or install the v3 prompts, tools, and key names. Do not use it as if it did.
+## Setup commands
+
+```sh
+npm run setup:agent -- --role=verifier
+npm run setup:agent -- --role=scammer
+```
+
+Default `--role=both` creates verifier then scammer. Existing configured IDs are
+retained to avoid duplicate creation. IDs are saved to private `.env`, never
+printed with credentials. Scammer setup requires ELEVENLABS_SCAMMER_VOICE_ID and
+ELEVENLABS_SCAMMER_CONSENT_PATH pointing to the actual voice owner consent note.
+The confirmed note is [voice consent](consent/voice-clone.md). Both agents require
+signed session authentication. No paid conversations were started by the setup
+checks. This account's English-agent API requires eleven_flash_v2 and a session
+cap of at least 60 seconds; the verifier prompt still targets under 30 seconds.
+
+The server adapter can mint the appropriate signed URL by agent role. The existing
+UI still uses the v2 scammer flow; there is no working v3 verifier call page yet.
+Do not claim that agent creation proves a complete phone demo.
 
 ## Agent A - scammer, demo only
 
