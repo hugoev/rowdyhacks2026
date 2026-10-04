@@ -3,13 +3,14 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const vaultRoutes = new Set(['/', '/guardian', '/protected', '/relative', '/settings', '/inspector', '/cases', '/drill', '/weather']);
+const vaultRoutes = new Set(['/', '/guardian', '/protected', '/relative', '/settings', '/cases']);
 const canonical = (path: string) => path === '/guardian' ? '/' : path;
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const previous = useRef(pathname);
   const [transition, setTransition] = useState<string | null>(null);
+  const [laser, setLaser] = useState<{ key: string; top: number; left: number } | null>(null);
 
   useLayoutEffect(() => {
     const from = previous.current;
@@ -18,17 +19,23 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     if (canonical(from) === canonical(pathname) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (!vaultRoutes.has(from) || !vaultRoutes.has(pathname)) return;
     setTransition(pathname);
+    // The laser starts under the new page's top bar and right of its sidebar
+    // (both absent on Diego's phone and in the stage view).
+    const bar = document.querySelector('.topbar')?.getBoundingClientRect();
+    const side = document.querySelector('.sidebar')?.getBoundingClientRect();
+    setLaser({ key: pathname + Date.now(), top: bar && bar.height ? bar.bottom : 0, left: side && side.right > 0 ? side.right : 0 });
     // A missing animationend event must never leave the decoration on screen.
     const timeout = setTimeout(() => setTransition(null), 1100);
-    return () => clearTimeout(timeout);
+    const laserTimeout = setTimeout(() => setLaser(null), 1400);
+    return () => { clearTimeout(timeout); clearTimeout(laserTimeout); };
   }, [pathname]);
 
   return <>
     <div className="route-content">{children}</div>
+    {laser && <div key={laser.key} className="vault-laser" aria-hidden="true" style={{ '--laser-top': `${laser.top}px`, '--laser-left': `${laser.left}px` } as React.CSSProperties} onAnimationEnd={() => setLaser(null)}/>}
     {transition && <div key={transition} className="vault-transition" aria-hidden="true" onAnimationEnd={event => {
       if (event.animationName === 'vault-door-left') setTransition(null);
     }}>
-      <div className="vault-scan-line"/>
       <div className="vault-door vault-door-left">
         <div className="vault-door-inset"/>
         <div className="vault-bolts"><i/><i/><i/></div>
