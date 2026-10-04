@@ -21,6 +21,7 @@ test('unauthenticated and wrong-role callers cannot approve payments', async ({ 
 for (let run = 1; run <= 3; run++) test(`grandson demo completes across three views — run ${run}`, async ({ browser }) => {
   const context = await browser.newContext(); const rosa = await context.newPage(); const guardian = await context.newPage(); const relative = await context.newPage();
   await guardian.goto('/guardian'); await expect(guardian.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
+  await expect(guardian.locator('main h1')).not.toHaveClass('caseboard-heading');
   await relative.goto('/relative'); await expect(relative.getByRole('heading', { name: 'You’re part of her safety net.' })).toBeVisible();
   await rosa.goto('/protected'); await rosa.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await rosa.getByLabel('Read critical warnings aloud').uncheck();
   await rosa.getByText('Practice tools', { exact: true }).click(); await rosa.getByRole('button', { name: 'Start call practice' }).click();

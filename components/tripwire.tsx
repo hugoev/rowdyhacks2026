@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { Sidebar } from './sidebar';
 import { BrandMark } from './brand-mark';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Activity, ArrowUpRight, Bell, Check, ChevronRight, CircleHelp, LockKeyhole, Menu, Radio, RotateCcw, Shield, ShieldCheck, Users, X } from 'lucide-react';
 import { Provider, useTripwire } from './context';
 import { Badge, Confirm, Countdown, Empty, money, PaymentStatus, RiskChart, RiskDial, SectionTitle, time, ViewLink } from './ui';
@@ -51,6 +51,15 @@ function Shell({ view }: { view: View }) {
     </div>
   </div>;
 }
+function CaseboardHeading() {
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    const timeout = setTimeout(() => setRevealed(true), 500);
+    return () => clearTimeout(timeout);
+  }, []);
+  return <h1 className={revealed ? undefined : 'caseboard-heading'} onAnimationEnd={() => setRevealed(true)}>Every second counts<span>.</span></h1>;
+}
+
 function Dashboard() {
   const { state, request } = useTripwire(); const s = state!;
   const [reset, setReset] = useState(false);
@@ -59,7 +68,7 @@ function Dashboard() {
   const protectedMoney = blocked + held.reduce((sum, p) => sum + p.amount, 0);
   const [tab, setTab] = useState<'signals' | 'transcript'>('signals');
   return <>
-    <div className="page-heading"><div><p className="eyebrow"><span className="red-dash"/> THE COUNTER-HEIST CREW</p><h1>Every second counts<span>.</span></h1><p>Your family’s safety net, before the money moves.</p></div><Link className="button primary" href="/protected"><Radio size={16}/>Open Rosa’s shield<ArrowUpRight size={16}/></Link></div>
+    <div className="page-heading"><div><p className="eyebrow"><span className="red-dash"/> THE COUNTER-HEIST CREW</p><CaseboardHeading/><p>Your family’s safety net, before the money moves.</p></div><Link className="button primary" href="/protected"><Radio size={16}/>Open Rosa’s shield<ArrowUpRight size={16}/></Link></div>
     <div className="overview-grid"><div className="stat-card" data-board-node="money" tabIndex={0}><div className="stat-top"><span>MONEY INTERRUPTED</span><ShieldCheck size={18}/></div><strong>{money(protectedMoney)}<span className="stat-unit">USD</span></strong><p><span className="green-dot"/>{money(blocked)} blocked · {money(protectedMoney - blocked)} on hold</p></div><div className="stat-card" data-board-node="attention" tabIndex={0}><div className="stat-top"><span>NEEDS YOUR ATTENTION</span><Bell size={18}/></div><strong>{String(held.length).padStart(2, '0')}<span className="stat-note">{held.length ? 'Your second key is needed' : 'You’re all caught up'}</span></strong><p>{held.length ? 'Review the payment queue below' : 'We’ll flag requests that need a closer look'}</p></div><div className="stat-card family-stat" data-board-node="inner-circle" tabIndex={0}><div className="stat-top"><span>YOUR INNER CIRCLE</span><Users size={18}/></div><div className="family-avatars"><div className="avatar rosa">R</div><div className="avatar elena">E</div><div className="avatar alex">A</div><div><strong>3 family members</strong><small>Rosa, Elena & Alex</small></div></div><p>Different roles. The same side.</p></div></div>
     <div className="dashboard-columns"><div className="left-column">
       <section className="panel lookout-panel" data-board-node="lookout"><SectionTitle index="01" title="The Lookout" right={<Badge tone={s.call.active ? 'green' : 'neutral'}><span className={s.call.active ? 'live-dot' : ''}/>{s.call.active ? 'CALL GUARD ACTIVE' : 'STANDING BY'}</Badge>}/><div className="lookout-body"><div className="risk-summary"><RiskDial score={s.call.assessment.score} level={s.call.assessment.level}/><div className="risk-copy"><p className="eyebrow">ROSA’S CALL GUARD</p><h3>{s.call.assessment.score >= 85 ? 'Something isn’t adding up.' : s.call.active ? 'Listening for the tells.' : 'A little backup. A lot of peace of mind.'}</h3><p>{s.call.active || s.call.assessment.score ? s.call.assessment.advice : 'When Rosa starts the call guard, you’ll see warning signs here as they happen.'}</p><div className="source-label"><Activity size={13}/>{s.call.assessment.source === 'gemini' ? 'Gemini + deterministic rules' : 'Deterministic risk engine'}<span>•</span>{s.call.active ? 'Call in progress' : 'No active call'}</div></div></div><div className="chart-heading"><span>RISK OVER TIME</span><span className="critical-key">— CRITICAL AT 85</span></div><RiskChart events={s.events}/></div><div className="lookout-tabs"><button className={tab === 'signals' ? 'selected' : ''} onClick={() => setTab('signals')}>Detected signals <span>{s.call.assessment.tells.length}</span></button><button className={tab === 'transcript' ? 'selected' : ''} onClick={() => setTab('transcript')}>Transcript</button></div><div className="signal-area">{tab === 'signals' ? s.call.assessment.tells.length ? <div className="tell-chips">{s.call.assessment.tells.map(t => <span key={t.id}><span className="signal-dot"/>{t.label}</span>)}</div> : <p className="quiet-text">No signals yet. Start a practice call in Rosa’s shield to see the Lookout in action.</p> : <div className="transcript-mini">{s.call.transcript.length ? s.call.transcript.map(l => <p key={l.id}><time>{time(l.at)}</time>{l.text}</p>) : <p className="quiet-text">Call text will appear here with the protected user’s consent. It is not saved by default.</p>}</div>}</div></section>

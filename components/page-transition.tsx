@@ -28,6 +28,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     {transition && <div key={transition} className="vault-transition" aria-hidden="true" onAnimationEnd={event => {
       if (event.animationName === 'vault-door-left') setTransition(null);
     }}>
+      <div className="vault-scan-line"/>
       <div className="vault-door vault-door-left">
         <div className="vault-door-inset"/>
         <div className="vault-bolts"><i/><i/><i/></div>

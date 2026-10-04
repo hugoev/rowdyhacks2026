@@ -8,12 +8,18 @@ test('vault navigation stays in the document and clears after rapid navigation a
     document.documentElement.dataset.navigationMarker = 'original';
     document.addEventListener('animationstart', event => {
       if (event.animationName.startsWith('vault-door')) document.documentElement.dataset.vaultPlayed = 'true';
+      if (event.animationName === 'vault-scan') {
+        document.documentElement.dataset.scanPlayed = 'true';
+        document.documentElement.dataset.scanPresent = String(!!document.querySelector('.vault-transition .vault-scan-line'));
+      }
     });
   });
   const nav = page.getByRole('navigation', { name: 'Main navigation' });
   await nav.getByRole('link', { name: 'The Inspector' }).click();
   await expect(page).toHaveURL('/inspector');
   await expect(page.locator('html')).toHaveAttribute('data-vault-played', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-scan-played', 'true');
+  await expect(page.locator('html')).toHaveAttribute('data-scan-present', 'true');
   await nav.getByRole('link', { name: 'Case files' }).click();
   await expect(page).toHaveURL('/cases');
   await expect(page.locator('.vault-transition')).toHaveCount(0);
@@ -22,6 +28,7 @@ test('vault navigation stays in the document and clears after rapid navigation a
   await page.goForward();
   await expect(page).toHaveURL('/cases');
   await expect(page.locator('.vault-transition')).toHaveCount(0);
+  await expect(page.locator('.vault-scan-line')).toHaveCount(0);
   await expect(page.locator('html')).toHaveAttribute('data-navigation-marker', 'original');
   await page.evaluate(() => delete document.documentElement.dataset.vaultPlayed);
   await nav.getByRole('link', { name: 'Case files' }).click();

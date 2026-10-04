@@ -209,7 +209,7 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
         return <g key={`${from}-${to}`} className="board-thread"><path d={path} className="board-thread-shadow"/><path d={path} className="board-thread-red" filter={`url(#${gradientId}-yarn)`}/><path d={path} className="board-yarn-fiber"/>{[[ax, ay], [bx, by]].map(([x, y], pinIndex) => <g key={pinIndex} className="board-thread-pin" transform={`translate(${x},${y}) scale(.8)`}><Pushpin gradientId={gradientId}/></g>)}</g>;
       })}
       <defs>
-        <radialGradient id={`${gradientId}-pin-cap`} cx=".35" cy=".3" r=".85"><stop stopColor="#db7767"/><stop offset=".55" stopColor="#bb4c44"/><stop offset="1" stopColor="#973332"/></radialGradient>
+        <radialGradient id={`${gradientId}-pin-cap`} cx=".35" cy=".3" r=".85"><stop stopColor="#ff7968"/><stop offset=".55" stopColor="#D92D20"/><stop offset="1" stopColor="#C5261B"/></radialGradient>
         <filter id={`${gradientId}-pin-shadow`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".8"/></filter>
       </defs>
       {geometry.anchors.map(anchor => <g key={anchor.id} className="board-paper-pin" transform={`translate(${anchor.x + anchor.width / 2},${anchor.y + 7})`}>

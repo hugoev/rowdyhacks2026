@@ -315,3 +315,39 @@
   .board-beam { display: none; }
   .board-lamp-shade { transform: none; }
 }
+
+/* Physical paper depth and responsive feedback; lamp behavior is unchanged. */
+.detective-board { box-shadow: inset 0 0 0 5px #c8a27a, inset 0 0 0 6px #97724e80, 0 3px 0 #60432540, 0 12px 24px #30251c24; }
+.detective-board [data-board-node] { box-shadow: 2px 3px 0 #80604432, 0 6px 12px #30251c20; transition: transform 150ms ease, box-shadow 150ms ease; }
+.detective-board [data-board-lit] { box-shadow: 2px 3px 0 #80604440, 0 8px 18px #30251c26; }
+.detective-board::before, .detective-board::after,
+.detective-board .page-heading::before, .detective-board .page-heading::after {
+  background-image: url('/paper-fiber.svg'), linear-gradient(110deg, #fff5, transparent 65%);
+  background-size: 100px 100px, auto;
+  filter: drop-shadow(1px 2px 1px #30251c35);
+}
+.detective-board .stat-card { padding: 28px; }
+.detective-board .stat-card:is([data-board-node='money'], [data-board-node='attention']) > strong {
+  font-size: 48px; font-weight: 700; color: #C5261B;
+}
+.button.primary, .rosa-surface .button.primary { background-color: #D92D20; color: #fffdf8; box-shadow: 0 3px 0 #922019; }
+.button.primary:hover:not(:disabled), .rosa-surface .button.primary:hover:not(:disabled) { background-color: #C5261B; }
+.sidebar .nav-item { transition: transform 150ms ease, filter 150ms ease; }
+.detective-board [data-board-node]:focus-visible,
+.detective-board [data-board-node]:focus-within { box-shadow: 2px 3px 0 #80604440, 0 10px 18px #30251c30; }
+.sidebar .nav-item:focus-visible { filter: drop-shadow(0 3px 2px #30251c30); }
+.caseboard-heading { animation: caseboard-typewriter 450ms steps(24, end) both; }
+@keyframes caseboard-typewriter { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@media (hover: hover) and (pointer: fine) {
+  .detective-board [data-board-node]:hover { transform: translateY(-2px); box-shadow: 2px 4px 0 #80604440, 0 10px 20px #30251c30; }
+  .sidebar .nav-item:hover { transform: translateY(-2px); filter: drop-shadow(0 4px 2px #30251c30); }
+}
+@media (max-width: 760px) {
+  .detective-board .stat-card { padding: 24px; }
+  .detective-board .stat-card:is([data-board-node='money'], [data-board-node='attention']) > strong { font-size: 40px; }
+  .caseboard-heading { animation: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .caseboard-heading { animation: none; }
+  .detective-board [data-board-node]:hover, .sidebar .nav-item:hover { transform: none; }
+}

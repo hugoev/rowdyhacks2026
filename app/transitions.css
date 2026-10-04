@@ -54,3 +54,21 @@
 @media (prefers-reduced-motion: reduce) {
   .vault-transition { display: none; }
 }
+
+.vault-scan-line {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 5;
+  background: #D92D20;
+  box-shadow: 0 0 12px #d92d2066;
+  animation: vault-scan 820ms linear both;
+}
+@keyframes vault-scan {
+  0% { transform: translateY(0); opacity: 0; }
+  8% { opacity: 1; }
+  80% { opacity: 1; }
+  100% { transform: translateY(100vh); opacity: 0; }
+}
