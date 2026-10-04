@@ -153,6 +153,13 @@ test('all boards reflow at phone and 200-percent desktop-equivalent widths', asy
       await expect(page.locator('.board-paper-pin')).toHaveCount(visibleCards);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${route} at ${width}px`).toBe(true);
       await page.screenshot({ path: `test-results/detective-${route}-${width}.png`, fullPage: true });
+      if (width === 390 && route === 'guardian') {
+        await page.getByRole('button', { name: 'Open navigation' }).click();
+        await expect(page.getByRole('navigation', { name: 'Main navigation' })).toBeVisible();
+        await expect.poll(() => page.locator('.sidebar').evaluate(node => node.getBoundingClientRect().left)).toBe(0);
+        await page.screenshot({ path: 'test-results/detective-mobile-sidebar.png' });
+        await page.getByRole('button', { name: 'Close navigation' }).click({ position: { x: 350, y: 20 } });
+      }
     }
   }
 });
