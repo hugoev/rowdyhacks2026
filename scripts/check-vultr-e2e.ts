@@ -2,14 +2,14 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { randomUUID } from 'node:crypto';
 import { parse } from 'dotenv';
-import { chromium, request, type APIRequestContext } from '@playwright/test';
+import { chromium, expect, request, type APIRequestContext } from '@playwright/test';
 import { io } from 'socket.io-client';
 import pg from 'pg';
 import { tigerPoolConfig } from '../server/tiger';
 import { vultrConfigSchema } from './vultr-config';
 import type { PublicState, Role } from '../lib/types';
 
-// This explicit live check creates and denies one synthetic mock payment.
+// This explicit live check runs a synthetic rules call and blocks a mock payment.
 const env = parse(readFileSync('.env.vultr'));
 const config = vultrConfigSchema.parse(env);
 assert.ok(env.DATABASE_URL, 'Configure DATABASE_URL in .env.vultr first');
@@ -20,6 +20,7 @@ pool.on('error', () => { process.exitCode = 1; console.error('Tiger connection i
 const browser = await chromium.launch();
 let socket: ReturnType<typeof io> | undefined;
 let paymentId: string | undefined;
+let callId: string | undefined;
 let resolved = false;
 let stage = 'paired login';
 async function api(role: Role, path: string, data?: unknown) {
@@ -56,6 +57,7 @@ try {
     assert.equal('riskHistory' in await api(role, '/api/state'), false);
   }
   const initial: PublicState = await api('guardian', '/api/state');
+  assert.equal(initial.call.active, false, 'End the existing call before running live verification');
   const previousIds = new Set(initial.events.map(event => event.id));
   stage = 'guardian WebSocket';
   const guardianCookies = (await clients.get('guardian')!.storageState()).cookies.map(cookie => `${cookie.name}=${cookie.value}`).join('; ');
@@ -67,16 +69,24 @@ try {
   const observedPayments = new Set<string>();
   socket.on('state', (state: PublicState) => { for (const payment of state.payments) if (payment.status === 'held') observedPayments.add(payment.id); });
   stage = 'payment hold and denial';
+  ({ callId } = await api('protected', '/api/call/start', { consent: true, live: 'rules' }));
+  await api('protected', '/api/call/line', { callId, source: 'scripted', text: 'Grandma, I got arrested. I need gift cards for bail right now. Please do not tell Mom. Keep this secret.' });
   const payment = await api('protected', '/api/payments', { payee: `Synthetic Vultr verification ${randomUUID()}`, amount: 2500, rail: 'gift-card', newPayee: true });
   paymentId = payment.id;
   assert.equal(payment.status, 'held', 'Gift-card fixture must be held');
   await waitFor(async () => observedPayments.has(payment.id), 'Guardian did not receive the held payment over WebSocket');
   const denied = await clients.get('protected')!.post('/api/payments/decide', { headers: { 'x-tripwire-client': 'web', 'x-tripwire-role': 'protected' }, data: { id: payment.id, decision: 'approve' } });
   assert.equal(denied.status(), 403, 'Protected role must not approve a held payment');
-  const decision = await api('guardian', '/api/payments/decide', { id: payment.id, decision: 'deny' });
-  assert.equal(decision.status, 'denied'); resolved = true;
+  const relativeContext = await browser.newContext({ baseURL, storageState: await clients.get('relative')!.storageState(), viewport: { width: 390, height: 844 } });
+  const relativePage = await relativeContext.newPage();
+  await relativePage.goto('/relative');
+  await relativePage.getByRole('button', { name: 'Not me, block' }).click();
+  await expect(relativePage.getByRole('heading', { name: 'Blocked. Grandma’s money hasn’t moved.' })).toBeVisible();
+  await relativeContext.close();
+  await waitFor(async () => (await api('protected', '/api/state') as PublicState).payments.some(p => p.id === payment.id && p.status === 'denied'), 'Diego reply did not block Rosa payment');
+  resolved = true;
   const state: PublicState = await api('guardian', '/api/state');
-  const eventIds = state.events.filter(event => !previousIds.has(event.id) && event.kind === 'payment').map(event => event.id);
+  const eventIds = state.events.filter(event => !previousIds.has(event.id)).map(event => event.id);
   assert.ok(eventIds.length >= 2, 'Creation and denial must generate risk events');
   stage = 'Tiger persistence and guardian chart';
   await waitFor(async () => {
@@ -95,9 +105,9 @@ try {
     page.on('pageerror', error => errors.push(error.message));
     stage = `${role} mobile navigation`;
     await page.goto(`/${role}`);
-    stage = `${role} mobile live connection`;
-    // The mobile layout hides this status label; its text still tracks the socket.
-    try { await page.getByText('Live connection', { exact: true }).waitFor({ state: 'attached' }); }
+    stage = `${role} mobile rendered view`;
+    const heading = role === 'guardian' ? 'Listening for the con.' : role === 'protected' ? 'Hello, Rosa.' : 'Blocked. Grandma’s money hasn’t moved.';
+    try { await expect(page.getByRole('heading', { name: heading, exact: true })).toBeVisible(); }
     catch (error) {
       await page.screenshot({ path: `test-results/vultr-${role}-failure.png`, fullPage: true });
       throw error;
@@ -118,6 +128,12 @@ try {
   if (paymentId && !resolved) {
     try { await api('guardian', '/api/payments/decide', { id: paymentId, decision: 'deny' }); }
     catch { console.error('Synthetic payment cleanup failed; guardian must deny the verification fixture.'); process.exitCode = 1; }
+  }
+  if (callId) {
+    try {
+      const state: PublicState = await api('protected', '/api/state');
+      if (state.call.id === callId && state.call.active) await api('protected', '/api/call/end', {});
+    } catch { console.error('Synthetic call cleanup failed; end the verification call from Rosa’s screen.'); process.exitCode = 1; }
   }
   socket?.disconnect();
   await browser.close();

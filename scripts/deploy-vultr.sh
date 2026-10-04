@@ -23,6 +23,23 @@ ssh "$target" bash -s -- "$release" <<'REMOTE'
 set -euo pipefail
 release="$1"
 cd "$HOME/tripwire"
+# Serialize deployments so cleanup cannot race another build.
+exec 9>deploy.lock
+flock -w 900 9
+previous="$(cat current-release 2>/dev/null || true)"
+running="$(docker inspect tripwire-tripwire-1 --format '{{.Config.Image}}' 2>/dev/null || true)"
+# Retain the active image and last successful release; never prune data volumes.
+docker image ls tripwire --format '{{.Repository}}:{{.Tag}}' | while read -r image; do
+  if [[ "$image" != "$running" && "$image" != "tripwire:$previous" && "$image" != "tripwire:$release" ]]; then
+    docker image rm "$image"
+  fi
+done
+docker builder prune -af --keep-storage 2GB
+available_kb="$(df -Pk /var/lib/docker | awk 'NR == 2 {print $4}')"
+if (( available_kb < 5 * 1024 * 1024 )); then
+  printf 'Deployment needs at least 5 GiB free for the build; existing service was not replaced.\n' >&2
+  exit 1
+fi
 chmod 600 .env.vultr
 mkdir -p "releases/$release"
 tar -xf "releases/$release.tar" -C "releases/$release"

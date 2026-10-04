@@ -7,8 +7,9 @@ app and its database remain on Docker's private network. One VM runs one househo
 ## Current demo and updates
 
 The demo runs at https://tripwire.64.177.46.134.sslip.io on Vultr. HTTPS, all three
-role logins, secure cookies, and WebSocket state delivery were verified. ElevenLabs
-is configured; Gemini is disabled in the deployment to preserve credits. Role
+role logins, secure cookies, and WebSocket state delivery can be checked with
+`npm run check:vultr:e2e`. Gemini and ElevenLabs require their server-side keys;
+the ElevenLabs caller additionally requires `ELEVENLABS_AGENT_ID`. Role
 access codes are in the local private `.env.vultr` file.
 
 Every push to `main` runs GitHub Actions validation across Linux, Windows, and
@@ -36,6 +37,10 @@ npm run deploy:vultr -- root@64.177.46.134
 The script deploys local committed HEAD, builds on Vultr, replaces containers,
 preserves named volumes, and checks HTTPS health. It does not pull GitHub changes
 automatically when invoked manually; manual deployment bypasses CI checks.
+
+Deployments retain the active image and last successful release, remove obsolete
+Tripwire images, and bound Docker build cache before building. A disk-space check
+requires 5 GiB free before replacing containers. Cleanup never removes volumes.
 
 ## Create the instance
 
@@ -88,8 +93,11 @@ into chat or commit it. Send each role its own access code privately.
 Visit `https://YOUR_DOMAIN/api/health`: expect `ok: true`, `mode: paired`,
 `hosting: vultr`, and the deployed commit's release ID. Log in on `/protected`,
 `/guardian`, and `/relative` with their respective codes. Rehearse a scripted
-call, callback, held payment, and denial across phones. These actions make live
-Gemini calls if its key is configured; omit that key to preserve credits.
+call, family check, held payment, and denial across phones. The automated
+`npm run check:vultr:e2e` starts a synthetic rules call, creates a mock payment,
+blocks it through Diego's browser, and verifies Tiger persistence and mobile
+views. It requires no existing active call and leaves the resulting case for
+audit. This does not verify live microphone audio or the ElevenLabs caller.
 
 The server stores deployments at `~/tripwire/releases/COMMIT`. From that release:
 
