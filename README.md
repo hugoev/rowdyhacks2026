@@ -1,4 +1,7 @@
 # Tripwire
+
+For the project overview, setup, and complete presentation flow, read the [team demo guide](docs/DEMO.md).
+
 **Tripwire is a family scam-protection app, with a payment-protection feature that could integrate into a bank’s app.** Our MVP puts both together in one website to demonstrate the complete experience.
 
 There are three connected views:
