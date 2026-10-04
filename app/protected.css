@@ -36,6 +36,8 @@
 :where(.rosa-surface) .family-brand { font: 600 28px var(--display); letter-spacing: -1.5px; }
 :where(.rosa-surface) .family-brand span { color: var(--red); }
 :where(.rosa-surface) .family-settings-link { font-size: 20px; text-decoration: underline; text-underline-offset: 5px; }
+:where(.rosa-surface) .family-return { margin-bottom: 24px; }
+:where(.rosa-surface) .family-return .button { min-height: 56px; font-size: 20px; white-space: normal; text-align: left; }
 :where(.rosa-surface) .simple-surface .main-content { max-width: 1060px; padding: 42px 24px; }
 :where(.rosa-surface) .senior-heading { margin-bottom: 24px; }
 :where(.rosa-surface) .senior-heading h1 { font: 700 44px/1.2 var(--sans); letter-spacing: -.5px; }

@@ -3,8 +3,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const calmRoutes = new Set(['/protected', '/relative', '/settings']);
-const vaultRoutes = new Set(['/', '/guardian', '/inspector', '/cases']);
+const calmRoutes = new Set(['/protected', '/student', '/relative', '/settings']);
+const vaultRoutes = new Set(['/', '/guardian', '/inspector', '/cases', '/drill', '/weather']);
 const canonical = (path: string) => path === '/guardian' ? '/' : path;
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
@@ -22,7 +22,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     const kind = calmRoutes.has(from) || calmRoutes.has(pathname) ? 'calm' : 'vault';
     setTransition({ path: pathname, kind });
     // A missing animationend event must never leave the decoration on screen.
-    const timeout = setTimeout(() => setTransition(null), kind === 'vault' ? 700 : 200);
+    const timeout = setTimeout(() => setTransition(null), kind === 'vault' ? 1100 : 200);
     return () => clearTimeout(timeout);
   }, [pathname]);
 

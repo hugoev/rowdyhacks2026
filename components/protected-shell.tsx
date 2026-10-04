@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { X } from 'lucide-react';
+import { ArrowLeft, X } from 'lucide-react';
 import { useTripwire } from './context';
 import { Protected } from './protected';
 import { Badge } from './ui';
@@ -15,6 +15,7 @@ export function ProtectedShell({ student = false }: { student?: boolean }) {
         <div className="topbar-right"><Link className="family-settings-link" href="/settings">Settings</Link><span className={'connection ' + (online ? 'connected' : '')}><i/>{online ? 'Live connection' : 'Connecting…'}</span><Badge tone="outline">{state?.config.demo !== false ? 'DEMO MODE' : 'PAIRED MODE'}</Badge></div>
       </header>
       <main id="main" className="main-content">
+        <nav className="family-return" aria-label="Return navigation"><Link href="/" className="button secondary"><ArrowLeft size={22} aria-hidden="true"/>Back to command center</Link></nav>
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}
         {state ? <Protected student={student}/> : <div className="loading-state"><div className="brand-mark">T<span/></div><h1>Connecting your crew…</h1><p>Preparing the family shield.</p><button className="button secondary" onClick={() => window.location.reload()}>Retry connection</button></div>}
       </main>

@@ -75,7 +75,7 @@ test('capture the vault reveal for design review', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.goto('/guardian');
   await expect(page.locator('main h1')).toBeVisible();
-  // Slow only this visual capture; production navigation still takes 520ms.
+  // Slow only this visual capture; production navigation still takes 820ms.
   await page.addStyleTag({ content: '.vault-door { animation-duration: 30s !important; } .vault-wheel, .vault-bolts i { animation-duration: 8s !important; }' });
   await page.clock.install();
   await page.clock.pauseAt(new Date());
@@ -91,7 +91,7 @@ test('capture the vault reveal for design review', async ({ page }) => {
     }, fraction);
     await page.screenshot({ path: `test-results/vault-${name}.png` });
   }
-  await page.clock.runFor(800);
+  await page.clock.runFor(1200);
   await expect(page.locator('.vault-transition')).toHaveCount(0);
   await page.screenshot({ path: 'test-results/vault-open.png' });
 });
@@ -113,5 +113,18 @@ test('leaving Rosa stops microphone capture without a document reload', async ({
   await page.locator('.family-brand').click();
   await expect(page).toHaveURL('/');
   await expect(page.locator('html')).toHaveAttribute('data-microphone', 'stopped');
+  await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
+});
+
+test('Rosa has an explicit return button on mobile', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/protected');
+  await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
+  const back = page.getByRole('link', { name: 'Back to command center', exact: true });
+  await expect(back).toBeVisible();
+  expect((await back.boundingBox())!.height).toBeGreaterThanOrEqual(56);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await back.click();
+  await expect(page).toHaveURL('/');
   await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
 });

@@ -18,8 +18,8 @@
   box-shadow: inset 0 0 0 8px #fdfaf4, inset 0 0 0 10px #c4b498, 0 0 28px #30251c24;
   will-change: transform;
 }
-.vault-door-left { left: 0; z-index: 2; animation: vault-door-left 520ms cubic-bezier(.65, 0, .25, 1) both; }
-.vault-door-right { right: 0; animation: vault-door-right 520ms cubic-bezier(.65, 0, .25, 1) both; }
+.vault-door-left { left: 0; z-index: 2; animation: vault-door-left 820ms cubic-bezier(.65, 0, .25, 1) both; }
+.vault-door-right { right: 0; animation: vault-door-right 820ms cubic-bezier(.65, 0, .25, 1) both; }
 .vault-door-inset {
   position: absolute;
   inset: clamp(24px, 5vw, 72px);
@@ -40,13 +40,13 @@
 }
 .vault-dial, .vault-wheel { position: absolute; inset: 0; width: 100%; height: 100%; stroke: var(--vault-brown); }
 .vault-dial { stroke-width: 1; }
-.vault-wheel { animation: vault-unlock 140ms ease-in-out both; filter: drop-shadow(0 3px 1px #654f3620); }
+.vault-wheel { animation: vault-unlock 220ms ease-in-out both; filter: drop-shadow(0 3px 1px #654f3620); }
 .vault-wheel-rim { stroke-width: 10; }
 .vault-spoke { stroke-width: 9; stroke-linecap: round; }
 .vault-hub { fill: var(--vault-brown); stroke-width: 2; }
 .vault-hub-slot { stroke: var(--vault-cream); stroke-width: 3; stroke-linecap: round; }
 .vault-bolts { position: absolute; inset: 20% -12px 20% auto; width: 30px; display: flex; flex-direction: column; justify-content: space-between; }
-.vault-bolts i { height: 16px; border: 1px solid #80664a; border-radius: 3px; background: linear-gradient(#b7a083, #e1d4c2 45%, #9c8160); animation: vault-bolt 140ms ease-in both; }
+.vault-bolts i { height: 16px; border: 1px solid #80664a; border-radius: 3px; background: linear-gradient(#b7a083, #e1d4c2 45%, #9c8160); animation: vault-bolt 220ms ease-in both; }
 .route-content-calm { animation: route-calm 120ms ease-out both; }
 @keyframes vault-unlock { from { transform: rotate(-60deg); } to { transform: rotate(0); } }
 @keyframes vault-bolt { to { transform: translateX(-24px); } }
