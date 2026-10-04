@@ -181,6 +181,14 @@
 .sidebar .nav-item.active { color: #6b252a; }
 .sidebar .nav-item.active::before { background-color: #f4e4c7; box-shadow: inset 0 -3px #6b252a; }
 .sidebar .nav-item > svg { stroke-width: 1.8; }
+.sidebar .nav-item[href='/guardian'] > svg { color: #315b78; }
+.sidebar .nav-item[href='/protected'] > svg { color: #3d6849; }
+.sidebar .nav-item[href='/inspector'] > svg { color: #85591d; }
+.sidebar .nav-item[href='/cases'] > svg { color: #715078; }
+.sidebar .nav-item[href='/drill'] > svg { color: #a33d30; }
+.sidebar .nav-item[href='/weather'] > svg { color: #926219; }
+.sidebar .nav-item[href='/relative'] > svg { color: #2c6b68; }
+.sidebar .nav-item[href='/settings'] > svg { color: #526379; }
 .sidebar .tape-label { font-family: var(--mono); font-size: 14px; letter-spacing: -.4px; }
 .sidebar .nav-count { margin-left: auto; }
 .sidebar .nav-item:focus-visible { outline: 3px solid #ffe4a1; outline-offset: 3px; }
