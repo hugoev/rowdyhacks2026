@@ -9,6 +9,11 @@ export const scenarios = {
     'Please hurry. I need you to send money for bail right now.',
     'Please don’t tell Mom. Keep this secret. Buy gift cards and send me the codes.',
   ] },
+  fakeJob: { title: 'The Fake Job Check', description: 'A fake paycheck. A request to send the difference back.', lines: [
+    'Congratulations on the remote job. We are sending you a check to buy your equipment.',
+    'Deposit it today. You can keep five hundred dollars for your time.',
+    'Please wire the rest to our equipment vendor right now. The check already cleared, so there is no risk.',
+  ] },
   normal: { title: 'An ordinary call', description: 'A dinner plan. No money pressure.', lines: [
     'Hi Rosa, are we still meeting for dinner on Sunday?',
     'I will bring the salad. See you at six. Have a lovely afternoon!',

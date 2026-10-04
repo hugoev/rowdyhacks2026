@@ -24,4 +24,23 @@ WITH NO DATA;
 SELECT add_continuous_aggregate_policy('tripwire.risk_minute',
   start_offset => INTERVAL '7 days', end_offset => INTERVAL '1 minute',
   schedule_interval => INTERVAL '1 minute', if_not_exists => TRUE);
+CREATE TABLE IF NOT EXISTS tripwire.scam_weather_reports (
+  reported_at TIMESTAMPTZ NOT NULL,
+  market TEXT NOT NULL CHECK (market = 'San Antonio'),
+  scam_type TEXT NOT NULL,
+  report_count SMALLINT NOT NULL CHECK (report_count BETWEEN 1 AND 100),
+  source TEXT NOT NULL CHECK (source = 'seeded-demo'),
+  PRIMARY KEY (reported_at, market, scam_type, source)
+);
+SELECT create_hypertable('tripwire.scam_weather_reports', 'reported_at', if_not_exists => TRUE, migrate_data => TRUE);
+CREATE MATERIALIZED VIEW IF NOT EXISTS tripwire.scam_weather_daily
+WITH (timescaledb.continuous, timescaledb.materialized_only = false) AS
+SELECT market, scam_type, source, time_bucket(INTERVAL '1 day', reported_at) AS bucket,
+       sum(report_count)::INTEGER AS reports
+FROM tripwire.scam_weather_reports
+GROUP BY market, scam_type, source, time_bucket(INTERVAL '1 day', reported_at)
+WITH NO DATA;
+SELECT add_continuous_aggregate_policy('tripwire.scam_weather_daily',
+  start_offset => INTERVAL '35 days', end_offset => INTERVAL '1 minute',
+  schedule_interval => INTERVAL '1 minute', if_not_exists => TRUE);
 `;

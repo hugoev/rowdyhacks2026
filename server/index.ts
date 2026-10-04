@@ -8,12 +8,13 @@ import { Store } from './store';
 import { authenticate, equal, issue, roles } from './auth';
 import { enrichTranscript, inspect, speak } from './providers';
 import { CallScheduler } from './call-scheduler';
-import { configureGemini, summarizePayment, summarizeCase, GeminiError } from './gemini';
+import { configureGemini, summarizePayment, summarizeCase, coachDrill, GeminiError } from './gemini';
 import { configureElevenLabs, transcriptionToken } from './elevenlabs';
 import { providerFailure, providerSuccess, providerStatuses } from './provider-status';
 import { TigerAnalytics } from './tiger';
 import { SolanaVault } from './solana';
 import type { Payment, Role } from '../lib/types';
+import { drillScenarios, findDrillScenario, scoreDrill, type DrillAction } from '../lib/heist-drill';
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOST || '127.0.0.1';
@@ -104,6 +105,7 @@ const server = createServer(async (req, res) => {
     const permit = (...allowed: Role[]) => { if (!allowed.includes(role)) throw Object.assign(new Error('This action requires a different family role.'), { status: 403 }); };
     if (path === '/api/state' && req.method === 'GET') { store.tick(); json(res, 200, publicSnapshot(role)); return; }
     if (path === '/api/analytics' && req.method === 'GET') { permit('guardian'); json(res, 200, { status: tiger.status(), history: tiger.history(role) }); return; }
+    if (path === '/api/scam-weather' && req.method === 'GET') { permit('guardian'); json(res, 200, await tiger.scamWeather()); return; }
     if (req.method !== 'POST') { json(res, 404, { error: 'Endpoint not found.' }); return; }
     let result: unknown = { ok: true };
     switch (path) {
@@ -152,6 +154,17 @@ const server = createServer(async (req, res) => {
         const input = z.object({ text: z.string().max(20000).default(''), image: z.object({ data: z.string().max(7000000).regex(/^[A-Za-z0-9+/]*={0,2}$/), mimeType: z.enum(['image/png', 'image/jpeg', 'image/webp']) }).optional() }).parse(body);
         if (!input.text.trim() && !input.image) throw new Error('Add a message, link, or screenshot first.');
         result = await inspect(input.text, input.image); break;
+      }
+      case '/api/drill/score': {
+        permit('protected', 'guardian'); limit(ip + ':drill', 12);
+        const input = z.object({ scenario: z.enum(drillScenarios.map(item => item.id) as [string, ...string[]]), actions: z.array(z.enum(['pause', 'independent-check', 'tell-trusted-person', 'share-info', 'send-money', 'keep-secret'])).length(3) }).parse(body);
+        const scenario = findDrillScenario(input.scenario)!;
+        const score = scoreDrill(scenario, input.actions as DrillAction[]);
+        if (config.gemini) {
+          try { const coaching = await coachDrill(scenario.title, input.actions); result = { ...score, ...coaching, source: 'gemini' as const }; }
+          catch (error) { if (!(error instanceof GeminiError)) throw error; result = score; }
+        } else result = score;
+        break;
       }
       case '/api/transcription/token': {
         permit('protected'); limit(ip + ':scribe-token', 6);

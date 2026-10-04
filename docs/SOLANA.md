@@ -5,6 +5,12 @@ payments remain simulations. Each chain-backed hold deposits exactly 0.001 devne
 SOL, plus rent and fees. This native Rust program is a hackathon prototype, not
 an audited financial product. No real SOL, bank payment, or gift card is involved.
 
+The current hosted deployment is activated: the program is executable on devnet,
+the guardian public key is configured in GitHub Actions, and the persistent server
+fee payer has devnet SOL. `/api/health` has reported `solana: working`. A public
+devnet RPC can still be rate-limited, and a complete live Phantom decision should
+be rehearsed before presenting. The program is not configured for mainnet.
+
 ## Implemented and verified
 
 - Native Rust program: `chain/src/lib.rs`; client wire format: `lib/solana-wire.ts`.
@@ -73,9 +79,10 @@ The public endpoint is the fallback and is rate limited. The backend checks the
 actual genesis hash before enabling transactions and refuses mainnet. Push a
 stable commit after setting variables to trigger the normal verified deployment.
 
-The backend creates a devnet-only fee/deposit payer in persistent SQLite. Its key
-never goes to the browser. The public payer address appears in `/api/config` under
-`solana.payer`. Fund it with free devnet SOL; do not fund it with real SOL:
+For a fresh deployment, the backend creates a devnet-only fee/deposit payer in
+persistent SQLite. Its key never goes to the browser. The public payer address
+appears in `/api/config` under `solana.payer`. Fund it with free devnet SOL; do
+not fund it with real SOL:
 
 ```sh
 solana transfer PUBLIC_RUNTIME_PAYER 0.05 --url devnet --keypair .solana-private/deployer.json --allow-unfunded-recipient
