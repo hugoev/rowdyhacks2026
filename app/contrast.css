@@ -34,7 +34,7 @@
   font-size: 16px;
   font-weight: 700;
   line-height: 1.5;
-  color: #fff2dc;
+  color: #203947;
 }
 .workspace :is(input:not([type='checkbox']), textarea, select) { border-color: #877057; }
 .workspace :is(input, textarea)::placeholder { color: #66513f; opacity: 1; }
@@ -48,9 +48,9 @@
 .workspace .critical-key { color: #963429; }
 
 .sidebar :is(.brand small, .nav-label, .sidebar-family small, .sidebar-user small, .crew-note p) {
-  color: #ead8bb;
+  color: #203947;
 }
-.sidebar .crew-note strong { color: #fff2dc; }
+.sidebar .crew-note strong { color: #203947; }
 
 .workspace .detective-board .stat-top {
   align-items: flex-start;
@@ -91,7 +91,7 @@
 .workspace .footer { font-size: 12px; color: #30251c; line-height: 1.6; }
 .sidebar .nav-label { font-size: 12px; font-weight: 600; }
 
-.workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #203947; }
+.workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #442b26; }
 .workspace .detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
   color: #fff2dc;
 }
@@ -117,3 +117,23 @@
 .rosa-surface .workspace .detective-board .task-navigation button[aria-current] { background: #f5e8ce; color: #241b14; }
 .app-shell .workspace .detective-board .demo-bottom > .text-link { color: #fff2dc; }
 .app-shell .workspace .detective-board :is(.privacy-note, .provider-note) { color: #574635; }
+/* A shared typewriter family for emphasis; body text and the wordmark retain their fonts. */
+:root { --emphasis-font: var(--mono); }
+body :is(h1, h2, h3, h4, h5, h6) { font-family: var(--emphasis-font) !important; font-weight: 700 !important; }
+body :is(button, .button, label, summary, .text-link) { font-family: var(--emphasis-font) !important; font-weight: 600; }
+body :is(strong, b, .badge, .eyebrow, .nav-label, .tape-label, .breadcrumb strong,
+  .breadcrumb > span, .stat-top > span, .mono-small, .source-label, .chart-heading,
+  .case-date, .payment-who p, .activity-event time, .demo-fine, .demo-disclosure,
+  .case-tab, .transcript-mini time, .tell-chips > span, .payment-meta > span:last-child,
+  .chart-times, .chart-labels, .stat-unit, .dial-label, .dial-level, .footer,
+  .integration-row, .sample-buttons, .preset-row, .task-navigation) { font-family: var(--emphasis-font) !important; }
+body .detective-board :is(h1, h2, h3, h4, .stat-card > strong, .risk-dial strong) {
+  font-family: var(--emphasis-font) !important;
+  font-weight: 700;
+}
+body .rosa-surface :is(h1, h2, h3, h4, strong, button, .button, label, summary) { font-family: var(--emphasis-font) !important; }
+.sidebar .sidebar-user strong, .sidebar .sidebar-family strong,
+.sidebar .sidebar-user small, .sidebar .sidebar-family small,
+.sidebar .brand small, .sidebar .crew-note p, .sidebar .mini-cross { color: #203947; }
+.sidebar .brand-name { color: #203947; }
+.sidebar .sidebar-family > svg { color: #375d52; }
