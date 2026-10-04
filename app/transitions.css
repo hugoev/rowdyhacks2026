@@ -56,19 +56,23 @@
 }
 
 .vault-scan-line {
+  --scan-start: 70px;
   position: absolute;
-  top: 0;
-  left: 0;
+  top: var(--scan-start);
+  left: 220px;
   right: 0;
-  height: 3px;
+  height: 2px;
   z-index: 5;
-  background: #D92D20;
-  box-shadow: 0 0 12px #d92d2066;
-  animation: vault-scan 820ms linear both;
+  background: #ff3b3b;
+  box-shadow: 0 0 10px #ff3b3b, 0 0 20px #ff3b3b60;
+  animation: vault-scan 820ms ease-in-out both;
 }
 @keyframes vault-scan {
-  0% { transform: translateY(0); opacity: 0; }
-  8% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { transform: translateY(100vh); opacity: 0; }
+  0% { top: var(--scan-start); opacity: 0; }
+  15% { opacity: 1; }
+  85% { opacity: .9; }
+  100% { top: 100vh; opacity: 0; }
+}
+@media (max-width: 760px) {
+  .vault-scan-line { --scan-start: 61px; left: 0; }
 }
