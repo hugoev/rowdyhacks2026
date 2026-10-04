@@ -47,13 +47,10 @@
 .vault-hub-slot { stroke: var(--vault-cream); stroke-width: 3; stroke-linecap: round; }
 .vault-bolts { position: absolute; inset: 20% -12px 20% auto; width: 30px; display: flex; flex-direction: column; justify-content: space-between; }
 .vault-bolts i { height: 16px; border: 1px solid #80664a; border-radius: 3px; background: linear-gradient(#b7a083, #e1d4c2 45%, #9c8160); animation: vault-bolt 220ms ease-in both; }
-.route-content-calm { animation: route-calm 120ms ease-out both; }
 @keyframes vault-unlock { from { transform: rotate(-60deg); } to { transform: rotate(0); } }
 @keyframes vault-bolt { to { transform: translateX(-24px); } }
 @keyframes vault-door-left { 0%, 27% { transform: translateX(0); } 100% { transform: translateX(calc(-100% - 160px)); } }
 @keyframes vault-door-right { 0%, 27% { transform: translateX(0); } 100% { transform: translateX(100%); } }
-@keyframes route-calm { from { opacity: .65; } to { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   .vault-transition { display: none; }
-  .route-content-calm { animation: none; }
 }

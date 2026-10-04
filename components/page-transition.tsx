@@ -3,32 +3,29 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const calmRoutes = new Set(['/protected', '/student', '/relative', '/settings']);
-const vaultRoutes = new Set(['/', '/guardian', '/inspector', '/cases', '/drill', '/weather']);
+const vaultRoutes = new Set(['/', '/guardian', '/protected', '/student', '/relative', '/settings', '/inspector', '/cases', '/drill', '/weather']);
 const canonical = (path: string) => path === '/guardian' ? '/' : path;
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const previous = useRef(pathname);
-  const [transition, setTransition] = useState<{ path: string; kind: 'vault' | 'calm' } | null>(null);
+  const [transition, setTransition] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     const from = previous.current;
     previous.current = pathname;
     setTransition(null);
     if (canonical(from) === canonical(pathname) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const known = (route: string) => calmRoutes.has(route) || vaultRoutes.has(route);
-    if (!known(from) || !known(pathname)) return;
-    const kind = calmRoutes.has(from) || calmRoutes.has(pathname) ? 'calm' : 'vault';
-    setTransition({ path: pathname, kind });
+    if (!vaultRoutes.has(from) || !vaultRoutes.has(pathname)) return;
+    setTransition(pathname);
     // A missing animationend event must never leave the decoration on screen.
-    const timeout = setTimeout(() => setTransition(null), kind === 'vault' ? 1100 : 200);
+    const timeout = setTimeout(() => setTransition(null), 1100);
     return () => clearTimeout(timeout);
   }, [pathname]);
 
   return <>
-    <div className={transition?.kind === 'calm' ? 'route-content route-content-calm' : 'route-content'}>{children}</div>
-    {transition?.kind === 'vault' && <div key={transition.path} className="vault-transition" aria-hidden="true" onAnimationEnd={event => {
+    <div className="route-content">{children}</div>
+    {transition && <div key={transition} className="vault-transition" aria-hidden="true" onAnimationEnd={event => {
       if (event.animationName === 'vault-door-left') setTransition(null);
     }}>
       <div className="vault-door vault-door-left">

@@ -28,19 +28,17 @@ test('vault navigation stays in the document and clears after rapid navigation a
   await expect(page.locator('html')).not.toHaveAttribute('data-vault-played');
 });
 
-test('family routes use a fade, switch roles and preserve separate-tab presenter links', async ({ page, context }) => {
+test('family routes use the vault, switch roles and preserve separate-tab presenter links', async ({ page, context }) => {
   const roles: string[] = [];
   page.on('request', request => { if (request.url().endsWith('/api/session')) roles.push(request.postDataJSON().role); });
   await page.goto('/protected');
   await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
   await page.evaluate(() => document.addEventListener('animationstart', event => {
-    if (event.animationName === 'route-calm') document.documentElement.dataset.calmPlayed = 'true';
     if (event.animationName.startsWith('vault-door')) document.documentElement.dataset.vaultPlayed = 'true';
   }));
   await page.locator('.family-brand').click();
   await expect(page).toHaveURL('/');
-  await expect(page.locator('html')).toHaveAttribute('data-calm-played', 'true');
-  await expect(page.locator('html')).not.toHaveAttribute('data-vault-played');
+  await expect(page.locator('html')).toHaveAttribute('data-vault-played', 'true');
   await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
   await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'Rosa’s shield' }).click();
   await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
@@ -128,4 +126,22 @@ test('Rosa has an explicit return button on mobile', async ({ page }) => {
   await back.click();
   await expect(page).toHaveURL('/');
   await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
+});
+
+test('every app destination receives a vault reveal', async ({ page }) => {
+  await page.goto('/guardian');
+  await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
+  await page.evaluate(() => document.addEventListener('animationstart', event => {
+    if (event.animationName === 'vault-door-left') document.documentElement.dataset.vaultDestination = location.pathname;
+  }));
+  for (const route of ['protected', 'student', 'relative', 'settings', 'inspector', 'cases', 'drill', 'weather']) {
+    await page.locator(`.sidebar a[href="/${route}"]`).click();
+    await expect(page).toHaveURL(`/${route}`);
+    await expect(page.locator('html')).toHaveAttribute('data-vault-destination', `/${route}`);
+    await expect(page.locator('.vault-transition')).toHaveCount(0);
+    await page.goBack();
+    await expect(page).toHaveURL('/guardian');
+    await expect(page.locator('html')).toHaveAttribute('data-vault-destination', '/guardian');
+    await expect(page.locator('.vault-transition')).toHaveCount(0);
+  }
 });
