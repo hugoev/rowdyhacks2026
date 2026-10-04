@@ -23,10 +23,10 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   await guardian.goto('/guardian'); await expect(guardian.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
   await relative.goto('/relative'); await expect(relative.getByRole('heading', { name: 'You’re part of her safety net.' })).toBeVisible();
   await rosa.goto('/protected'); await rosa.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await rosa.getByLabel('Read critical warnings aloud').uncheck();
-  await rosa.getByText('Presenter controls', { exact: true }).click(); await rosa.getByRole('button', { name: 'Start scripted demo' }).click();
-  await rosa.getByRole('button', { name: 'Next scripted line' }).click();
+  await rosa.getByText('Practice tools', { exact: true }).click(); await rosa.getByRole('button', { name: 'Start call practice' }).click();
+  await rosa.getByRole('button', { name: 'Next caller statement' }).click();
   const detectionStarted = Date.now();
-  await rosa.getByRole('button', { name: 'Next scripted line' }).click();
+  await rosa.getByRole('button', { name: 'Next caller statement' }).click();
   await expect(guardian.getByText('Keep-it-secret request', { exact: true })).toBeVisible();
   expect(Date.now() - detectionStarted).toBeLessThan(10000);
   if (run === 1) await guardian.screenshot({ path: 'test-results/detective-active-call.png', fullPage: true });
@@ -36,7 +36,7 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   await relative.getByRole('button', { name: 'No, that’s not me' }).click();
   await expect(rosa.getByText('Alex says: “That isn’t me calling.” Hang up and call his saved number.')).toBeVisible();
   expect(Date.now() - callbackStarted).toBeLessThan(5000);
-  await rosa.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click(); await rosa.getByRole('button', { name: 'Check & send demo payment' }).click();
+  await rosa.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click(); await rosa.getByRole('button', { name: 'Review payment' }).click();
   await expect(rosa.getByRole('heading', { name: 'Your money can wait.' })).toBeVisible();
   if (run === 1) await guardian.screenshot({ path: 'test-results/detective-held-payment.png', fullPage: true });
   await guardian.getByRole('button', { name: 'Deny payment', exact: true }).click();
@@ -54,14 +54,14 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
 });
 
 test('normal $40 bill completes with no friction', async ({ page }) => {
-  await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await page.getByText('Presenter controls', { exact: true }).click(); await page.getByRole('button', { name: 'Try a $40 bill' }).click(); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click(); await page.getByRole('button', { name: 'Check & send demo payment' }).click();
-  await expect(page.getByRole('heading', { name: 'Demo payment completed.' })).toBeVisible(); await expect(page.getByText('PAYMENT HELD', { exact: true })).toHaveCount(0);
+  await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await page.getByText('Practice tools', { exact: true }).click(); await page.getByRole('button', { name: 'Try a $40 bill' }).click(); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click(); await page.getByRole('button', { name: 'Review payment' }).click();
+  await expect(page.getByRole('heading', { name: 'Payment review complete.' })).toBeVisible(); await expect(page.getByText('PAYMENT HELD', { exact: true })).toHaveCount(0);
 });
 test('safe word setup and incorrect answer escalate the call', async ({ page }) => {
   await page.goto('/settings');
   await expect(page.getByRole('heading', { name: 'Set your safety net.' })).toBeVisible();
   if (await page.getByRole('button', { name: 'Set safe word', exact: true }).isVisible()) { await page.getByLabel('Your family word').fill('marigold'); await page.getByRole('button', { name: 'Set safe word', exact: true }).click(); await expect(page.getByText('SAFE WORD CONFIGURED', { exact: true })).toBeVisible(); }
-  await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await page.getByLabel('Read critical warnings aloud').uncheck(); await page.getByText('Presenter controls', { exact: true }).click(); await page.getByRole('button', { name: 'Start scripted demo' }).click();
+  await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await page.getByLabel('Read critical warnings aloud').uncheck(); await page.getByText('Practice tools', { exact: true }).click(); await page.getByRole('button', { name: 'Start call practice' }).click();
   await page.getByRole('button', { name: 'Check the family word', exact: true }).click(); await page.getByLabel('What word did they say?').fill('wrong answer'); await page.getByRole('button', { name: 'Check their answer' }).click();
   await expect(page.getByText('That word did not match. Please hang up and call Alex.')).toBeVisible(); await expect(page.getByText(/CRITICAL ·/)).toBeVisible();
 });
@@ -87,7 +87,7 @@ test('student mode opens with a fake-job check scenario and student-specific saf
   await expect(page.getByRole('navigation', { name: 'Student tasks' })).toBeVisible();
   await expect(page.getByText('Never send part of a check back to a new contact.')).toBeVisible();
   await page.getByRole('navigation', { name: 'Student tasks' }).getByRole('button', { name: 'Check a call' }).click();
-  await expect(page.getByLabel('Try a practice call')).toHaveValue('fakeJob');
+  await expect(page.getByLabel('Choose a practice scenario')).toHaveValue('fakeJob');
 });
 test('Scam Weather clearly labels its 30-day synthetic aggregates', async ({ page, request }) => {
   const response = await request.get('/api/scam-weather', { headers: headers('guardian') });
@@ -97,17 +97,29 @@ test('Scam Weather clearly labels its 30-day synthetic aggregates', async ({ pag
   await login(request, 'relative');
   expect((await request.get('/api/scam-weather', { headers: headers('relative') })).status()).toBe(403);
   await page.goto('/weather'); await expect(page.getByRole('heading', { name: 'Scam Weather.' })).toBeVisible();
-  await expect(page.getByText('SEEDED DEMO DATA — NOT LIVE CRIME REPORTS')).toBeVisible();
+  await expect(page.getByText('SAMPLE DATA · NOT INCIDENT REPORTS')).toBeVisible();
   await expect(page.getByRole('img', { name: /synthetic scam report counts/ })).toBeVisible();
 });
 test('phone layouts have no horizontal overflow and navigation works', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   for (const route of ['/guardian', '/protected', '/relative', '/inspector', '/settings', '/cases', '/drill', '/weather']) {
-    await page.goto(route); await expect(page.locator('main h1')).toBeVisible(); await expect(page.getByText('Live connection', { exact: true })).toBeAttached();
+    await page.goto(route); await expect(page.locator('main h1')).toBeVisible(); await expect(page.getByText('Live connection', { exact: true })).toHaveCount(0); await expect(page.getByText('DEMO MODE', { exact: true })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   }
   await page.getByRole('button', { name: 'Open navigation' }).click(); await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('link', { name: 'The Inspector' }).click();
   await expect(page.getByRole('heading', { name: 'Something feel off?' })).toBeVisible();
+});
+test('caseboard navigation hides its scrollbar while remaining scrollable', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 430 });
+  await page.goto('/guardian');
+  await page.getByRole('button', { name: 'Open navigation' }).click();
+  await expect(page.getByText('CASEBOARD', { exact: true })).toBeVisible();
+  await expect(page.getByText('THE CREW', { exact: true })).toBeVisible();
+  const sidebar = page.locator('.sidebar');
+  expect(await sidebar.evaluate(element => getComputedStyle(element).scrollbarWidth)).toBe('none');
+  const scroll = await sidebar.evaluate(element => { const before = element.scrollTop; element.scrollTop = element.scrollHeight; return { before, after: element.scrollTop, overflow: element.scrollHeight > element.clientHeight }; });
+  expect(scroll.overflow).toBe(true);
+  expect(scroll.after).toBeGreaterThan(scroll.before);
 });
 test('desktop and mobile views render without runtime errors', async ({ page }) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
@@ -129,9 +141,9 @@ test('Rosa home, payment result and reduced motion remain readable on a narrow s
   await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
   await page.screenshot({ path: 'test-results/rosa-home.png', fullPage: true });
   await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click();
-  await page.getByRole('button', { name: 'Check & send demo payment' }).click();
+  await page.getByRole('button', { name: 'Review payment' }).click();
   await expect(page.getByRole('heading', { name: 'Your money can wait.' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Check & send demo payment' })).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Review payment' })).toBeHidden();
   await expect(page.locator('.payment-result')).toHaveCSS('animation-name', 'none');
   await expect(page.locator('.senior-payment .payment-result > p').first()).toHaveCSS('font-size', '24px');
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);

@@ -22,9 +22,9 @@ export function ScamWeather() {
   return <div className={styles.wrap}>
     <div className={styles.intro}><p className="eyebrow">COMMUNITY SIGNALS / SAN ANTONIO</p><h1>Scam Weather<span>.</span></h1><p>See the kinds of pressure the community should watch for, without collecting anyone’s identity, conversation, or payment details.</p></div>
     {loading ? <section className={styles.panel} role="status">Loading the 30-day report…</section> : error ? <section className={styles.panel} role="alert"><p>{error}</p><button className="button secondary" onClick={() => window.location.reload()}><RefreshCw size={15}/>Try again</button></section> : report && <>
-      <div className={styles.banner}><CloudSun size={21}/><div><strong>SEEDED DEMO DATA — NOT LIVE CRIME REPORTS</strong>This 30-day San Antonio trend is synthetic, generated for the hackathon demo, and not an estimate of actual incidents. No personal reports are collected.</div></div>
+      <div className={styles.banner}><CloudSun size={21}/><div><strong>SAMPLE DATA · NOT INCIDENT REPORTS</strong>These illustrative 30-day San Antonio figures are generated, not measured community activity or an estimate of actual incidents. No personal reports are collected.</div></div>
       <section className={styles.panel}>
-        <div className="section-title"><h2><span>30</span>Days of scam patterns</h2><Badge tone="outline">{report.source === 'tiger-seeded-demo' ? 'TIGER DATA AGGREGATE' : 'LOCAL FALLBACK'}</Badge></div>
+        <div className="section-title"><h2><span>30</span>Days of scam patterns</h2><Badge tone="outline">{report.source === 'tiger-seeded-demo' ? 'TIGER DATA' : 'SAMPLE ARCHIVE'}</Badge></div>
         <div className={styles.chart}><svg viewBox="0 0 930 250" role="img" aria-label="Stacked column chart of synthetic scam report counts by scam type for the past 30 days">
           {yLabels.map(label => { const y = 212 - label * scale; return <g key={label}><line x1="42" x2="916" y1={y} y2={y} stroke="#ddd5c8" strokeDasharray="4 5"/><text x="34" y={y + 4} textAnchor="end" fill="#786f63" fontSize="11">{label}</text></g>; })}
           {report.days.map((day, index) => {
@@ -34,7 +34,7 @@ export function ScamWeather() {
         </svg></div>
         <div className={styles.legend}>{report.totals.map((item, index) => <span key={item.type}><i className={styles.swatch} style={{ background: colors[index] }}/>{item.type}</span>)}</div>
         <div className={styles.totals}>{report.totals.map(item => <div className={styles.total} key={item.type}><strong>{item.count}</strong><span>{item.type}</span></div>)}</div>
-        <p className={styles.fine}>Source: synthetic, seeded demo aggregates. Tiger Data powers the chart when connected; local deterministic data is used if analytics is unavailable. “Reports” here are generated sample counts, not complaints, verified cases, or measured community activity.</p>
+        <p className={styles.fine}>Source: generated sample counts. “Reports” here are not complaints, verified cases, or measured community activity.</p>
       </section>
     </>}
   </div>;

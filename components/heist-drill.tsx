@@ -66,7 +66,7 @@ export function HeistDrill() {
       <p className={styles.notice}>Caller lines are fictional practice scripts. Your selected answer categories are sent for scoring; no transcript or free-text response is collected.</p>
     </section>}
     {phase === 'playing' && activeRound && <section className={styles.panel}>
-      <div className={styles.topline}><div><Badge tone="red">SIMULATED CALL · {scenario.title.toUpperCase()}</Badge><p>Moment {roundIndex + 1} of {scenario.rounds.length}</p></div><div className={styles.timer} aria-label={`${seconds} seconds remaining`}>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</div></div>
+      <div className={styles.topline}><div><Badge tone="red">PRACTICE SCENARIO · {scenario.title.toUpperCase()}</Badge><p>Moment {roundIndex + 1} of {scenario.rounds.length}</p></div><div className={styles.timer} aria-label={`${seconds} seconds remaining`}>{Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}</div></div>
       <div className={styles.caller} aria-live="polite">“{activeRound.caller}”</div>
       <p className={styles.tell}>A possible tell: {activeRound.tell}</p>
       <div className={styles.topline}><h2>What would you do?</h2><button className="button secondary" disabled={voiceBusy} onClick={() => void speakCaller()}><Headphones size={16}/>{voiceBusy ? 'Playing…' : 'Hear caller'}</button></div>

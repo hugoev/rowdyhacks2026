@@ -44,9 +44,9 @@ test('family routes use the vault, switch roles and preserve separate-tab presen
   await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
   // Development Strict Mode can repeat each mount's session request.
   expect(roles.filter((role, index) => role !== roles[index - 1])).toEqual(['protected', 'guardian', 'protected']);
-  await page.getByText('Presenter controls', { exact: true }).click();
+  await page.getByText('Practice tools', { exact: true }).click();
   const opened = context.waitForEvent('page');
-  await page.getByRole('navigation', { name: 'Demo views' }).getByRole('link', { name: 'Guardian', exact: true }).click();
+  await page.getByRole('navigation', { name: 'Family views' }).getByRole('link', { name: 'Guardian', exact: true }).click();
   const guardian = await opened;
   await expect(guardian).toHaveURL('/guardian');
   await expect(page).toHaveURL('/protected');

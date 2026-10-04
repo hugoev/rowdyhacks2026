@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-int
 const syne = Syne({ subsets: ['latin'], display: 'swap', variable: '--font-syne' });
 export const metadata: Metadata = {
   title: 'Tripwire — Before the money moves.',
-  description: 'Your family’s counter-heist crew. A consent-first scam defense demo built for RowdyHacks XII.',
+  description: 'Consent-first protection against social engineering, suspicious callers, and risky payment requests.',
   icons: { icon: '/favicon.svg' },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

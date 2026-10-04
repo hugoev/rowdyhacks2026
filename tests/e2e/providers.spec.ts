@@ -44,9 +44,9 @@ test('mocked Scribe streams committed text, shows failure, and closes on stop', 
     setTimeout(() => ws.send(JSON.stringify({ message_type: 'session_started', session_id: 'mock', config: {} })), 50);
   });
   await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await page.getByLabel('Read critical warnings aloud').uncheck();
-  await page.getByRole('button', { name: 'Use microphone', exact: true }).click();
+  await page.getByRole('button', { name: 'Resume microphone', exact: true }).click();
   await page.getByText('Read the transcript', { exact: true }).click();
-  await expect(page.getByText('ELEVENLABS LIVE', { exact: true })).toBeVisible();
+  await expect(page.getByText('ELEVENLABS', { exact: true })).toBeVisible();
   await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click();
   await page.getByLabel('Who are you paying?').fill('Draft recipient');
   await expect(page.getByText('Your microphone is still listening.')).toBeVisible();

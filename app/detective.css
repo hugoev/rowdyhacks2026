@@ -136,7 +136,8 @@
 .detective-board .upload-zone { font-size: 16px; }
 .detective-board .integration-row { color: #584b3a; }
 .detective-board .demo-card .eyebrow { color: #f1cfb4; }
-.sidebar { overflow-y: auto; }
+.sidebar { overflow-y: auto; scrollbar-width: none; -ms-overflow-style: none; }
+.sidebar::-webkit-scrollbar { display: none; width: 0; height: 0; }
 .nav-item { font-size: 16px; min-height: 48px; padding: 12px 10px; gap: 9px; }
 .sidebar-user strong, .sidebar-family strong { font-size: 14px; }
 .sidebar-user small, .sidebar-family small { font-size: 12px; line-height: 1.5; }
