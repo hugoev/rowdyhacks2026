@@ -23,12 +23,24 @@ const audioDir = join(process.env.DATA_DIR || './data', 'eval-audio'); mkdirSync
 // Scam scripts: English x3 voices, Spanish x2 voices (30). Benign: x2 voices (20).
 const plan = evalScripts.flatMap(script => voices.slice(0, script.kind === 'benign' ? 2 : script.language === 'en' ? 3 : 2).map(voice => ({ script, voice }))).slice(0, limit);
 
-async function synthesize(script: EvalScript, voice: string) {
-  const file = join(audioDir, createHash('sha256').update(voice + script.text).digest('hex').slice(0, 16) + '.pcm');
+/** Caller turns of about two sentences, like a real call where the victim answers in between. */
+export function turns(text: string) {
+  const sentences = text.match(/[^.!?]+[.!?]+/g)?.map(s => s.trim()) || [text];
+  const out: string[] = []; for (let i = 0; i < sentences.length; i += 2) out.push(sentences.slice(i, i + 2).join(' '));
+  return out;
+}
+const GAP = Buffer.alloc(16000 * 2 * 2.5); // 2.5 s of silence while the victim "answers"
+async function speakTurn(text: string, voice: string, language: string) {
+  const file = join(audioDir, createHash('sha256').update(voice + text).digest('hex').slice(0, 16) + '.pcm');
   if (existsSync(file)) return readFileSync(file);
-  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=pcm_16000`, { method: 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: script.text, model_id: process.env.ELEVENLABS_EVAL_MODEL || 'eleven_multilingual_v2', language_code: script.language }) });
+  const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voice}?output_format=pcm_16000`, { method: 'POST', headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY!, 'Content-Type': 'application/json' }, body: JSON.stringify({ text, model_id: process.env.ELEVENLABS_EVAL_MODEL || 'eleven_multilingual_v2', language_code: language }) });
   if (!response.ok) throw new Error(`ElevenLabs ${response.status}`);
   const audio = Buffer.from(await response.arrayBuffer()); writeFileSync(file, audio); return audio;
+}
+async function synthesize(script: EvalScript, voice: string) {
+  const parts: Buffer[] = [];
+  for (const turn of turns(script.text)) parts.push(await speakTurn(turn, voice, script.language), GAP);
+  return Buffer.concat(parts);
 }
 
 type Run = { id: string; voice: string; kind: EvalScript['kind']; type: string; language: string; levers: string[]; maxRisk: number; flagged: boolean; firstFlagMs: number | null; error?: string };
@@ -53,13 +65,13 @@ async function runOne(script: EvalScript, voice: string): Promise<Run> {
     onerror: () => {}, onclose: () => { closed = true; },
   } });
   started = Date.now();
-  // Real-time streaming (100 ms frames) so time-to-flag is honest.
+  // Real-time streaming (100 ms frames) so time-to-flag is honest. The audio already
+  // ends with a silent gap, which ends the caller's last turn.
   for (let offset = 0; offset < audio.length && !closed; offset += 3200) {
     session.sendRealtimeInput({ audio: { data: audio.subarray(offset, offset + 3200).toString('base64'), mimeType: 'audio/pcm;rate=16000' } });
     await new Promise(resolve => setTimeout(resolve, 100));
   }
-  try { session.sendRealtimeInput({ audioStreamEnd: true }); } catch { /* closed */ }
-  await new Promise(resolve => setTimeout(resolve, 5000));
+  await new Promise(resolve => setTimeout(resolve, 3000));
   try { session.close(); } catch { /* closed */ }
   return { ...base, levers: [...levers], maxRisk, flagged: flagged(), firstFlagMs: firstFlagAt === null ? null : firstFlagAt - started };
 }

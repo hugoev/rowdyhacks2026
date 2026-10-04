@@ -13,9 +13,34 @@
 - `npm run check:live` against the real Gemini API: ephemeral token minted in
   311 ms; one synthetic caller line produced five `report_signal` calls (all
   levers), a family-word `whisper`, and `update_risk` 99 within about 2.7 s.
+- Real caller audio (macOS `say`, 16 kHz, ~3 s gaps between caller turns, as when
+  Rosa answers) via `npm run check:live -- --audio=call.wav`: every lever reported
+  0.3–1.2 s after the sentence that contained it, across three runs; the family-word
+  whisper about 1 s after the first turn.
+- Real browser, Chromium fake microphone, Operator-microphone channel, real Gemini:
+  per-turn transcription, all five levers with Gemini quotes 366–672 ms after each
+  transcribed line, risk 100, family-word whisper on Rosa's screen.
+- Three synthetic normal calls (dinner, bank fraud alert, doctor reminder) over four
+  runs: zero tool calls after the prompt fix below.
 - Not yet verified live: the ElevenLabs scammer agent and streaming voice (no
-  ElevenLabs key configured locally), real caller audio into Gemini, and the eval
-  harness. The eval card shows no numbers until `npm run eval:live` runs.
+  ElevenLabs key configured locally) and the eval harness. The eval card shows no
+  numbers until `npm run eval:live` runs.
+
+### Live-tuning findings (gemini-3.8-live)
+
+- `proactivity` is rejected on the v1beta endpoint; the Live client uses v1alpha.
+- With proactive audio on, the model held every tool call until the caller stopped
+  entirely (~13 s on a 12 s monologue). Proactive audio is off; turn detection uses
+  high end-of-speech sensitivity with 300 ms of silence. Text checkpoints mid-speech
+  did not change timing; they remain only as an 8-second no-activity fallback.
+- The voice agent sends audio only while speaking, so the browser fills gaps with
+  real-time silence; without it Gemini cannot detect the caller's turn ending.
+- The model sometimes called `check_family_word("")` before Rosa asked, which would
+  have recorded a false dodge. The server now rejects that call until Rosa taps
+  "I asked".
+- The model reported "This is an automated alert from your bank" as a Trust lever.
+  The prompt now states that introductions alone are never a lever and that
+  `update_risk` is only for scores of 30 or more.
 
 ## Earlier P0 validation (v1 features, some since removed)
 

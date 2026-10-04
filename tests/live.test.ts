@@ -26,6 +26,8 @@ test('report_signal records the quote, the source, and latency from when the cal
 });
 test('check_family_word: a dodge fails, the phrase is never logged, and only match comes back', async () => {
   const store = new Store(':memory:'); await store.setSafeWord('Marigold'); store.startCall('gemini');
+  assert.match(String((await executeTool(store, 'check_family_word', { heard_phrase: '' })).error), /not asked yet/);
+  assert.equal(store.state.call.safeWord, 'unchecked', 'a premature call never records a dodge');
   store.familyWordAsked();
   assert.deepEqual(await executeTool(store, 'check_family_word', { heard_phrase: '' }), { match: false });
   assert.equal(store.state.call.safeWord, 'failed'); assert.equal(store.state.call.assessment.level, 'Critical');
@@ -35,7 +37,7 @@ test('check_family_word: a dodge fails, the phrase is never logged, and only mat
   assert.ok(!JSON.stringify(store.state).toLowerCase().includes('marigold')); store.db.close();
 });
 test('the right word from the real grandson does not raise risk', async () => {
-  const store = new Store(':memory:'); await store.setSafeWord('Marigold'); store.startCall('gemini');
+  const store = new Store(':memory:'); await store.setSafeWord('Marigold'); store.startCall('gemini'); store.familyWordAsked();
   assert.deepEqual(await executeTool(store, 'check_family_word', { heard_phrase: 'Marigold' }), { match: true });
   assert.equal(store.state.call.safeWord, 'matched'); assert.ok(store.state.call.assessment.score < 30); store.db.close();
 });

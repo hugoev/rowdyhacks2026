@@ -24,9 +24,13 @@ model, system instruction, and tool declarations; the browser connects with it.
 Only the caller's audio is streamed (16 kHz PCM). The model's audio output is
 discarded; it acts only through the eight tools in `lib/live-config.ts`, which the
 server validates and executes in `server/live-tools.ts`. Input transcription feeds
-the caller transcript and the deterministic rule spotter. A text `CHECKPOINT` is
-sent every 8 seconds while audio flows, and session resumption reconnects up to
-three times. Run `npm run check:live` as the hour-0 gate.
+the caller transcript and the deterministic rule spotter. Proactive audio is off
+and turn detection ends a caller turn after 300 ms of silence; the browser fills
+gaps in the agent's audio with silence so turns can end (see VALIDATION.md for the
+measurements). A text `CHECKPOINT` is sent only if the caller talks for 8 seconds
+with no tool activity, and session resumption reconnects up to three times. Run
+`npm run check:live` (typed line) and `npm run check:live -- --audio=call.wav`
+(real speech) as the hour-0 gate.
 
 Use synthetic calls on the free tier: Google may use submitted content to improve
 its products.

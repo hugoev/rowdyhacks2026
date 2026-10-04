@@ -32,6 +32,9 @@ export async function executeTool(store: Store, name: string, rawArgs: unknown):
       case 'update_risk': { const a = args as z.infer<typeof schemas.update_risk>; store.updateRisk(a.score_0_100, a.scam_type, a.reason); return { ok: true, score: store.state.call.assessment.score }; }
       case 'whisper': { store.whisper((args as z.infer<typeof schemas.whisper>).text, 'gemini'); return { ok: true }; }
       case 'check_family_word': {
+        // Measured: the model sometimes calls this before Rosa has asked, which would
+        // record a false dodge. Only an answer to Rosa's question counts.
+        if (store.state.call.safeWord === 'unchecked') return { error: 'Rosa has not asked yet. Wait for ROSA_ASKED_FAMILY_WORD, then pass the caller\'s answer.' };
         if (!store.state.settings.safeWordConfigured) return { match: false, note: 'No family word is configured.' };
         // Only the match result returns to the model; the phrase is discarded here.
         return { match: await store.verifyWord((args as z.infer<typeof schemas.check_family_word>).heard_phrase, 'gemini') };
