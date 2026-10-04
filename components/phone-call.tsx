@@ -24,6 +24,7 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
   const conversation = useRef<VoiceConversation | null>(null);
   const scammer = useRef<TellerSession | null>(null);
   const reported = useRef(0);
+  const closingSpeechStarted = useRef(false);
   const quietTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const ringtone = useRingtone();
   const setSpeakingFrom = (call: TellerSession) => {
@@ -57,6 +58,9 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
     if (!ring) return;
     ringtone.stop(); setError('');
     const id = ring.id;
+    reported.current = 0;
+    closingSpeechStarted.current = false;
+    clearTimeout(quietTimer.current);
     setInCall({ id, since: Date.now(), caller: ring.callerName });
     try {
       await api('/ring/status', { id, status: 'answered' });
@@ -92,16 +96,18 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
             await api('/result', { id, status, note: String(params.note || '').slice(0, 300) });
             // Turn-taking: let the verifier finish its thank-you (it usually ends the call
             // itself), then hang up so the teller can speak. Never mid-sentence.
-            reported.current = Date.now();
-            setTimeout(() => { if (conversation.current && reported.current) void hangUp(); }, 15000);
-            return 'Result delivered to Tripwire. Thank them in one short sentence and end the call.';
+            const reportedAt = Date.now();
+            reported.current = reportedAt;
+            setTimeout(() => { if (conversation.current && reported.current === reportedAt) void hangUp(); }, 15000);
+            return 'Result delivered. Say only "Thank you. Please give Rosa a call," then end the call immediately.';
           },
         } } : {}),
         onModeChange: ({ mode }) => {
           setSpeaking(mode === 'speaking');
           clearTimeout(quietTimer.current);
-          // After reporting, the first pause after its closing words ends the call.
-          if (reported.current && mode !== 'speaking') quietTimer.current = setTimeout(() => { if (conversation.current) void hangUp(); }, 1500);
+          if (reported.current && mode === 'speaking') closingSpeechStarted.current = true;
+          // Wait for the closing words, not the silent gap before they start.
+          if (reported.current && closingSpeechStarted.current && mode !== 'speaking') quietTimer.current = setTimeout(() => { if (conversation.current) void hangUp(); }, 300);
         },
         onDisconnect: () => { conversation.current = null; reported.current = 0; clearTimeout(quietTimer.current); void api('/ring/status', { id, status: 'ended' }).catch(() => {}); setInCall(null); setSpeaking(false); },
         onError: message => setError(String(message)),

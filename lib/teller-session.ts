@@ -31,7 +31,17 @@ export class TellerSession {
   private transcript: string[] = [];
   pushToTalk = false;
   /** Stop sending Rosa's mic (e.g. while Diego's call uses the same laptop mic). */
-  muted = false;
+  private micMuted = false;
+  get muted() { return this.micMuted; }
+  set muted(value: boolean) {
+    if (value === this.micMuted) return;
+    this.micMuted = value;
+    if (!value || !this.session) return;
+    // Flush the last utterance before pausing the mic for Diego's call.
+    if (this.pushToTalk) { this.holdToTalk(false); return; }
+    try { this.session.sendRealtimeInput({ audioStreamEnd: true }); }
+    catch (error) { console.warn('Could not finalize paused teller audio:', error); }
+  }
   constructor(private hooks: TellerHooks) {}
 
   /** Call from the Send tap (a user gesture) so audio playback is allowed. */

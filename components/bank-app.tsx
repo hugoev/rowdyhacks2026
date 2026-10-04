@@ -157,15 +157,12 @@ function tipText(tip?: string) {
   return stripped === text ? text : stripped && stripped[0].toLowerCase() + stripped.slice(1);
 }
 
-/** Resolves true once the teller has spoken and gone quiet, false if it stayed silent. */
-async function untilQuiet(player: { speaking: boolean }, max: number) {
-  const start = Date.now(); let spoke = false; let quietSince = 0;
-  while (Date.now() - start < max) {
-    if (player.speaking) { spoke = true; quietSince = 0; } else if (spoke) { quietSince ||= Date.now(); if (Date.now() - quietSince > 600) return true; }
-    else if (Date.now() - start > 2500) return false; // it chose not to say anything
-    await new Promise(r => setTimeout(r, 150));
+/** Drain speech already playing; a silent teller does not need another reassurance turn. */
+async function finishSpeaking(player: { speaking: boolean }, max: number) {
+  const start = Date.now();
+  while (player.speaking && Date.now() - start < max) {
+    await new Promise(resolve => setTimeout(resolve, 50));
   }
-  return spoke;
 }
 
 type Line = { id: number; who: 'rosa' | 'teller'; text: string; done: boolean };
@@ -211,12 +208,8 @@ function useTeller(state: DemoState | null) {
         if (name === 'call_trusted_contact') {
           // Turn-taking: let the teller finish "Calling him now…" before Diego's phone rings.
           pending.current = { id };
-          // If it dialed without saying its comforting line, prompt it now so the line
-          // comes before the ring (not later, glued to the good news).
-          if (!(await untilQuiet(teller.player, 6000))) {
-            teller.cue('[Diego\'s phone is about to ring. Say only your one short comforting line to Rosa now, like "Calling him now. I\'m right here with you." Then stay quiet until the result arrives.]');
-            await untilQuiet(teller.player, 7000);
-          }
+          await finishSpeaking(teller.player, 6000);
+          if (session.current !== teller || stateRef.current?.phase !== 'tripwire') return { status: 'no_answer', note: 'The payment session ended.' };
           try { await api('/ring', args); return null; }
           catch (e) { pending.current = null; return { status: 'no_answer', note: (e as Error).message }; }
         }
@@ -274,7 +267,7 @@ function useTeller(state: DemoState | null) {
     const waited = Date.now() - result.at;
     // Only when the verifier actually got through; a forced result (backup) is delivered at once.
     const verifierTalking = state?.ring?.who === 'diego' && state.ring.status === 'answered' && result.source === 'verifier';
-    if (verifierTalking && waited < 8000) { const t = setTimeout(() => setTick(n => n + 1), Math.min(500, 8000 - waited)); return () => clearTimeout(t); }
+    if (verifierTalking && waited < 8000) { const t = setTimeout(() => setTick(n => n + 1), Math.min(100, 8000 - waited)); return () => clearTimeout(t); }
     delivered.current = result.at;
     if (session.current) session.current.muted = false;
     const teller = session.current;

@@ -1,4 +1,4 @@
-import { Behavior, Modality, Type, type FunctionDeclaration, type LiveConnectConfig } from '@google/genai';
+import { Behavior, EndSensitivity, Modality, Type, type FunctionDeclaration, type LiveConnectConfig } from '@google/genai';
 import { contacts, railLabels, rosa } from './demo-data';
 import type { Language, RiskCheck } from './types';
 
@@ -48,6 +48,7 @@ export function systemInstruction(check: RiskCheck, language: Language) {
     `She just tried to send ${money(check.amount)} by ${railLabels[check.rail].toLowerCase()} to ${check.isNewPayee ? 'a new payee' : 'a payee'}, "${check.payee}". This is about ${check.multiple} times her typical payment of ${money(check.typical)} (from her history).`,
     `Saved trusted contacts: ${saved}.`,
     'Goal: find out kindly what the payment is for. Never accuse, lecture, or say "scam" first. Use short sentences. You are speaking out loud to an older person: be patient, one question at a time.',
+    'Sound like a helpful person, not a recorded announcement. Use contractions and brief, natural acknowledgments. Keep each turn to two or three short sentences, then let Rosa answer. Do not repeat her whole story or repeat a question she already answered.',
     'If she describes someone she loves in trouble, urgency, or being told to keep it secret, gently say calls like this sometimes come from people pretending to be family, and ask permission to call that person on the number she saved for them. If her story does not fit the payee (for example a car repair paid to a legal firm), ask about the mismatch kindly, then still offer to call.',
     'Never call call_trusted_contact before asking and hearing her clear yes in a separate reply. Asking and calling in the same turn is not allowed.',
     'When she agrees, first say one short comforting line like "Calling him now. I\'m right here with you.", then call call_trusted_contact, then stay completely quiet until the result arrives. Do not speak while the call is in progress.',
@@ -70,8 +71,10 @@ export function tellerConfig(check: RiskCheck, language: Language, options: { pu
     outputAudioTranscription: {},
     sessionResumption: {},
     ...(options.voice ? { speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: options.voice } } } } : {}),
-    // Expo noise fallback: the client sends activityStart/End from a "Hold to talk" button.
-    ...(options.pushToTalk ? { realtimeInputConfig: { automaticActivityDetection: { disabled: true } } } : {}),
+    // Allow natural pauses without waiting through a long silence after every answer.
+    realtimeInputConfig: { automaticActivityDetection: options.pushToTalk
+      ? { disabled: true }
+      : { disabled: false, endOfSpeechSensitivity: EndSensitivity.END_SENSITIVITY_HIGH, prefixPaddingMs: 100, silenceDurationMs: 600 } },
   };
 }
 
@@ -79,5 +82,5 @@ export function tellerConfig(check: RiskCheck, language: Language, options: { pu
 export function openingCue(language: Language) {
   return language === 'es'
     ? '[Rosa acaba de tocar Enviar. Salúdala como Tripwire, la cajera de seguridad de su banco, menciona cuántas veces más es que lo usual y a quién nunca le ha pagado, y pregúntale para qué es el pago.]'
-    : '[Rosa just tapped Send. Greet her as Tripwire, the safety teller at her bank, mention how many times her usual amount this is and that she has never paid this payee, and ask what the payment is for.]';
+    : '[Rosa just tapped Send. In two short sentences, introduce yourself as Tripwire, mention this new payee and how many times her usual payment this is, and ask what it is for. Then listen.]';
 }
