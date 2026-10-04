@@ -10,7 +10,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const previous = useRef(pathname);
   const [transition, setTransition] = useState<string | null>(null);
-  const [laser, setLaser] = useState<{ key: string; top: number; left: number } | null>(null);
+  const [laser, setLaser] = useState<string | null>(null);
 
   useLayoutEffect(() => {
     const from = previous.current;
@@ -19,11 +19,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     if (canonical(from) === canonical(pathname) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     if (!vaultRoutes.has(from) || !vaultRoutes.has(pathname)) return;
     setTransition(pathname);
-    // The laser starts under the new page's top bar and right of its sidebar
-    // (both absent on Diego's phone and in the stage view).
-    const bar = document.querySelector('.topbar')?.getBoundingClientRect();
-    const side = document.querySelector('.sidebar')?.getBoundingClientRect();
-    setLaser({ key: pathname + Date.now(), top: bar && bar.height ? bar.bottom : 0, left: side && side.right > 0 ? side.right : 0 });
+    setLaser(pathname + Date.now());
     // A missing animationend event must never leave the decoration on screen.
     const timeout = setTimeout(() => setTransition(null), 1100);
     const laserTimeout = setTimeout(() => setLaser(null), 1400);
@@ -32,7 +28,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
 
   return <>
     <div className="route-content">{children}</div>
-    {laser && <div key={laser.key} className="vault-laser" aria-hidden="true" style={{ '--laser-top': `${laser.top}px`, '--laser-left': `${laser.left}px` } as React.CSSProperties} onAnimationEnd={() => setLaser(null)}/>}
+    {laser && <div key={laser} className="vault-laser" aria-hidden="true" onAnimationEnd={() => setLaser(null)}/>}
     {transition && <div key={transition} className="vault-transition" aria-hidden="true" onAnimationEnd={event => {
       if (event.animationName === 'vault-door-left') setTransition(null);
     }}>

@@ -55,22 +55,23 @@
   .vault-transition { display: none; }
 }
 
-/* Xander's laser sweep: page-level, above the page and under the vault doors
-   (z 22 < 80), so it is revealed as the doors part and keeps sweeping after. */
+/* Xander's laser sweep: page-level, above the page and sidebar (z 25) and under the
+   vault doors (z 80), so it is revealed as the doors part and keeps sweeping after.
+   It spans the whole screen, sidebar included, top to bottom. */
 .vault-laser {
   position: fixed;
-  left: var(--laser-left, 220px);
+  left: 0;
   right: 0;
-  top: var(--laser-top, 70px);
+  top: 0;
   height: 2px;
   background: #ff3b3b;
   box-shadow: 0 0 10px #ff3b3b, 0 0 20px #ff3b3b60;
   pointer-events: none;
-  z-index: 22;
+  z-index: 30;
   animation: vault-laser 1.2s ease-in-out forwards;
 }
 @keyframes vault-laser {
-  0% { top: var(--laser-top, 70px); opacity: 0; }
+  0% { top: 0; opacity: 0; }
   15% { opacity: 1; }
   85% { opacity: .9; }
   100% { top: 100vh; opacity: 0; }
