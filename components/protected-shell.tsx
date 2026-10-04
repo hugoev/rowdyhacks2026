@@ -1,8 +1,10 @@
 'use client';
 import Link from 'next/link';
+import { useState } from 'react';
+import { Sidebar } from './sidebar';
 import { Wordmark } from './wordmark';
 import { BrandMark } from './brand-mark';
-import { ArrowLeft, X } from 'lucide-react';
+import { ArrowLeft, Menu, X } from 'lucide-react';
 import { useTripwire } from './context';
 import { Protected } from './protected';
 import { DetectiveBoard } from './detective-board';
@@ -11,11 +13,14 @@ const taskConnections = [['check-call', 'send-money']] as const;
 
 export function ProtectedShell() {
   const { state, error, setError } = useTripwire();
+  const [menu, setMenu] = useState(false);
+  const urgent = state?.payments.filter(payment => payment.status === 'held').length || 0;
   return <div className="app-shell simple-surface">
     <a className="skip-link" href="#main">Skip to main content</a>
+    <Sidebar view="protected" menu={menu} urgent={urgent} onClose={() => setMenu(false)}/>
     <div className="workspace">
       <header className="topbar">
-        <div className="breadcrumb"><Link className="family-brand" href="/"><Wordmark/></Link></div>
+        <div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}><Menu size={22}/></button><Link className="family-brand" href="/"><Wordmark/></Link></div>
         <div className="topbar-right"><Link className="family-settings-link" href="/settings">Settings</Link></div>
       </header>
       <main id="main" className="main-content">

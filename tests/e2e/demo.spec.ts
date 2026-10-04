@@ -127,7 +127,8 @@ test('desktop and mobile views render without runtime errors', async ({ page }) 
   await page.screenshot({ path: 'test-results/tripwire-desktop.png', fullPage: true });
   await page.goto('/protected'); await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Check a call' }).click(); await expect(page.getByRole('button', { name: 'Use microphone', exact: true })).toBeVisible();
   await page.setViewportSize({ width: 390, height: 844 });
-  await expect(page.locator('.sidebar')).toHaveCount(0);
+  await expect(page.locator('.sidebar')).not.toHaveClass(/open/);
+  await expect(page.getByRole('button', { name: 'Open navigation' })).toBeVisible();
   await page.screenshot({ path: 'test-results/tripwire-mobile.png', fullPage: true });
   expect(errors).toEqual([]);
 });
@@ -161,4 +162,30 @@ test('Rosa header returns home and the command center retains its existing font 
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.locator('.footer')).toBeVisible();
   await expect(page.locator('body')).toHaveCSS('font-family', 'Inter, "Inter Fallback", Arial, Helvetica, sans-serif');
+});
+
+test('Rosa shares the desktop sidebar and mobile navigation without losing her task', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto('/protected');
+  await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
+  const sidebar = page.locator('.sidebar');
+  await expect(sidebar).toBeVisible();
+  await expect(sidebar.getByRole('link', { name: 'Rosa’s shield' })).toHaveAttribute('aria-current', 'page');
+  const sidebarBox = (await sidebar.boundingBox())!;
+  expect((await page.locator('.workspace').boundingBox())!.x).toBeGreaterThanOrEqual(sidebarBox.x + sidebarBox.width);
+  await page.screenshot({ path: 'test-results/rosa-sidebar-desktop.png', fullPage: true });
+  await page.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click();
+  await page.getByLabel('Who are you paying?').fill('Draft recipient');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole('button', { name: 'Open navigation' }).click();
+  await expect(sidebar).toHaveClass(/open/);
+  await expect.poll(async () => (await sidebar.boundingBox())!.x).toBe(0);
+  await page.screenshot({ path: 'test-results/rosa-sidebar-mobile.png' });
+  await page.getByRole('button', { name: 'Close navigation' }).click({ position: { x: 380, y: 400 } });
+  await expect(page.getByLabel('Who are you paying?')).toHaveValue('Draft recipient');
+  await page.getByRole('button', { name: 'Open navigation' }).click();
+  await sidebar.getByRole('link', { name: 'Command center', exact: true }).click();
+  await expect(page).toHaveURL('/guardian');
+  await expect(sidebar).not.toHaveClass(/open/);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
 });

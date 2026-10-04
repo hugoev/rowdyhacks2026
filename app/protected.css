@@ -31,7 +31,6 @@
 :where(.rosa-surface) .presenter-content label, :where(.rosa-surface) .presenter-content p { font-size: 17px; }
 :where(.rosa-surface) .presenter-content .preset-row button { font-size: 17px; padding: 12px; }
 :where(.rosa-surface) .simple-surface { background: #eeece4; min-height: 100vh; }
-:where(.rosa-surface) .simple-surface .workspace { margin: 0; width: 100%; }
 :where(.rosa-surface) .simple-surface .topbar { padding: 0 max(24px, calc((100% - 1060px) / 2)); background: #fffaf3; }
 :where(.rosa-surface) .family-brand { font: 600 28px var(--display); letter-spacing: -1.5px; }
 :where(.rosa-surface) .family-brand span { color: var(--red); }
