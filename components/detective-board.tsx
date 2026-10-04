@@ -9,6 +9,16 @@ type Anchor = { id: string; x: number; y: number; width: number; height: number 
 type LightInput = 'pointer' | 'keyboard' | 'idle';
 const noConnections: readonly BoardConnection[] = [];
 
+function Pushpin({ gradientId }: { gradientId: string }) {
+  return <>
+    <circle cx="1.5" cy="2" r="6.5" fill="#24160f" opacity=".22" filter={`url(#${gradientId}-pin-shadow)`}/>
+    <circle r="6.2" fill="#7e2527"/>
+    <circle cy="-.4" r="5.7" fill={`url(#${gradientId}-pin-cap)`}/>
+    <path d="M-4 -2.8A4.8 4.8 0 0 1 1 -5" fill="none" stroke="#f6bdac" strokeWidth=".7" strokeLinecap="round" opacity=".65"/>
+    <path d="M2.5 4A4.8 4.8 0 0 0 4.8 1" fill="none" stroke="#702326" strokeWidth=".6" opacity=".55"/>
+  </>;
+}
+
 /** Decorations are independent of application state and never intercept input. */
 export function DetectiveBoard({ children, variant = 'standard', connections = noConnections, spotlight }: {
   children: ReactNode;
@@ -196,21 +206,14 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
         const top = Math.min(a.y, b.y) - 12;
         const sameColumn = Math.abs(a.x - b.x) < 20;
         const path = sameColumn ? `M${ax},${ay} Q${rail},${ay - 10} ${rail},${ay + 6} C${rail - 2},${ay + (by - ay) / 3} ${rail + 5},${by - 24} ${rail + 3},${by - 12} Q${rail + 2},${by - 2} ${bx},${by}` : `M${ax},${ay} Q${ax - 3},${top} ${ax + 8},${top} Q${(ax + bx) / 2},${top + 9} ${bx - 8},${top + 3} Q${bx},${top} ${bx},${by}`;
-        return <g key={`${from}-${to}`} className="board-thread"><path d={path} className="board-thread-shadow"/><path d={path} className="board-thread-red" filter={`url(#${gradientId}-yarn)`}/><path d={path} className="board-yarn-fiber"/>{[[ax, ay], [bx, by]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="4" className="board-thread-pin"/>)}</g>;
+        return <g key={`${from}-${to}`} className="board-thread"><path d={path} className="board-thread-shadow"/><path d={path} className="board-thread-red" filter={`url(#${gradientId}-yarn)`}/><path d={path} className="board-yarn-fiber"/>{[[ax, ay], [bx, by]].map(([x, y], pinIndex) => <g key={pinIndex} className="board-thread-pin" transform={`translate(${x},${y}) scale(.8)`}><Pushpin gradientId={gradientId}/></g>)}</g>;
       })}
-      <defs><linearGradient id={`${gradientId}-pin`} x1="0" y1="0" x2="1" y2="0"><stop stopColor="#ff5149"/><stop offset=".3" stopColor="#df191a"/><stop offset=".75" stopColor="#9d090d"/><stop offset="1" stopColor="#f32b2b"/></linearGradient></defs>
+      <defs>
+        <radialGradient id={`${gradientId}-pin-cap`} cx=".35" cy=".3" r=".85"><stop stopColor="#db7767"/><stop offset=".55" stopColor="#bb4c44"/><stop offset="1" stopColor="#973332"/></radialGradient>
+        <filter id={`${gradientId}-pin-shadow`} x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation=".8"/></filter>
+      </defs>
       {geometry.anchors.map(anchor => <g key={anchor.id} className="board-paper-pin" transform={`translate(${anchor.x + anchor.width / 2},${anchor.y + 7})`}>
-        <ellipse cx="3" cy="5" rx="10" ry="3.5" fill="#30251c" opacity=".24"/>
-        <g transform="rotate(30)">
-          <path d="M0 2V12L-1 14 -1 2" fill="#dedbd5" stroke="#625c54" strokeWidth=".8"/>
-          <ellipse cy="2" rx="8" ry="3.5" fill="#a50e14"/>
-          <ellipse cy="1" rx="8" ry="3" fill={`url(#${gradientId}-pin)`}/>
-          <path d="M-4 -10 -3 1Q0 3 4 1L4 -10Z" fill={`url(#${gradientId}-pin)`}/>
-          <path d="M-2.5 -9 -2 0" stroke="#ff8a80" strokeWidth="1"/>
-          <ellipse cy="-10" rx="7" ry="3" fill="#a80c12"/>
-          <ellipse cy="-11" rx="7" ry="2.8" fill="#ed252a" stroke="#a90e13" strokeWidth=".7"/>
-          <path d="M-5 -12Q0 -14 5 -11" fill="none" stroke="#ffafa2" strokeWidth="1.2" strokeLinecap="round"/>
-        </g>
+        <Pushpin gradientId={gradientId}/>
       </g>)}
     </svg>
     <div className="board-content">{children}</div>
