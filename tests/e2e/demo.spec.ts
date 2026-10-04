@@ -118,5 +118,5 @@ test('Rosa header returns home and other screens retain the existing theme', asy
   await expect(page.getByRole('heading', { name: 'Every second counts.' })).toBeVisible();
   await expect(page.locator('.sidebar')).toBeVisible();
   await expect(page.locator('.footer')).toBeVisible();
-  await expect(page.locator('body')).toHaveCSS('font-family', 'Arial, Helvetica, sans-serif');
+  await expect(page.locator('body')).toHaveCSS('font-family', /Inter/);
 });

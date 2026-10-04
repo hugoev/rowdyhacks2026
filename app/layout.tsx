@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Inter, Syne } from 'next/font/google';
 import './globals.css';
 import './protected.css';
+import './transitions.css';
+import { PageTransition } from '@/components/page-transition';
 const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
 const syne = Syne({ subsets: ['latin'], display: 'swap', variable: '--font-syne' });
 export const metadata: Metadata = {
@@ -10,5 +12,5 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.svg' },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={`${inter.variable} ${syne.variable}`}><body>{children}</body></html>;
+  return <html lang="en" className={`${inter.variable} ${syne.variable}`}><body><PageTransition>{children}</PageTransition></body></html>;
 }

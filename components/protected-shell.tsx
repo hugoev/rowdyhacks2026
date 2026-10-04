@@ -1,4 +1,5 @@
 'use client';
+import Link from 'next/link';
 import { X } from 'lucide-react';
 import { useTripwire } from './context';
 import { Protected } from './protected';
@@ -10,8 +11,8 @@ export function ProtectedShell() {
     <a className="skip-link" href="#main">Skip to main content</a>
     <div className="workspace">
       <header className="topbar">
-        <div className="breadcrumb"><a className="family-brand" href="/">tripwire<span>.</span></a></div>
-        <div className="topbar-right"><a className="family-settings-link" href="/settings">Settings</a><span className={'connection ' + (online ? 'connected' : '')}><i/>{online ? 'Live connection' : 'Connecting…'}</span><Badge tone="outline">{state?.config.demo !== false ? 'DEMO MODE' : 'PAIRED MODE'}</Badge></div>
+        <div className="breadcrumb"><Link className="family-brand" href="/">tripwire<span>.</span></Link></div>
+        <div className="topbar-right"><Link className="family-settings-link" href="/settings">Settings</Link><span className={'connection ' + (online ? 'connected' : '')}><i/>{online ? 'Live connection' : 'Connecting…'}</span><Badge tone="outline">{state?.config.demo !== false ? 'DEMO MODE' : 'PAIRED MODE'}</Badge></div>
       </header>
       <main id="main" className="main-content">
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}

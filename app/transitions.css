@@ -1,0 +1,59 @@
+.vault-transition {
+  --vault-cream: #f8f5ee;
+  --vault-brown: #654f36;
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  pointer-events: none;
+  overflow: hidden;
+  contain: layout paint;
+}
+.vault-door {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 50%;
+  background: repeating-linear-gradient(0deg, transparent 0 3px, #654f3605 3px 4px), linear-gradient(110deg, #fffdf8, var(--vault-cream) 65%, #e4d9c8);
+  border: 1px solid #a08c70;
+  box-shadow: inset 0 0 0 8px #fdfaf4, inset 0 0 0 10px #c4b498, 0 0 28px #30251c24;
+  will-change: transform;
+}
+.vault-door-left { left: 0; z-index: 2; animation: vault-door-left 520ms cubic-bezier(.65, 0, .25, 1) both; }
+.vault-door-right { right: 0; animation: vault-door-right 520ms cubic-bezier(.65, 0, .25, 1) both; }
+.vault-door-inset {
+  position: absolute;
+  inset: clamp(24px, 5vw, 72px);
+  border: 1px solid #bead92;
+  border-radius: 12px;
+  box-shadow: inset 2px 2px 7px #654f3610, 1px 1px 0 #fffdf8;
+}
+.vault-wheel-mount {
+  position: absolute;
+  width: clamp(150px, 22vw, 260px);
+  aspect-ratio: 1;
+  top: 50%;
+  right: 0;
+  transform: translate(50%, -50%);
+  border-radius: 50%;
+  background: var(--vault-cream);
+  box-shadow: 0 8px 24px #30251c24, inset 0 0 0 2px #a08c70;
+}
+.vault-dial, .vault-wheel { position: absolute; inset: 0; width: 100%; height: 100%; stroke: var(--vault-brown); }
+.vault-dial { stroke-width: 1; }
+.vault-wheel { animation: vault-unlock 140ms ease-in-out both; filter: drop-shadow(0 3px 1px #654f3620); }
+.vault-wheel-rim { stroke-width: 10; }
+.vault-spoke { stroke-width: 9; stroke-linecap: round; }
+.vault-hub { fill: var(--vault-brown); stroke-width: 2; }
+.vault-hub-slot { stroke: var(--vault-cream); stroke-width: 3; stroke-linecap: round; }
+.vault-bolts { position: absolute; inset: 20% -12px 20% auto; width: 30px; display: flex; flex-direction: column; justify-content: space-between; }
+.vault-bolts i { height: 16px; border: 1px solid #80664a; border-radius: 3px; background: linear-gradient(#b7a083, #e1d4c2 45%, #9c8160); animation: vault-bolt 140ms ease-in both; }
+.route-content-calm { animation: route-calm 120ms ease-out both; }
+@keyframes vault-unlock { from { transform: rotate(-60deg); } to { transform: rotate(0); } }
+@keyframes vault-bolt { to { transform: translateX(-24px); } }
+@keyframes vault-door-left { 0%, 27% { transform: translateX(0); } 100% { transform: translateX(calc(-100% - 160px)); } }
+@keyframes vault-door-right { 0%, 27% { transform: translateX(0); } 100% { transform: translateX(100%); } }
+@keyframes route-calm { from { opacity: .65; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .vault-transition { display: none; }
+  .route-content-calm { animation: none; }
+}
