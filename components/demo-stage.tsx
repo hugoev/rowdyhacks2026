@@ -45,7 +45,7 @@ export function DemoStage() {
   const file = state?.caseFile;
   return <main className="demo-stage">
     <header className="demo-bar">
-      <strong>Tripwire</strong><span>AI made this scam possible. Now AI calls your grandson.</span>
+      <a className="demo-home" href="/"><strong>Tripwire</strong></a><span>AI made this scam possible. Now AI calls your grandson.</span>
       <div className="demo-actions">
         <button className="demo-start" onClick={() => void start()}><Play size={18}/>{started ? 'Ring Rosa again' : 'Start the demo'}</button>
         <button onClick={() => { run('/operator/reset'); }}><RotateCcw size={16}/>Reset</button>

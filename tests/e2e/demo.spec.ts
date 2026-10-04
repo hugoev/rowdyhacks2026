@@ -10,7 +10,7 @@ test('home opens the dashboard and the demo enters through the vault', async ({ 
   await expect(page.locator('.vault-transition')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Start the demo' })).toBeVisible();
   await expect(page.locator('.vault-transition')).toHaveCount(0);
-  await page.getByRole('link', { name: 'Dashboard', exact: true }).click();
+  await page.getByRole('link', { name: 'Tripwire', exact: true }).click();
   await expect(page).toHaveURL('/');
   await expect(page.getByRole('heading', { name: 'Before the money moves.' })).toBeVisible();
 });
