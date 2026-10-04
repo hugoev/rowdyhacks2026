@@ -3,20 +3,22 @@
 html.embed :is(.sidebar, .topbar, .footer, .presenter-drawer, .family-return, .skip-link, .stage-view-link) { display: none !important; }
 html.embed .workspace { margin-left: 0; width: 100%; }
 
-/* ---------- Rosa's phone: huge type, one action per screen, no heist styling ---------- */
-.rosa-phone { position: relative; max-width: 560px; margin: 0 auto; padding: 24px 8px 120px; color: var(--tw-ink); font-size: 24px; line-height: 1.4; }
-.rosa-screen { background: var(--tw-card); border-radius: 28px; padding: 36px 28px; box-shadow: 0 18px 50px #2a1c1022; min-height: 560px; display: flex; flex-direction: column; gap: 22px; }
+.rosa-phone { position: relative; max-width: 560px; margin: 24px auto; padding: 36px 22px 32px; color: var(--ink); font-family: var(--font-inter), Arial, sans-serif; font-size: 24px; line-height: 1.4; border: 1px solid #97724e; border-radius: 7px; background: radial-gradient(ellipse at 50% 0, #e8bf7c30, transparent 65%), url('/cork-grain.svg'), #805331; background-size: auto, 160px 160px, auto; box-shadow: inset 0 0 0 5px #c8a27a, inset 0 0 0 6px #97724e80, 0 5px 18px #30251c12; }
+.rosa-screen { position: relative; background-color: var(--card); background-image: radial-gradient(circle, #715b3d12 .7px, transparent .9px); background-size: 20px 20px; background-position: 10px 10px; border: 1px solid #b5a58f; border-radius: 4px; padding: 36px 28px; box-shadow: 2px 4px 0 #80604424, 0 7px 14px #30251c18; min-height: 560px; display: flex; flex-direction: column; gap: 22px; }
+.rosa-screen::before { content: ''; position: absolute; top: -12px; left: calc(50% - 48px); width: 96px; height: 28px; background-color: #e5d4afe6; background-image: url('/tape-grain.svg'), linear-gradient(110deg, #fff5, #fff0 65%); background-size: 128px 64px, auto; clip-path: polygon(2% 0, 98% 2%, 96% 15%, 100% 30%, 97% 47%, 99% 64%, 96% 80%, 98% 100%, 1% 98%, 4% 80%, 0 63%, 3% 46%, 0 28%, 3% 14%); transform: rotate(-5deg); pointer-events: none; }
 .rosa-screen h1 { font-size: 40px; line-height: 1.1; margin: 0; letter-spacing: -.01em; }
 .rosa-screen h2 { font-size: 26px; margin: 0; }
-.rosa-label { font-size: 20px; color: #5a4a3c; margin: 0; text-transform: uppercase; letter-spacing: .08em; }
+.rosa-label { font: 600 20px/1.5 var(--mono); color: #49392b; margin: 0; text-transform: uppercase; letter-spacing: .04em; }
 .rosa-sub { margin: -14px 0 0; color: #5a4a3c; }
 .rosa-calm { display: flex; gap: 14px; align-items: center; margin: 0; color: #24533a; }
-.rosa-big { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; min-height: 76px; border: 0; border-radius: 18px; background: var(--tw-ink); color: #fff; font: 600 26px/1.2 var(--font-inter), system-ui, sans-serif; cursor: pointer; padding: 12px 20px; }
-.rosa-big.secondary { background: #fff; color: var(--tw-ink); border: 2px solid #3d3026; }
+.rosa-big { display: flex; align-items: center; justify-content: center; gap: 14px; width: 100%; min-height: 76px; border: 1px solid #862017; border-radius: 5px; background: var(--red); color: #fff8f0; box-shadow: 0 2px 0 #862017; font: 600 26px/1.2 var(--font-inter), system-ui, sans-serif; cursor: pointer; padding: 12px 20px; }
+.rosa-big.secondary { background: #f8f5ee; color: #49392b; border: 2px solid #877057; box-shadow: 0 2px 0 #80604418; }
+.rosa-big:hover:not(:disabled) { background: #96231b; }
+.rosa-big.secondary:hover:not(:disabled) { background: #e9e6da; }
 .rosa-big.hangup { background: var(--tw-red); }
 .rosa-big:disabled { opacity: .55; cursor: wait; }
 .rosa-big:focus-visible, .rosa-round:focus-visible, .push-button:focus-visible { outline: 4px solid #1d5fd1; outline-offset: 3px; }
-.rosa-home { justify-content: center; }
+.rosa-home { justify-content: center; min-height: 320px; padding: 28px 24px; gap: 18px; }
 .rosa-ringing { align-items: center; text-align: center; justify-content: center; }
 .ring-icon { color: #24533a; animation: ring 1.2s ease-in-out infinite; }
 @keyframes ring { 0%, 100% { transform: rotate(0); } 20% { transform: rotate(-12deg); } 40% { transform: rotate(12deg); } 60% { transform: rotate(0); } }
@@ -28,20 +30,20 @@ html.embed .workspace { margin-left: 0; width: 100%; }
 .rosa-consent { font-size: 20px; color: #5a4a3c; margin-top: 40px; }
 .rosa-listening { display: flex; align-items: center; gap: 10px; font-size: 19px; color: #24533a; margin: 0; }
 .rosa-call-actions { display: grid; gap: 14px; margin-top: auto; }
-.whisper { background: #fffaf0; border: 2px solid #d9c6a8; border-radius: 20px; padding: 22px; display: grid; gap: 14px; animation: whisper-in .6s cubic-bezier(.2,.8,.2,1); }
-.whisper.family { border-color: #1d5fd1; background: #f1f6ff; }
+.whisper { background: #f8efdd; border: 1px solid #c9b08e; border-left: 4px solid var(--red); border-radius: 4px; padding: 22px; display: grid; gap: 14px; animation: whisper-in .6s cubic-bezier(.2,.8,.2,1); }
+.whisper.family { border-color: #617f8d; border-left-color: #315b78; background: #e7eff1; }
 .whisper p { margin: 0; font-size: 28px; font-weight: 600; }
 .whisper .whisper-sub { font-size: 22px; font-weight: 400; }
 .whisper .whisper-sub.red { color: var(--tw-red); font-weight: 600; }
 @keyframes whisper-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
 .typed-word { display: grid; gap: 12px; }
-.typed-word input { font-size: 24px; padding: 12px; border-radius: 12px; border: 2px solid #877057; }
+.typed-word input { font-size: 24px; padding: 12px; border-radius: 5px; border: 2px solid #877057; }
 .call-pill { position: sticky; top: 8px; z-index: 5; display: flex; align-items: center; gap: 10px; margin: 0 auto 12px; background: #1f7a43; color: #fff; border: 0; border-radius: 999px; padding: 12px 24px; font: 600 22px var(--font-inter), sans-serif; cursor: pointer; }
 .teller-head { display: flex; align-items: center; gap: 10px; font-size: 20px; border-bottom: 2px solid #e2d6c3; padding-bottom: 14px; }
 .teller-head span { margin-left: auto; color: #5a4a3c; font-size: 18px; }
 .teller form { display: grid; gap: 18px; }
 .teller label { display: grid; gap: 6px; font-size: 22px; font-weight: 600; }
-.teller input:not([type=checkbox]), .teller select { font-size: 26px; padding: 14px; border-radius: 14px; border: 2px solid #877057; background: #fff; color: var(--tw-ink); }
+.teller input:not([type=checkbox]), .teller select { font-size: 26px; padding: 14px; border-radius: 5px; border: 2px solid #877057; background: #fffdf8; color: var(--ink); }
 .teller .teller-check { display: flex; align-items: center; gap: 12px; font-weight: 400; }
 .teller .teller-check input { width: 28px; height: 28px; }
 .teller-result { display: grid; gap: 16px; justify-items: start; }
@@ -144,8 +146,13 @@ html.embed .workspace { margin-left: 0; width: 100%; }
 /* ---------- Stage: Rosa on the left, Mission Control on the right ---------- */
 .stage { display: grid; grid-template-columns: minmax(380px, 38%) 1fr; height: 100vh; background: #120d09; gap: 6px; }
 .stage iframe { width: 100%; height: 100%; border: 0; background: var(--tw-card); }
-/* Rosa's screens stay calm: no heist display type except the Tripwire mark. */
-.rosa-phone :is(h1, h2) { font-family: var(--font-inter), system-ui, sans-serif !important; text-transform: none !important; letter-spacing: -.01em !important; font-weight: 700 !important; }
+.rosa-phone :is(h1, h2) { font-family: var(--font-bebas-neue), 'Arial Narrow', sans-serif !important; text-transform: none !important; letter-spacing: .7px !important; font-weight: 400 !important; }
+.rosa-phone h1 { font-size: 44px; }
+.rosa-phone h2 { font-size: 32px; }
+.rosa-phone .presenter-drawer { background: var(--card); border: 1px solid #b5a58f; border-radius: 4px; padding: 18px; margin-top: 28px; color: var(--ink); }
+.rosa-phone .presenter-content { padding: 16px 0 0; background: transparent; border: 0; }
+.rosa-surface .family-return { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+@media (max-width: 430px) { .rosa-phone { margin: 16px auto; padding: 30px 12px 20px; } .rosa-screen { padding: 30px 20px; } .ring-actions { gap: 24px; } .rosa-phone .rosa-round { width: 88px; height: 88px; } .rosa-phone .teller-head { flex-wrap: wrap; } .rosa-phone .teller-head span { margin-left: 0; width: 100%; } }
 .rosa-phone .teller-result p, .rosa-phone .held-why { color: var(--tw-ink); }
 .rosa-phone .call-pill { position: static; }
 .detective-board .demo-bottom :is(.text-link, .demo-disclosure) { color: #f5f1ea; }
