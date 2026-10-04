@@ -1,8 +1,6 @@
 .wrap { max-width: 1100px; margin: 0 auto; }
 .intro { max-width: 760px; margin-bottom: 28px; }
-.panel { background: url('/paper-fiber.svg'), #f5e8ce; border: 1px solid #b79a71; border-radius: 2px; padding: clamp(20px, 4vw, 34px); box-shadow: 2px 3px 0 #d8c19a, 3px 4px 0 #6d4b2d, 0 10px 18px #160c0845; }
-.intro { color: #fff2dc; }
-.intro :global(.eyebrow) { color: #ead8bb !important; }
+.panel { background: #fbf8f2; border: 1px solid #ddd5c8; border-radius: 14px; padding: clamp(20px, 4vw, 34px); box-shadow: 0 14px 34px #322b2110; }
 .banner { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; margin-bottom: 20px; border: 1px solid #dec990; border-radius: 9px; background: #fff6db; color: #58451a; line-height: 1.5; }
 .banner strong { display: block; }
 .chart { width: 100%; overflow-x: auto; }

@@ -188,20 +188,7 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
   const byId = new Map(geometry.anchors.map(anchor => [anchor.id, anchor]));
   return <div ref={root} className={`detective-board detective-board--${variant}${spotlight ? ' detective-board--spotlight' : ''}`} data-spotlight="idle">
     {spotlight && <div ref={lamp} className="board-lamp" aria-hidden="true">
-      <svg viewBox="0 0 120 90" focusable="false">
-        <defs>
-          <linearGradient id={`${gradientId}-metal`} x1="0" y1="0" x2="1" y2="0"><stop stopColor="#171310"/><stop offset=".35" stopColor="#67533b"/><stop offset=".5" stopColor="#9b8057"/><stop offset=".62" stopColor="#493a2b"/><stop offset="1" stopColor="#171310"/></linearGradient>
-          <radialGradient id={`${gradientId}-bulb`}><stop stopColor="#fffbe1"/><stop offset=".5" stopColor="#ffd47b"/><stop offset="1" stopColor="#efa83b" stopOpacity="0"/></radialGradient>
-        </defs>
-        <path d="M60 0V43" stroke="#171310" strokeWidth="5"/><path d="M59 0V39" stroke="#9b8057" strokeWidth="1"/>
-        <g ref={head} className="board-lamp-shade">
-          <path d="M48 40h24l8 15 25 17H15l25-17Z" fill={`url(#${gradientId}-metal)`}/>
-          <path d="m49 42-7 14-19 13M43 54h34" fill="none" stroke="#c5a16a" strokeWidth="1" opacity=".65"/>
-          <ellipse cx="60" cy="72" rx="44" ry="5" fill="#171310" stroke="#aa8552"/>
-          <ellipse cx="60" cy="76" rx="29" ry="13" fill={`url(#${gradientId}-bulb)`}/>
-          <path ref={bulb} d="M47 72a13 10 0 0 0 26 0" fill="#fff2bb"/>
-        </g>
-      </svg>
+      <svg viewBox="0 0 120 90" focusable="false"><path d="M60 0V43" stroke="#493527" strokeWidth="3"/><g ref={head} className="board-lamp-shade"><path d="M48 40h24l8 15 25 17H15l25-17Z" fill="#30251c"/><path d="M43 54h34" stroke="#70583e" strokeWidth="2"/><ellipse cx="60" cy="72" rx="44" ry="5" fill="#c8a27a"/><path ref={bulb} d="M47 72a13 10 0 0 0 26 0" fill="#fff2bb"/></g></svg>
     </div>}
     {spotlight && portalHost && createPortal(<svg className="board-beam" data-spotlight="idle" data-variant={variant} aria-hidden="true" focusable="false">
       <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#fff2b9" stopOpacity=".55"/><stop offset="1" stopColor="#fff5d6" stopOpacity=".08"/></linearGradient></defs>
