@@ -97,7 +97,7 @@ export class Demo {
       foiledBy: clean(input.foiled_by, 120), tip: clean(input.tip, 140),
       outcome: decision.decision === 'hold' ? 'foiled' : 'released', amount: check.amount, payee: check.payee, multiple: check.multiple,
       secondsToStop: Math.max(1, Math.round((decision.at - (this.state.sentAt ?? decision.at)) / 1000)),
-      writtenBy: source, stored: 'memory',
+      writtenBy: source, stored: 'memory', resultSource: this.state.result?.source ?? null,
     };
     this.cases.set(file.id, file); this.state.caseFile = file; this.state.phase = 'outcome';
     this.changed(`finish · FILE ${String(file.number).padStart(3, '0')} // ${file.jobName.toUpperCase()} (${source})`);

@@ -6,7 +6,7 @@
 
 When a payment looks risky, Tripwire doesn’t show a warning. It starts a real-time voice conversation with a warm safety teller (**Gemini 3.8 Live**). If it hears the shape of a con (someone she loves in trouble, urgency, “don’t tell anyone”), it calls the person being impersonated on the number saved on the account (an **ElevenLabs** voice agent), and the money moves only if they confirm. Tripwire never tries to detect the deepfake. It verifies the person.
 
-See the [demo runbook](docs/DEMO.md) for the 2:40 table demo and failure drills.
+See [PRD v3](docs/PRD.md), the [demo runbook](docs/DEMO.md) (2:40 table demo and failure drills), and the [case-file design](docs/CASE-FILES.md). Earlier versions are [archived](docs/archive/v2/ARCHIVE.md).
 
 > Payments are simulated; no bank is connected. The scammer’s voice is a clone of our teammate, made with his written consent, and used only for the demo. The “phone calls” are web pages on teammates’ phones, not telephony.
 

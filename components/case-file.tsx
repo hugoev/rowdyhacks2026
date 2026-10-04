@@ -44,7 +44,7 @@ export function CaseFileView({ id }: { id: string }) {
       <p className="case-tip"><span>NEXT TIME</span>{file.tip}</p>
       <footer>
         <span>{money(file.amount)} · {file.multiple}x her usual · {new Date(file.at).toLocaleString()}</span>
-        <span>Written by {file.writtenBy === 'gemini' ? 'Gemini from the real conversation' : 'Tripwire rules (teller offline)'} · {file.stored === 'tiger' ? 'saved in Tiger Data' : 'not yet saved to Tiger Data'}</span>
+        <span>Written by {file.writtenBy === 'gemini' ? 'Gemini from the real conversation' : 'Tripwire rules (teller offline)'}{file.resultSource === 'operator' ? ' · result entered by the operator' : file.resultSource === 'verifier' ? ' · result from the verifier call' : ''} · {file.stored === 'tiger' ? 'saved in Tiger Data' : 'not yet saved to Tiger Data'}</span>
       </footer>
     </article>
   </main>;

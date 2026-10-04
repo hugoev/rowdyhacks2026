@@ -2,9 +2,9 @@
 
 ## Project Structure & Module Organization
 
-Tripwire is a RowdyHacks XII counter-scam prototype that combines call analysis with payment verification. The current scaffold uses Next.js, React, strict TypeScript, Tailwind CSS, and Socket.IO. Shared models live in `lib/types.ts`, deterministic scoring in `lib/risk.ts` and `lib/levers.ts`, the Gemini Live config and tools in `lib/live-config.ts`, and scripted calls in `lib/scenarios.ts`. Static assets belong in `public/`.
+The active product brief is PRD v3 in `docs/PRD.md`: a payment-only speaking safety teller, two ElevenLabs phone agents, and a family heist case file. Read that brief and `docs/integrations.md` before implementing provider or environment changes. Earlier docs are archived under `docs/archive/v2/` and must not drive new scope.
 
-Next.js views live in `app/`, shared UI in `components/`, the custom backend in `server/`, and unit and Playwright tests in `tests/`. Provider adapters and the call scheduler belong in `server/`. Keep Rosa (protected), Mission Control (guardian), and Diego (relative) views consistent through shared types and server events.
+Current code still uses Next.js, React, strict TypeScript, Tailwind, SQLite, and Socket.IO from v2. Shared models are in `lib/types.ts`, backend/adapters in `server/`, UI in `app/` and `components/`, tests in `tests/`, assets in `public/`. V3 targets a bank app at `/`, call pages at `/call?who=rosa|diego`, hidden `/operator`, and `/case/:id`, with one in-memory session, SSE, and Tiger Data transactions/cases. These are planned, not yet implemented. Preserve existing state and teammates' work while migrating.
 
 ## Build, Test, and Development Commands
 
@@ -26,7 +26,7 @@ Follow existing two-space indentation, single quotes, and semicolons. Use camelC
 
 ## Testing Guidelines
 
-Name unit tests `*.test.ts`. Cover risk thresholds, routine-payment friction, lever detection, failed or dodged family words, tool validation, Diego's replies, and approval or timer enforcement. Use Playwright for the cross-view demo flow. No coverage percentage is defined. Targets: all levers within three seconds of the trigger phrase, zero levers on benign calls, Diego's reply on Rosa's screen within two seconds.
+Name unit tests `*.test.ts`. For v3, cover the payment anomaly gate, known $40 bill, saved-contact routing, verifier statuses, release enforcement, stale results after reset, and idempotent case writes. Use Playwright for the bank/call/operator flow. Acceptance targets and three-repeat gates are in `docs/VALIDATION.md`; existing v2 tests do not prove v3 readiness. Live provider calls use synthetic fixtures and require appropriate task authorization.
 
 ## Commit & Pull Request Guidelines
 
@@ -45,4 +45,6 @@ The current team workflow is to commit and push directly to `main`, unless the u
 
 ## Scope & Configuration
 
-Prioritize MLH integrations while preserving the core call, family-word, Teller, Diego, voice, and case-file flow. Label live versus simulated features explicitly. Copy `.env.example` to `.env`; never commit credentials or real personal data. Hash safe words, obtain listening consent, and use empathetic warnings that say "no red flags found" rather than "safe".
+Prioritize the PRD v3 demo: Gemini is the audible bank teller; ElevenLabs powers both the consented scammer and stock-voice verifier; Tiger Data owns seeded payment history and case rows; Vultr coordinates one server process. Do not add dashboards, Con Meter, caller listening, family words, auth, blockchain, camera, or video to new v3 work. No actual bank payments or telephony API are connected.
+
+Target keys: GEMINI_API_KEY, ELEVENLABS_API_KEY, EL_AGENT_SCAMMER_ID, EL_AGENT_VERIFIER_ID, TIGER_DATABASE_URL, PUBLIC_BASE_URL. Current templates/runtime use some legacy names; migrate consumers, templates, setup scripts, and private deployment configuration together. Never commit credentials or actual voice samples. Voice-owner consent must be supplied, never fabricated. Mark live, simulated, and operator-forced behavior honestly. Case-file claims and timings must come from the actual session. Node 22 remains the supported runtime until an explicit migration.

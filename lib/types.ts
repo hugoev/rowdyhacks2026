@@ -26,6 +26,8 @@ export type CaseFile = {
   pressure: string[]; cover: string; getaway: string; foiledBy: string; tip: string;
   outcome: 'foiled' | 'released'; amount: number; payee: string; multiple: number;
   secondsToStop: number; writtenBy: 'gemini' | 'rules'; stored: 'tiger' | 'memory';
+  /** Who supplied the verification result: Diego's verifier call, or the operator's FORCE RESULT. */
+  resultSource: 'verifier' | 'operator' | null;
 };
 
 export type Phase = 'home' | 'send' | 'tripwire' | 'outcome';
