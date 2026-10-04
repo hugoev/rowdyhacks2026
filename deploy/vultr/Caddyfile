@@ -3,6 +3,7 @@
 }
 
 {$TRIPWIRE_DOMAIN}, tripwire.64.177.46.134.sslip.io {
+    redir /offline.html / 302
     encode zstd gzip
     reverse_proxy tripwire:3000
 }
