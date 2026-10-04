@@ -87,6 +87,12 @@ html.embed .workspace { margin-left: 0; width: 100%; }
 .mc-status { display: flex; gap: 12px; align-items: center; }
 .mc-grid { display: grid; grid-template-columns: 1.2fr 1fr; gap: 22px; }
 .mc-meter { grid-column: 1 / -1; }
+.mc-meter > .con-meter, .mc-risk > .risk-summary { padding: 24px; }
+.mc-risk .risk-copy { min-width: 0; }
+.mc-risk .risk-copy > .small-note { margin-top: 12px; }
+@media (max-width: 760px) {
+  .mc-meter > .con-meter, .mc-risk > .risk-summary { padding: 20px 16px; }
+}
 .mc-case { grid-column: 1 / -1; }
 @media (max-width: 1000px) { .mc-grid { grid-template-columns: 1fr; } }
 .con-meter { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
