@@ -9,6 +9,24 @@ type Anchor = { id: string; x: number; y: number; width: number; height: number 
 type LightInput = 'pointer' | 'keyboard' | 'idle';
 const noConnections: readonly BoardConnection[] = [];
 
+function Pushpin({ gradientId, angle = 24 }: { gradientId: string; angle?: number }) {
+  return <>
+    <ellipse cx="6" cy="6" rx="11" ry="4" fill="#24160f" opacity=".3" filter={`url(#${gradientId}-pin-shadow)`}/>
+    <ellipse cy="2" rx="3" ry="1.5" fill="#29180d" opacity=".45"/>
+    <g transform={`rotate(${angle})`}>
+      <path d="M-1 -1H1L1 7 0 9 -1 7Z" fill={`url(#${gradientId}-steel)`}/>
+      <ellipse cy="1" rx="8" ry="3.8" fill="#730d12"/>
+      <ellipse cy="0" rx="8" ry="3.2" fill={`url(#${gradientId}-pin-body)`}/>
+      <path d="M-4 -10C-3 -7 -2 -4 -4 0Q0 2 4 0C2 -4 3 -7 4 -10Z" fill={`url(#${gradientId}-pin-body)`}/>
+      <path d="M-2.5 -8Q-1.8 -4 -2.5 -1" fill="none" stroke="#ffb1a0" strokeWidth=".9" opacity=".65"/>
+      <ellipse cy="-10" rx="7.5" ry="4" fill="#8b1118"/>
+      <ellipse cy="-11.5" rx="7.5" ry="3.8" fill={`url(#${gradientId}-pin-cap)`}/>
+      <path d="M-5 -12.5Q-2 -14.5 1 -13.5" fill="none" stroke="#ffe1c9" strokeWidth="1.2" strokeLinecap="round" opacity=".85"/>
+      <path d="M-6 0Q-2 2 3 1" fill="none" stroke="#ff8c73" strokeWidth=".7" opacity=".65"/>
+    </g>
+  </>;
+}
+
 /** Decorations are independent of application state and never intercept input. */
 export function DetectiveBoard({ children, variant = 'standard', connections = noConnections, spotlight }: {
   children: ReactNode;
@@ -196,21 +214,16 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
         const top = Math.min(a.y, b.y) - 12;
         const sameColumn = Math.abs(a.x - b.x) < 20;
         const path = sameColumn ? `M${ax},${ay} Q${rail},${ay - 10} ${rail},${ay + 6} C${rail - 2},${ay + (by - ay) / 3} ${rail + 5},${by - 24} ${rail + 3},${by - 12} Q${rail + 2},${by - 2} ${bx},${by}` : `M${ax},${ay} Q${ax - 3},${top} ${ax + 8},${top} Q${(ax + bx) / 2},${top + 9} ${bx - 8},${top + 3} Q${bx},${top} ${bx},${by}`;
-        return <g key={`${from}-${to}`} className="board-thread"><path d={path} className="board-thread-shadow"/><path d={path} className="board-thread-red" filter={`url(#${gradientId}-yarn)`}/><path d={path} className="board-yarn-fiber"/>{[[ax, ay], [bx, by]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="4" className="board-thread-pin"/>)}</g>;
+        return <g key={`${from}-${to}`} className="board-thread"><path d={path} className="board-thread-shadow"/><path d={path} className="board-thread-red" filter={`url(#${gradientId}-yarn)`}/><path d={path} className="board-yarn-fiber"/>{[[ax, ay], [bx, by]].map(([x, y], pinIndex) => <g key={pinIndex} className="board-thread-pin" transform={`translate(${x},${y}) scale(.65)`}><Pushpin gradientId={gradientId} angle={pinIndex ? -18 : 24}/></g>)}</g>;
       })}
-      <defs><linearGradient id={`${gradientId}-pin`} x1="0" y1="0" x2="1" y2="0"><stop stopColor="#ff5149"/><stop offset=".3" stopColor="#df191a"/><stop offset=".75" stopColor="#9d090d"/><stop offset="1" stopColor="#f32b2b"/></linearGradient></defs>
-      {geometry.anchors.map(anchor => <g key={anchor.id} className="board-paper-pin" transform={`translate(${anchor.x + anchor.width / 2},${anchor.y + 7})`}>
-        <ellipse cx="3" cy="5" rx="10" ry="3.5" fill="#30251c" opacity=".24"/>
-        <g transform="rotate(30)">
-          <path d="M0 2V12L-1 14 -1 2" fill="#dedbd5" stroke="#625c54" strokeWidth=".8"/>
-          <ellipse cy="2" rx="8" ry="3.5" fill="#a50e14"/>
-          <ellipse cy="1" rx="8" ry="3" fill={`url(#${gradientId}-pin)`}/>
-          <path d="M-4 -10 -3 1Q0 3 4 1L4 -10Z" fill={`url(#${gradientId}-pin)`}/>
-          <path d="M-2.5 -9 -2 0" stroke="#ff8a80" strokeWidth="1"/>
-          <ellipse cy="-10" rx="7" ry="3" fill="#a80c12"/>
-          <ellipse cy="-11" rx="7" ry="2.8" fill="#ed252a" stroke="#a90e13" strokeWidth=".7"/>
-          <path d="M-5 -12Q0 -14 5 -11" fill="none" stroke="#ffafa2" strokeWidth="1.2" strokeLinecap="round"/>
-        </g>
+      <defs>
+        <linearGradient id={`${gradientId}-pin-body`} x1="0" y1="0" x2="1" y2=".2"><stop stopColor="#ff8970"/><stop offset=".25" stopColor="#d93b30"/><stop offset=".65" stopColor="#8f1420"/><stop offset="1" stopColor="#c32c2a"/></linearGradient>
+        <radialGradient id={`${gradientId}-pin-cap`} cx=".3" cy=".25" r=".8"><stop stopColor="#ffac8c"/><stop offset=".35" stopColor="#ed5441"/><stop offset=".75" stopColor="#be2627"/><stop offset="1" stopColor="#84101a"/></radialGradient>
+        <linearGradient id={`${gradientId}-steel`}><stop stopColor="#625d56"/><stop offset=".45" stopColor="#f9f4e9"/><stop offset="1" stopColor="#807b73"/></linearGradient>
+        <filter id={`${gradientId}-pin-shadow`} x="-50%" y="-100%" width="200%" height="300%"><feGaussianBlur stdDeviation="1.4"/></filter>
+      </defs>
+      {geometry.anchors.map((anchor, pinIndex) => <g key={anchor.id} className="board-paper-pin" transform={`translate(${anchor.x + anchor.width / 2},${anchor.y + 7})`}>
+        <Pushpin gradientId={gradientId} angle={[24, -18, 12][pinIndex % 3]}/>
       </g>)}
     </svg>
     <div className="board-content">{children}</div>

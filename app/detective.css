@@ -40,7 +40,7 @@
 .board-thread-shadow { fill: none; stroke: #30251c; stroke-width: 4; opacity: .28; transform: translate(2px, 3px); filter: blur(1.5px); }
 .board-thread-red { fill: none; stroke: #c52d23; stroke-width: 2.7; stroke-linecap: round; stroke-linejoin: round; }
 .board-yarn-fiber { fill: none; stroke: #eb7460; stroke-width: .5; opacity: .65; stroke-linecap: round; }
-.board-thread-pin { fill: #a83226; stroke: #f8f5ee; stroke-width: 1; }
+.board-thread-pin { stroke: none; }
 .detective-board [data-board-node] {
   position: relative;
   min-width: 0;
