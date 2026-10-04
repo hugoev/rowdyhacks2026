@@ -63,7 +63,7 @@
   line-height: 1.5;
   letter-spacing: .5px;
 }
-.workspace .detective-board :is(
+.workspace .detective-board :where(
   .eyebrow, .mono-small, .source-label, .chart-heading,
   .case-date, .payment-who p, .activity-event time,
   .demo-fine, .demo-disclosure, .badge, .case-tab, .transcript-mini time,
@@ -95,3 +95,25 @@
 .workspace .detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
   color: #fff2dc;
 }
+
+/* Dark room chrome and light dossiers have separate contrast requirements. */
+.app-shell .workspace .topbar :is(.breadcrumb, .breadcrumb > span, .breadcrumb > svg, .breadcrumb strong, .icon-button) { color: #f5e8ce; }
+.app-shell .workspace .footer { color: #ead8bb; border-color: #705439; }
+.app-shell .workspace .detective-board :is(.page-heading, .panel, .stat-card, .case-card, .family-strip) { color: #241b14; }
+.app-shell .workspace .detective-board :is(.eyebrow, .mono-small, .source-label, .chart-heading, .case-date) { color: #49392b; }
+.app-shell .workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #203947; }
+.app-shell .workspace .detective-board :is(.demo-disclosure, .demo-disclosure button) { color: #fff2dc; }
+.app-shell .workspace .detective-board .badge.green { color: #35512b; }
+.app-shell .workspace .detective-board .badge.amber { color: #70490d; }
+.app-shell .workspace .detective-board .case-tab { color: #fff8e9; }
+.app-shell .workspace .detective-board :focus-visible { outline: 3px solid #174c74; outline-offset: 4px; }
+.sidebar :focus-visible, .app-shell .topbar :focus-visible { outline: 3px solid #ffce75; outline-offset: 4px; }
+.rosa-surface .app-shell .workspace .topbar :is(.family-brand, .family-settings-link, .icon-button) { color: #241b14; }
+.rosa-surface .app-shell .topbar :focus-visible { outline-color: #174c74; }
+.app-shell .workspace .detective-board .relative-header,
+.app-shell .workspace .detective-board .relative-header :is(.eyebrow, p) { color: #fff2dc; }
+.rosa-surface .workspace .detective-board :is(.task-home > p, .presenter-drawer > summary) { color: #fff2dc; }
+.rosa-surface .workspace .detective-board .task-navigation button { color: #fff2dc; }
+.rosa-surface .workspace .detective-board .task-navigation button[aria-current] { background: #f5e8ce; color: #241b14; }
+.app-shell .workspace .detective-board .demo-bottom > .text-link { color: #fff2dc; }
+.app-shell .workspace .detective-board :is(.privacy-note, .provider-note) { color: #574635; }

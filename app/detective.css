@@ -1,4 +1,4 @@
-/* The original paper, red, brown, and route-specific fonts remain the palette. */
+/* Shared board materials and lighting. Contrast rules load after this file. */
 .detective-board {
   --paper-dots: radial-gradient(circle, #715b3d12 .7px, transparent .9px);
   position: relative;
@@ -309,3 +309,85 @@
   .board-beam { display: none; }
   .board-lamp-shade { transform: none; }
 }
+
+/* Late-night counter-heist headquarters. Texture stays below the ink. */
+body { background-color: #201915; }
+.app-shell {
+  background: radial-gradient(ellipse at 55% 0, #60463155, transparent 65%), repeating-linear-gradient(92deg, #ffffff02 0 1px, transparent 1px 7px), #201915;
+}
+.sidebar {
+  background: linear-gradient(90deg, #ffffff03, transparent 60%), url('/paper-fiber.svg'), #191511;
+  border-right-color: #705439;
+  box-shadow: 8px 0 24px #0003;
+}
+.topbar { background: #261e18; border-color: #705439; box-shadow: 0 3px 12px #0003; }
+.detective-board {
+  --paper-fiber: url('/paper-fiber.svg');
+  --card: #f5e8ce;
+  background-color: #51341f;
+  background-image: radial-gradient(ellipse at 50% 0, #e7aa583b, transparent 62%), linear-gradient(90deg, #160e0850, transparent 14%, transparent 86%, #160e0850), url('/cork-grain.svg');
+  background-size: auto, auto, 130px 130px;
+  border-color: #a78355;
+  box-shadow: inset 0 0 0 5px #6d4b2d, inset 0 0 0 6px #c49b6266, inset 0 0 55px #150c0755, 0 15px 35px #0006;
+}
+.detective-board--spotlight { padding-top: 140px; }
+.detective-board--spotlight > .board-content::before {
+  content: '';
+  position: absolute;
+  top: -140px;
+  left: 0;
+  right: 0;
+  height: 470px;
+  background: radial-gradient(ellipse at 50% 0, #ffce7545, #f2b95512 45%, transparent 70%);
+  pointer-events: none;
+  z-index: -1;
+}
+.board-lamp { width: 180px; height: 135px; left: calc(50% - 90px); filter: drop-shadow(0 8px 5px #110b0880) drop-shadow(0 3px 14px #f9b64f55); }
+.board-thread-shadow { opacity: .55; }
+.board-thread-red { stroke: #d2382d; stroke-width: 3; }
+.board-yarn-fiber { stroke: #ff9980; opacity: .8; }
+.detective-board :is(.panel, .stat-card, .case-card, .family-strip, .page-heading) {
+  background-color: #f5e8ce;
+  border-color: #b79a71;
+  border-radius: 2px;
+  box-shadow: 2px 3px 0 #d8c19a, 3px 4px 0 #6d4b2d, 0 10px 18px #160c0845;
+}
+.detective-board [data-board-node]:not(.demo-card),
+.detective-board [data-board-lit]:not(.demo-card) {
+  background-image: radial-gradient(circle 230px at var(--spot-x, 50%) var(--spot-y, 0%), #fff0b338, transparent 75%), linear-gradient(105deg, #9f713112, transparent 18%, transparent 85%, #9f713117), var(--paper-fiber);
+  background-size: auto, auto, 180px 180px;
+}
+.detective-board [data-board-lit]:not(.demo-card) { background-image: radial-gradient(circle 230px at var(--spot-x, 50%) var(--spot-y, 0%), #fff0b380, transparent 75%), var(--paper-fiber); background-size: auto, 180px 180px; }
+.detective-board .page-heading { background-image: linear-gradient(175deg, transparent 86%, #91693314 87%, transparent 89%), var(--paper-fiber); }
+.detective-board .page-heading::before, .detective-board .page-heading::after { box-shadow: inset 0 0 10px #8c663322; background-color: #dfc697e6; height: 34px; }
+.detective-board .page-heading::before { transform: rotate(-17deg); }
+.detective-board .page-heading::after { top: -7px; transform: rotate(8deg); }
+.detective-board .section-title { background-color: #e9d9ba; background-image: var(--paper-fiber); border-bottom-color: #b79a71; }
+.detective-board .section-title h2 { font-family: var(--font-bebas-neue), sans-serif; font-weight: 400; font-size: 26px; letter-spacing: .6px; }
+.detective-board .stat-card { border-top: 3px solid #886644; }
+.detective-board .case-tab { box-shadow: 2px 3px 0 #190b0840; }
+.detective-board .case-card { background-image: linear-gradient(170deg, transparent 92%, #9b713c18 93%, transparent 95%), var(--paper-fiber); }
+.detective-board .foiled-stamp { border-width: 3px; transform: rotate(-9deg); }
+.detective-board .sample-section { background: url('/paper-fiber.svg'), #f5e8ce; padding: 24px 20px; border: 1px solid #b79a71; box-shadow: 2px 3px 0 #d8c19a, 0 8px 18px #160c0845; }
+.detective-board .filter-tabs { gap: 12px; padding-bottom: 16px; }
+.detective-board .filter-tabs button { background: #f5e8ce; padding: 12px 16px; border: 1px solid #b79a71; border-radius: 2px; }
+.detective-board [data-board-node].demo-card { background-color: #d8e1df; background-image: linear-gradient(110deg, #ffffff20, transparent), var(--paper-fiber); border-color: #7e9994; box-shadow: 3px 4px 0 #899c93, 0 10px 20px #160c0855; }
+.detective-board--calm { background-color: #65482f; background-image: url('/cork-grain.svg'); background-size: 160px 160px; }
+.detective-board--calm :is(.panel, .page-heading) { box-shadow: 2px 3px 0 #d8c19a, 0 5px 12px #160c0828; }
+@media (min-width: 761px) {
+  .detective-board--standard .stat-card:nth-child(1) { transform: rotate(-.7deg); }
+  .detective-board--standard .stat-card:nth-child(2) { transform: rotate(.6deg); }
+  .detective-board--standard .stat-card:nth-child(3) { transform: rotate(-.4deg); }
+  .detective-board--standard .case-card:nth-child(odd) { transform: rotate(-.6deg); }
+  .detective-board--standard .case-card:nth-child(even) { transform: rotate(.7deg); }
+}
+@media (max-width: 760px) {
+  .board-lamp { width: 144px; height: 108px; left: calc(50% - 72px); }
+  .detective-board--spotlight { padding-top: 115px; }
+  .detective-board--spotlight > .board-content::before { top: -115px; height: 350px; }
+}
+
+/* Rosa keeps flat, spacious task surfaces with a quiet paper finish. */
+.rosa-surface .simple-surface { background: url('/paper-fiber.svg'), #eee4d1; }
+.rosa-surface .topbar { background: #fff6e5; box-shadow: 0 2px 8px #513b2412; border-color: #b5a58f; }
+.rosa-surface .simple-surface :is(.panel, .task-choices button) { background-color: #fff9ec; background-image: url('/paper-fiber.svg'); border-color: #a89373; box-shadow: 0 3px 0 #d8c19a; }
