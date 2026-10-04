@@ -1,125 +1,70 @@
-# Deploy Tripwire on Vultr
+# Vultr deployment and v3 migration
 
-Vultr runs the Node/Next.js server, Socket.IO hub, and SQLite holds. Caddy provides
-HTTPS so family phones can use the microphone. Only Caddy publishes ports; the
-app and its database remain on Docker's private network. One VM runs one household.
+Vultr remains the host: one long-running Node server behind Caddy HTTPS. The
+v3 browser calls and microphone need HTTPS; SSE coordinates the two call apps
+and bank app in the same process. Horizontal replicas/serverless functions are
+outside the one-session design.
 
-## Current demo and updates
+## Current deployment (v2)
 
-The demo runs at https://tripwire.64.177.46.134.sslip.io on Vultr. HTTPS, all three
-role logins, secure cookies, and WebSocket state delivery can be checked with
-`npm run check:vultr:e2e`. Gemini and ElevenLabs require their server-side keys;
-the ElevenLabs caller additionally requires `ELEVENLABS_AGENT_ID`. Role
-access codes are in the local private `.env.vultr` file.
+URL: https://tripwire.64.177.46.134.sslip.io. This is a temporary hostname, not a
+confirmed GoDaddy Registry domain. Current runtime uses Docker, Node 22, Caddy,
+SQLite, Socket.IO, and paired access codes. It has not been migrated to v3.
+Keep Node 22.22+; the PRD's Node 20 note does not supersede the current runtime.
 
-Every push to `main` runs GitHub Actions validation across Linux, Windows, and
-macOS, plus browser tests on Linux. If all checks pass, Actions runs deployment
-automatically. Pull requests run checks only. Main releases are serialized so
-another push cannot interrupt an active deployment. Failed checks leave the
-current live release running.
+Main pushes run checks across Linux/Windows/macOS plus browser and chain tests.
+After checks pass, Actions deploys the committed release. Until CI is changed,
+docs-only pushes also deploy. `/api/health` identifies the actual live release.
+Deployment preserves named volumes, retains active/previous images, bounds build
+cache, and requires at least 5 GiB free. Do not use `down -v`.
 
-Repository Actions Secrets contain `VULTR_SSH_KEY` (a dedicated deployment key),
-`VULTR_KNOWN_HOSTS` (the verified server identity), and `VULTR_ENV` (the complete
-private deployment configuration). To change the domain, API keys, or role codes,
-update `.env.vultr` locally and synchronize it without printing credentials:
-
-```sh
-gh secret set VULTR_ENV --repo hugoev/rowdyhacks2026 < .env.vultr
-```
-
-The next push deploys the new configuration. For a manual release, ensure your
-local `main` contains the desired commit, then run:
-
-```sh
-npm run deploy:vultr -- root@64.177.46.134
-```
-
-The script deploys local committed HEAD, builds on Vultr, replaces containers,
-preserves named volumes, and checks HTTPS health. It does not pull GitHub changes
-automatically when invoked manually; manual deployment bypasses CI checks.
-
-Deployments retain the active image and last successful release, remove obsolete
-Tripwire images, and bound Docker build cache before building. A disk-space check
-requires 5 GiB free before replacing containers. Cleanup never removes volumes.
-
-## Create the instance
-
-Use Cloud Compute, Ubuntu 24.04 LTS, a nearby region, and approximately two vCPUs
-with 4 GB RAM for on-server Next.js builds. Add your SSH public key and name the
-instance `tripwire`. The Docker Marketplace image is another option if offered.
-Sponsor credits cover eligible usage according to your account; review the price
-shown before creating the instance. No Vultr API key is needed for SSH deployment.
-
-Point the domain's DNS A record at the server's IPv4 address. Add an AAAA record
-only if IPv6 is configured correctly. Allow inbound TCP 80 and 443, optional UDP
-443 for HTTP/3, and SSH 22 from the team's IPs in Vultr's firewall and the VM
-firewall. Do not expose port 3000. HTTP 80 must remain reachable for certificate
-issuance and redirects. Check for existing web servers using those ports.
-
-On a fresh Ubuntu VM, install Docker Engine and the Compose plugin using
-[Docker's Ubuntu installation guide](https://docs.docker.com/engine/install/ubuntu/).
-The SSH deployment user needs Docker access. Reconnect after adding that user
-to the Docker group. Verify `docker info` and `docker compose version` on the VM.
-Vultr documents its [Docker Marketplace setup](https://docs.vultr.com/how-to-use-vultrs-docker-marketplace-application).
-
-## Configure secrets locally
-
-From the repository root:
-
-```sh
-npm run setup:vultr
-```
-
-This creates private, gitignored `.env.vultr`, generates three different role
-access codes, and copies any saved local Gemini/ElevenLabs keys. Existing files
-are never overwritten. Set `TRIPWIRE_DOMAIN` and `ACME_EMAIL` in that file; confirm
-provider keys and model choices. Leave `GEMINI_API_KEY` empty until you want live
-Gemini requests. Creating/deploying the file does not call either provider.
+Secrets: VULTR_SSH_KEY, VULTR_KNOWN_HOSTS, and VULTR_ENV. Local `.env.vultr` holds
+private deployment config; never print or commit it. Existing Solana variables
+are overlaid by CI; do not assume rewriting the env file disables that overlay.
 
 ```sh
 npm run check:vultr
-npm run deploy:vultr -- ubuntu@SERVER_IP
+npm run deploy:vultr -- root@64.177.46.134
 ```
 
-Use the actual SSH username shown by Vultr; some images use `root` or `docker`.
-SSH must work with your key, including initial host-key verification. The script
-uploads a committed Git archive and secrets over SSH, builds on the VM, waits for
-the app health check, and checks the public HTTPS endpoint. Uncommitted changes
-are excluded. Access codes and keys are never printed. Do not paste `.env.vultr`
-into chat or commit it. Send each role its own access code privately.
-
-## Verify and operate
-
-Visit `https://YOUR_DOMAIN/api/health`: expect `ok: true`, `mode: paired`,
-`hosting: vultr`, and the deployed commit's release ID. Log in on `/protected`,
-`/guardian`, and `/relative` with their respective codes. Rehearse a scripted
-call, family check, held payment, and denial across phones. The automated
-`npm run check:vultr:e2e` starts a synthetic rules call, creates a mock payment,
-blocks it through Diego's browser, and verifies Tiger persistence and mobile
-views. It requires no existing active call and leaves the resulting case for
-audit. This does not verify live microphone audio or the ElevenLabs caller.
-
-The server stores deployments at `~/tripwire/releases/COMMIT`. From that release:
+Manual deployment uploads committed HEAD and bypasses CI checks. From a release
+at `~/tripwire/releases/COMMIT`, current operations are:
 
 ```sh
 docker compose --env-file .env.vultr -f deploy/vultr/compose.yaml ps
 docker compose --env-file .env.vultr -f deploy/vultr/compose.yaml logs --tail=100
 ```
 
-Named volumes preserve SQLite data and Caddy certificates across releases. Never
-use `down -v` unless you intend to delete them. Back up the SQLite database with
-SQLite's online backup API before risky changes; copying only a live `.sqlite`
-file can miss WAL transactions.
+Back up SQLite using its online backup API before risky data migration. Resetting
+legacy activity must preserve settings, family hash, access/session keys, provider
+configuration, and unresolved chain mappings; historical Tiger rows need not be
+removed to clear the UI. Never deploy an empty volume as a casual reset.
 
-To roll back, enter an earlier release directory, copy the current private
-`~/tripwire/.env.vultr` into it, and run the following with that release's commit:
+## V3 migration tasks (pending)
+
+1. Implement bank `/`, phone `/call`, hidden `/operator`, `/case/:id`, and SSE.
+2. Add two-agent keys, TIGER_DATABASE_URL, PUBLIC_BASE_URL to runtime/templates;
+   retain current private settings until migration is verified.
+3. Initialize and seed the new Tiger schema without dropping older history.
+4. Replace role auth and SQLite session flow for the fictional no-auth demo;
+   explicitly limit the deployment to simulated money and demo data.
+5. Remove obsolete Solana overlays/services only after accounting for existing
+   records. The docs update does not disable the live program.
+6. Replace v2 CI/E2E checks with the v3 acceptance path; keep appropriate Node
+   compatibility, build/type checks, deployment health, and data preservation.
+7. Test real phone sessions over HTTPS, then point the chosen Registry domain
+   to the VM and configure Caddy after the domain is available.
+
+To synchronize a complete verified private config (during the setup task):
 
 ```sh
-TRIPWIRE_RELEASE=PREVIOUS_COMMIT docker compose --env-file .env.vultr -f deploy/vultr/compose.yaml up -d --no-build --wait
+gh secret set VULTR_ENV --repo hugoev/rowdyhacks2026 < .env.vultr
 ```
 
-This reuses the earlier image and existing volumes. After schema changes, confirm
-backward compatibility before rollback. Certificate setup requires DNS propagation
-and reachable ports; a failed HTTPS check reports deployment failure instead of
-claiming the app is live. Neither this guide nor committed infrastructure files
-mean a Vultr instance has already been provisioned or deployed.
+Do not run this with a partial template. Changing local `.env` does not change
+production. RESET in v3 clears in-memory demo state while retaining completed
+Tiger cases and seeded transactions. Forced results remain distinguishable.
+See [environment setup](integrations.md) and [v3 validation](VALIDATION.md).
+
+Detailed legacy provisioning and rollback instructions are
+[archived](archive/v2/docs/VULTR.md).

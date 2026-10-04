@@ -1,80 +1,100 @@
-# Live provider setup
+# PRD v3 provider and environment setup
 
-Keep API keys in `.env` or the hosting provider's server-side secret settings.
-Never use `NEXT_PUBLIC_` for keys. Restart the server after changing configuration.
+This is the next setup brief. Current code still implements v2. No new agents,
+voice clones, keys, provider resources, or production secrets are created by
+this documentation update.
 
-Each teammate copies `.env.example` to an untracked local `.env` and adds their
-own provider keys. Prefer separate keys per developer so one can be revoked
-without affecting teammates. If sharing sponsor credentials, use a password
-manager's shared vault, not Git, issue comments, PRs, or screenshots. The deployed
-server has its own protected `.env` or secret settings. `.env.example` contains
-variable names and placeholders only; `.gitignore` excludes local secret files.
+## Target environment contract
 
-## Gemini
+| Variable | Purpose | Current migration status |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Server-side ephemeral-token minting | Already consumed |
+| `ELEVENLABS_API_KEY` | Server-side agent session setup | Already consumed |
+| `EL_AGENT_SCAMMER_ID` | ElevenLabs Agent A, consented clone | New; runtime not wired |
+| `EL_AGENT_VERIFIER_ID` | ElevenLabs Agent B, stock voice | New; runtime not wired |
+| `TIGER_DATABASE_URL` | Transaction and case PostgreSQL database | New name; current runtime uses DATABASE_URL |
+| `PUBLIC_BASE_URL` | Canonical HTTPS origin for bank and call pages | New name; current runtime uses APP_ORIGIN |
 
-Create a Gemini Developer API key in Google AI Studio. Start with the free tier;
-Tripwire never activates billing. Set `GEMINI_API_KEY` and keep the task-specific
-defaults in `.env.example`: Flash-Lite for rolling call analysis and guardian
-summaries, Flash for screenshot inspection. `GEMINI_MODEL` is an optional legacy
-override; task-specific values take precedence.
+Keep all keys and DB credentials server-side, in ignored `.env` locally and
+`.env.vultr`/GitHub `VULTR_ENV` for deployment. PUBLIC_BASE_URL is a public origin,
+not a credential. The target brief also permits an optional model selection
+`GEMINI_LIVE_MODEL`; verify the requested primary/fallback before wiring it.
+Use `TIGER_CA_CERT` only if the connection needs an explicit CA certificate.
+Infrastructure still needs its domain, certificate email, host/port, and SSH
+settings; these are not additional application services.
 
-Tripwire uses one Gemini Live session per call (`GEMINI_LIVE_MODEL`, default
-`gemini-3.8-live`). The server mints a single-use ephemeral token locked to the
-model, system instruction, and tool declarations; the browser connects with it.
-Only the caller's audio is streamed (16 kHz PCM). The model's audio output is
-discarded; it acts only through the eight tools in `lib/live-config.ts`, which the
-server validates and executes in `server/live-tools.ts`. Input transcription feeds
-the caller transcript and the deterministic rule spotter. Proactive audio is off
-and turn detection ends a caller turn after 300 ms of silence; the browser fills
-gaps in the agent's audio with silence so turns can end (see VALIDATION.md for the
-measurements). A text `CHECKPOINT` is sent only if the caller talks for 8 seconds
-with no tool activity, and session resumption reconnects up to three times. Run
-`npm run check:live` (typed line) and `npm run check:live -- --audio=call.wav`
-(real speech) as the hour-0 gate.
+Do not rename existing private keys before runtime support lands. Current
+`.env.example` and `deploy/vultr/env.example` describe the current implementation.
+`ELEVENLABS_AGENT_ID` is the old single-agent key, not a verifier configuration.
+Voice IDs select voices during agent setup; agent IDs identify configured agents.
+Never put API keys in `NEXT_PUBLIC_` values, browser events, URLs, or logs.
 
-Use synthetic calls on the free tier: Google may use submitted content to improve
-its products.
+## Next setup sequence
 
-Run `npm run eval:live` explicitly for the red-team numbers: ElevenLabs voices
-speak 22 synthetic scripts (6 scam types and benign calls, English and Spanish)
-for about 50 calls, streamed in real time into Gemini Live. A call counts as
-flagged at risk 60+ or two distinct levers. Results go to
-`data/eval-results.json` (and Tiger Data when configured); the eval card shows
-only those measured numbers.
+1. Confirm account keys and required scopes without printing them. Existing keys
+   were smoke-tested for Gemini Live and ElevenLabs TTS; that does not prove two
+   conversational agents are ready.
+2. Diego supplies a recorded consent statement, written consent, and about one
+   minute of his own sample. Record actual consent in the repo; keep private
+   recordings out of Git. Do not fabricate a consent note or clone someone else.
+3. Create Agent A and Agent B with the prompts below. Record returned IDs in the
+   private environment. Provider setup is the next task, not completed here.
+4. Configure verifier client tool and dynamic variables. Verify signing/session
+   URLs and web-SDK permissions for the deployed origin; keys remain on server.
+5. Implement runtime support for the two IDs, session/request correlation, SSE,
+   and result handling; migrate local and deployed templates together.
+6. Seed Tiger transactions, verify the ~29x query, then test on two physical
+   phones over HTTPS. Confirm Ready unlocks audio and Answer grants microphone.
+7. Synchronize the complete VULTR_ENV secret, preserving unrelated infrastructure
+   values; deploy and run v3 acceptance three times. Do not upload a partial file.
 
-## ElevenLabs
+Existing `npm run setup:agent` creates the old scammer using
+ELEVENLABS_SCAMMER_VOICE_ID and prints ELEVENLABS_AGENT_ID. It does not create
+Agent B or install the v3 prompts, tools, and key names. Do not use it as if it did.
 
-- **Tripwire's voice:** `ELEVENLABS_VOICE_ID` (and optional `ELEVENLABS_VOICE_ID_ES`)
-  with `eleven_flash_v2_5` streaming TTS. It speaks once per call, only after
-  Diego replies. Browser speech is the fallback.
-- **Scammer agent:** record written consent, create an instant voice clone, set
-  `ELEVENLABS_SCAMMER_VOICE_ID`, then `npm run setup:agent` and copy the printed
-  `ELEVENLABS_AGENT_ID`. The protected-role endpoint returns a signed URL; the
-  agent's PCM output streams to Gemini, so venue noise never reaches the model.
-  The "short arc" option overrides the prompt per session.
+## Agent A - scammer, demo only
 
-## Verification
+Voice: instant clone of consenting teammate Diego.
 
-Run `npm test`, `npm run typecheck`, `npm run build`, and `npm run test:e2e` before
-merging. Automated tests use mocks or no-key fallbacks and do not consume credits.
-For a live smoke test, run `npm run check:live`, then ring Rosa's phone with the
-agent and confirm GEMINI-tagged tumblers in Mission Control.
-Rehearse all three family views three times and confirm provider failures cannot
-release payments or erase critical warnings.
+```text
+You are role-playing a scammer for a fraud-prevention demo. Pretend to be
+Diego calling grandmother Rosa. You were arrested and need $2,500 bail today,
+sent from her bank app to M. Ellis Legal. Beg her not to tell Mom. Be emotional
+and rushed. Keep it under 40 seconds, then say you'll call back and end the call.
+If asked anything personal you cannot know, dodge with urgency.
+```
 
-## Tiger Data
+Optional coach-mode prompt variant: tell Rosa to say "car repair" if the bank
+asks. Do not add this until the normal demo is reliable. No live victims or real
+payment instructions. Runs on `/call?who=rosa` using `@elevenlabs/client`.
 
-Set server-only `DATABASE_URL` in your ignored `.env`. Follow [Tiger setup](TIGER.md)
-for schema initialization, connection checks, TLS options, and deployment secrets.
-Only risk metadata is uploaded; payment holds still work without the database.
+## Agent B - verifier
 
-## Solana
+Voice: calm stock Tripwire voice, not the clone. Allow dynamic variables
+`grandma_name`, `contact_name`, `amount`, `claim_summary`.
 
-See [production Solana setup](SOLANA.md). The devnet escrow program and guardian
-wallet-signing flow are implemented; activation requires program deployment,
-independent guardian configuration, and a funded runtime payer. No mainnet funds
-are supported. Without configuration the UI retains its explicit Web2 fallback.
+```text
+You are Tripwire calling {{contact_name}} for their grandmother
+{{grandma_name}}'s bank. Say someone using their name told her
+{{claim_summary}} and asked for {{amount}}. Ask: are you safe, and did you
+ask her for money? As soon as you know, call report_result, thank them,
+ask them to call her, and end the call. Keep it under 30 seconds.
+```
 
-Mock dollar payments, SQLite holds, and scripted calls remain simulated.
-Presage and SMS are not connected. Live provider accuracy and microphone
-latency must be measured with your account before claiming those demo metrics.
+Client tool `report_result`: required `status` enum not_me|confirmed|no_answer
+and `note` string. Browser posts it to `/api/result` with the pending verification
+identifier. Ambiguous answers/timeouts are no_answer, never confirmed. Runs on
+`/call?who=diego`; add Ana only through the saved-contact map.
+
+## Gemini teller
+
+Gemini supplies audible output in v3; the legacy client discards output audio.
+Use the exact system instruction and three tools in [PRD v3](PRD.md). Input and
+output transcription become captions. A pending contact call retains its tool
+ID; the matching result returns to that same session while it stays open.
+
+Requested model gemini-3.8-live; proposed fallback gemini-3.1-flash-live-preview.
+The primary passed a typed-line smoke test in the previous implementation.
+Native two-way teller audio, fallback availability, barge-in, exact PTT fields,
+and non-blocking external verification still require verification during build.
+No large live eval run is part of this documentation task.

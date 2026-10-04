@@ -1,27 +1,33 @@
-# Post-payment case files
+# V3 family case files
 
-When a guardian denies a flagged demo payment, Tripwire saves a short lesson
-in the same SQLite case record. It appears immediately below the result on
-`/protected` and in the matching file on `/cases`.
+Planned route `/case/:id`. Gemini's finish tool fills the case from Rosa's real
+teller conversation and the verifier result; the server persists it in Tiger
+Data. This replaces the current SQLite `/cases` view and is not implemented yet.
 
-The lesson explains the suspected pattern, up to three warning signs, the
-recorded family checks, and one next step using an independent contact number.
-Denial alone is not evidence of fraud. Approval and timer release do not create
-a scam lesson.
+The heist theme lives here: kraft paper, typewriter/slab headings, red Tripwire
+laser motif and a decisive FOILED stamp. Rosa's bank, captions, and outcome stay
+calm and legible. White/cream and brown from the established design remain the
+base; red marks the intervention. Motion should support the story and respect
+reduced-motion preferences.
 
-With `GEMINI_API_KEY` configured, one background summary request can rewrite
-the explanation in plain language. Recorded warning signs, verification results,
-payment outcome, and next action remain controlled by the application. A timeout,
-quota error, or invalid response keeps the complete rules explanation; provider
-status shows failures in Family settings. Payment denial never waits for AI.
-Historical cases are not automatically rewritten by Gemini on server restart.
+```text
+FILE 001 // THE BAIL JOB                         [FOILED]
+The mark ........ Rosa, 74
+The inside man .. someone posing as grandson Diego
+The pressure .... "arrested", "bail today"
+The cover ....... "don't tell Mom"
+The getaway ..... $2,500 instant transfer to M. Ellis Legal
+                  new payee, about 29x her usual
+Foiled by ....... called real Diego on his saved contact
+Time to stop .... actual elapsed time (not a fixed 0:47)
+```
 
-Only warning labels and the existing explanation go to Gemini for this task.
-No transcript quotes, safe words, payment amount, or payee are sent. Case records
-remain local; Tiger Data continues receiving risk metadata. Relative sessions
-cannot see case files. Verification belongs to the original call, even if another
-call starts before the guardian decides.
+Quotes must come from the actual session, not fabricated model evidence.
+Outcome and foiled_by must match the recorded result; distinguish confirmed,
+not_me, unanswered, and operator-forced fallback. Store pressure quotes, cover,
+getaway, tip, amount/payee, outcome, and measured seconds_to_stop. The demo's
+0:47 is illustrative only; define the timing start/end during implementation.
 
-Verify with `npm test` and `npm run test:e2e`. The three-view demo checks denial,
-the protected user's next step, and the guardian's case after a page reload.
-These tests use synthetic input and mocked providers, without paid API calls.
+Show three plain explanations and a next-time tip to Rosa. Case rows are the
+family record; Ana delivery is a pitch concept, not an implemented notification.
+No extra dashboard, scoring meter, or risk chart is needed.

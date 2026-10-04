@@ -1,72 +1,52 @@
-# Tiger Data risk analytics
+# Tiger Data - PRD v3 target
 
-Add your PostgreSQL connection string to the ignored local `.env`, then restart
-your existing development server. Never commit it or use `NEXT_PUBLIC_`.
+V3 uses Tiger Data for the payment anomaly gate and completed case files.
+Session/call state lives in memory. This replaces the older risk-chart analytics;
+the new schema and seed are **not implemented yet**.
 
-```dotenv
-DATABASE_URL=postgres://USER:PASSWORD@HOST:PORT/tsdb?sslmode=require
-```
+## Target schema and seed
 
-The server initializes only the dedicated `tripwire` schema. It creates a
-`risk_events` hypertable, a `risk_minute` continuous aggregate with real-time
-aggregation, and a minute refresh policy. It also creates `eval_runs`, which stores
-aggregate red-team results from `npm run eval:live` (no audio or transcripts).
-Existing unrelated tables are untouched.
-The database user needs permission to create those objects; TimescaleDB must be
-installed. Initialization is serialized and idempotent.
+- `transactions(ts timestamptz, payee text, amount numeric, rail text)`, a
+  hypertable on ts. One fictional user, Rosa; no multi-user account model.
+- A daily/weekly typical-payment continuous aggregate. Choose a supported
+  median/percentile implementation and define its rolling lookback. Do not
+  silently substitute an unweighted median of bucket medians for a global median.
+- Known payees come from distinct historical transaction payees.
+- `cases(ts, amount, payee, outcome, job_name, impersonated, pressure text[],
+  cover text, getaway text, foiled_by text, tip text, seconds_to_stop int)`.
+  Add stable case ID/request uniqueness when implementing `/case/:id` and
+  idempotent finish writes.
 
-These commands work across the team's supported operating systems:
+Planned `scripts/seed.ts`: ~12 months of utilities, pharmacy, groceries, church,
+monthly $50 to Diego. Include City Electric; exclude M. Ellis Legal. Typical
+near $86, so $2,500 is about 29x. Make the seed idempotent and fictional. It is
+not the existing risk-event smoke test or an npm command that exists today.
 
-```sh
-npm run check:tiger
-npm run setup:tiger
-npm run check:tiger -- --smoke
-```
+One `/api/check` SQL query returns is_new_payee, typical, multiple, trigger.
+Trigger: amount/typical > 5 AND (new payee OR instant/irreversible rail).
+Use numeric arithmetic and defined behavior for missing/zero history; a DB
+failure must surface explicitly and keep the risky payment unresolved.
 
-The first command checks connectivity, encryption, the TimescaleDB extension, and
-schema readiness without changing data. Setup initializes the schema. The smoke
-test writes three synthetic events to an isolated random stream, checks raw and
-aggregate results, and retries them to verify duplicate protection. Those test
-rows remain in the database but never appear in the household's chart.
+`finish` saves exactly one case per completed session/payment, generated from
+the teller conversation and actual verification result. No database reset is
+needed between judges: RESET clears active UI/session, not historical case rows.
+Retain a readable saved case after restart; do not invent successful persistence
+when a write fails. Define retry/idempotency handling during implementation.
 
-## Privacy and reliability
+## Environment migration
 
-Only event identifiers, timestamps, scores, event categories, allowlisted scam
-types, and call identifiers leave the server. No transcript, safe word, payment
-amount, payee, screenshot, or guardian summary is uploaded to Tiger.
+Target server key: `TIGER_DATABASE_URL`; current runtime consumes `DATABASE_URL`.
+Migrate adapter, templates, setup, and private deployment secrets together.
+Use pg, encrypted connections, and a verified CA where needed. Never print the
+connection string. Do not drop unrelated tables or old risk history during migration.
 
-SQLite continues to enforce payment holds. An on-disk outbox retries cloud writes
-with idempotent inserts; entries are removed only after successful writes.
-Connection failures use a 30-second retry delay and the guardian chart falls back
-to local events. The configured server normally syncs every five seconds.
+## Existing database (v2, historical)
 
-The guardian can switch between the latest 60 individual events and up to 120
-one-minute peak buckets from the last day. Chart totals cover the returned minute
-buckets, not a lifetime total. Other roles receive no cloud risk history. Demo
-reset starts a new stream; it does not delete historical cloud records. A cloud
-retention/deletion policy and multi-household authentication remain future work.
+Current adapter creates dedicated `tripwire.risk_events`, `tripwire.risk_minute`,
+and `tripwire.eval_runs`. SQLite owns holds and an upload outbox. These do not
+provide Rosa's v3 transaction history or v3 case persistence.
 
-## TLS
-
-`sslmode=require` encrypts traffic but does not authenticate the server certificate.
-For certificate verification, use `sslmode=verify-full` and, where necessary,
-`TIGER_CA_CERT` containing your trusted CA certificate (escaped newlines supported).
-Disabled TLS is rejected. Do not claim that encryption alone verifies the server.
-See [node-postgres SSL configuration](https://node-postgres.com/features/ssl).
-
-## Vultr
-
-Local `.env` changes do not change production secrets. Add `DATABASE_URL` and any
-`TIGER_CA_CERT` to the existing private Vultr environment configuration and GitHub
-`VULTR_ENV` deployment secret, preserving the domain, provider keys, and paired
-access codes. Do not overwrite that secret with an incomplete example file.
-`npm run setup:vultr` copies these values when creating a new `.env.vultr`; it
-refuses to replace an existing file. Deploy/restart after updating configuration.
-
-After deployment, run `npm run check:vultr:e2e` to verify the live HTTPS app,
-all three paired logins, secure cookies, guardian WebSocket delivery, payment
-holds and denial permissions, guardian-only analytics, Tiger event persistence,
-minute aggregation, and mobile views. Install Playwright Chromium first if needed.
-This explicit live check creates and denies one synthetic mock payment; its case
-and anonymized risk events remain as verification evidence. It does not reset the
-household, change the family safe word, or start a call.
+Existing commands: `npm run check:tiger`, `npm run setup:tiger`,
+`npm run check:tiger -- --smoke`. They validate/initialize the **old** schema;
+the smoke command writes synthetic risk events. Keep them labeled until replaced.
+See [archived Tiger operations](archive/v2/docs/TIGER.md) for current details.
