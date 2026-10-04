@@ -21,7 +21,7 @@ One-liner: "Tripwire asks whether the account holder should really be making thi
 | Case files | `/cases` | Review warning signs and payment outcomes |
 | Family settings | `/settings` | Safe word, consent, co-sign limit, and provider status |
 
-Optional extras: `/student` adapts the shield to fake-job scams; `/drill` offers scripted scam practice; `/weather` shows explicitly synthetic San Antonio scam trends.
+Optional extras: `/drill` offers scripted scam practice; `/weather` shows explicitly synthetic San Antonio scam trends.
 
 ## How the technology fits
 

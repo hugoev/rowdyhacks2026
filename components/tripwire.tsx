@@ -16,8 +16,8 @@ import { DetectiveBoard, type BoardConnection, type BoardSpotlight } from './det
 import { HeistDrill } from './heist-drill';
 import { ScamWeather } from './scam-weather';
 
-export type View = 'guardian' | 'protected' | 'student' | 'relative' | 'inspector' | 'cases' | 'settings' | 'drill' | 'weather';
-const names: Record<View, string> = { guardian: 'Command center', protected: 'Rosa’s shield', student: 'Student shield', relative: 'Family callback', inspector: 'The Inspector', cases: 'Case files', settings: 'Family settings', drill: 'Heist Drill', weather: 'Scam Weather' };
+export type View = 'guardian' | 'protected' | 'relative' | 'inspector' | 'cases' | 'settings' | 'drill' | 'weather';
+const names: Record<View, string> = { guardian: 'Command center', protected: 'Rosa’s shield', relative: 'Family callback', inspector: 'The Inspector', cases: 'Case files', settings: 'Family settings', drill: 'Heist Drill', weather: 'Scam Weather' };
 const boardConnections: Partial<Record<View, readonly BoardConnection[]>> = {
   guardian: [['lookout', 'payment-queue'], ['payment-queue', 'family']],
   inspector: [['inspector-input', 'inspector-result']],
@@ -25,8 +25,8 @@ const boardConnections: Partial<Record<View, readonly BoardConnection[]>> = {
 };
 const commandSpotlight: BoardSpotlight = { targets: ['money', 'attention', 'inner-circle'] };
 export default function Tripwire({ view }: { view: View }) {
-  const role = view === 'protected' || view === 'student' || view === 'settings' ? 'protected' : view === 'relative' ? 'relative' : 'guardian';
-  if (view === 'protected' || view === 'student') return <Provider key={view} role={role}><div className="rosa-surface"><MotionProvider><ProtectedShell student={view === 'student'}/></MotionProvider></div></Provider>;
+  const role = view === 'protected' || view === 'settings' ? 'protected' : view === 'relative' ? 'relative' : 'guardian';
+  if (view === 'protected') return <Provider key={view} role={role}><div className="rosa-surface"><MotionProvider><ProtectedShell/></MotionProvider></div></Provider>;
   return <Provider key={view} role={role}><Shell view={view}/></Provider>;
 }
 function Shell({ view }: { view: View }) {
@@ -41,7 +41,7 @@ function Shell({ view }: { view: View }) {
       <div className="sidebar-family"><div className="avatar rosa">R</div><div><strong>The Garcia family</strong><small>Protected household</small></div><ShieldCheck size={17}/></div>
       <div className="nav-label">CASEBOARD</div>
       <nav aria-label="Main navigation">
-        {([{ id: 'guardian', label: 'Command center', icon: LayoutDashboard }, { id: 'protected', label: 'Rosa’s shield', icon: Shield }, { id: 'student', label: 'Student mode', icon: ShieldCheck }, { id: 'inspector', label: 'The Inspector', icon: FileSearch }, { id: 'cases', label: 'Case files', icon: FolderOpen }, { id: 'drill', label: 'Heist Drill', icon: Crosshair }, { id: 'weather', label: 'Scam Weather', icon: CloudSun }] as const).map(item => <Link key={item.id} href={'/' + item.id} className={view === item.id ? 'nav-item active' : 'nav-item'} aria-current={view === item.id ? 'page' : undefined}><item.icon size={19} strokeWidth={1.6}/>{item.label}{item.id === 'guardian' && urgent > 0 && <span className="nav-count">{urgent}</span>}</Link>)}
+        {([{ id: 'guardian', label: 'Command center', icon: LayoutDashboard }, { id: 'protected', label: 'Rosa’s shield', icon: Shield }, { id: 'inspector', label: 'The Inspector', icon: FileSearch }, { id: 'cases', label: 'Case files', icon: FolderOpen }, { id: 'drill', label: 'Heist Drill', icon: Crosshair }, { id: 'weather', label: 'Scam Weather', icon: CloudSun }] as const).map(item => <Link key={item.id} href={'/' + item.id} className={view === item.id ? 'nav-item active' : 'nav-item'} aria-current={view === item.id ? 'page' : undefined}><item.icon size={19} strokeWidth={1.6}/>{item.label}{item.id === 'guardian' && urgent > 0 && <span className="nav-count">{urgent}</span>}</Link>)}
       </nav>
       <div className="nav-label second">THE CREW</div><nav aria-label="Family navigation"><Link href="/relative" className={'nav-item ' + (view === 'relative' ? 'active' : '')}><Users size={19}/>Family callback</Link><Link href="/settings" className={'nav-item ' + (view === 'settings' ? 'active' : '')}><Settings size={19}/>Family settings</Link></nav>
       <div className="sidebar-bottom"><div className="crew-note"><span className="mini-cross">+</span><p>Every scam is a heist.<br/><strong>You have a crew.</strong></p></div><div className="sidebar-user"><div className="avatar elena">E</div><div><strong>{view === 'protected' || view === 'settings' ? 'Rosa Garcia' : view === 'relative' ? 'Alex Garcia' : 'Elena Garcia'}</strong><small>{view === 'protected' || view === 'settings' ? 'Protected family member' : view === 'relative' ? 'Trusted relative' : 'Family guardian'}</small></div></div></div>

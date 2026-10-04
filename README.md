@@ -64,7 +64,6 @@ The server prints an experimental SQLite warning on some Node 22 versions; this 
 | --- | --- | --- |
 | Guardian command center | `/` or `/guardian` | Risk dial, live chart, signals, transcript, payment decisions, demo reset |
 | Rosa’s shield | `/protected` | Consent-based call guard, scripted, ElevenLabs, and browser transcripts, safe word, callback, mock payments |
-| Student shield | `/student` | Student-focused fake-job / overpayment-check scenario and transfer preset, still protected by the same risk and co-sign flow |
 | Alex’s callback | `/relative` | Answer whether the caller is really Alex; receives no payments or transcript |
 | Inspector | `/inspector` | Text/link inspection, optional Gemini screenshot analysis, 10 prepared samples |
 | Case files | `/cases` | Explain attempted scams and guardian outcomes |
@@ -102,7 +101,6 @@ The demo uses **manual next-line controls**, so venue noise and timing cannot br
 | Tiger Data | PostgreSQL risk-event hypertable, minute continuous aggregate, and cloud-backed guardian chart. Durable local retry queue and local chart fallback. See [Tiger setup](docs/TIGER.md). |
 | Heist Drill | Six scripted scam scenarios, a two-minute timer, ElevenLabs/browser spoken caller lines, and a rules-based scorecard. Optional Gemini coaching receives scenario/action categories only. It is a practice simulation, not a real caller or microphone session. |
 | Scam Weather | Thirty days of deterministic synthetic San Antonio aggregates. Tiger Data stores seeded counts in a continuous aggregate; local generated counts are the fallback. The chart is labeled as simulated and does not represent real incidents. |
-| Student mode | Student-focused protected-user screen with a fake-job / overpayment-check practice call and transfer preset. Uses the same consent, risk checks, guardian hold, and scanner as the family demo. |
 | Vultr | Deployed with Caddy HTTPS, Socket.IO, paired role access, and persistent SQLite storage. See [deployment details](docs/VULTR.md). |
 | Solana | Native Rust escrow is deployed on devnet and the hosted app is configured with a guardian wallet and funded runtime payer. Dollar payments remain simulated; the program is not audited or ready for mainnet funds. See [Solana setup](docs/SOLANA.md). |
 | Presage | Intentionally out of scope for this build. |

@@ -81,13 +81,11 @@ test('Heist Drill returns a scorecard for protective choices', async ({ page }) 
   await expect(page.getByText('100/100', { exact: true })).toBeVisible();
   await expect(page.getByText('3 of 3 protective choices.')).toBeVisible();
 });
-test('student mode opens with a fake-job check scenario and student-specific safety guidance', async ({ page }) => {
-  await page.goto('/student');
-  await expect(page.getByRole('heading', { name: 'Check the offer.' })).toBeVisible();
-  await expect(page.getByRole('navigation', { name: 'Student tasks' })).toBeVisible();
-  await expect(page.getByText('Never send part of a check back to a new contact.')).toBeVisible();
-  await page.getByRole('navigation', { name: 'Student tasks' }).getByRole('button', { name: 'Check a call' }).click();
-  await expect(page.getByLabel('Choose a practice scenario')).toHaveValue('fakeJob');
+test('removed student route returns 404 and is absent from navigation', async ({ page }) => {
+  const response = await page.goto('/student');
+  expect(response?.status()).toBe(404);
+  await page.goto('/guardian');
+  await expect(page.locator('a[href="/student"]')).toHaveCount(0);
 });
 test('Scam Weather clearly labels its 30-day synthetic aggregates', async ({ page, request }) => {
   const response = await request.get('/api/scam-weather', { headers: headers('guardian') });

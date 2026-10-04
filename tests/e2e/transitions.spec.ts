@@ -134,7 +134,7 @@ test('every app destination receives a vault reveal', async ({ page }) => {
   await page.evaluate(() => document.addEventListener('animationstart', event => {
     if (event.animationName === 'vault-door-left') document.documentElement.dataset.vaultDestination = location.pathname;
   }));
-  for (const route of ['protected', 'student', 'relative', 'settings', 'inspector', 'cases', 'drill', 'weather']) {
+  for (const route of ['protected', 'relative', 'settings', 'inspector', 'cases', 'drill', 'weather']) {
     await page.locator(`.sidebar a[href="/${route}"]`).click();
     await expect(page).toHaveURL(`/${route}`);
     await expect(page.locator('html')).toHaveAttribute('data-vault-destination', `/${route}`);

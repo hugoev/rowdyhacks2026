@@ -104,7 +104,7 @@ test('the light stays on while the bulb is visible and switches off when it scro
 
 test('other routes have no lamps or spotlight behavior while keeping their boards', async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1000 });
-  for (const route of ['protected', 'student', 'relative', 'inspector', 'settings', 'cases', 'drill', 'weather']) {
+  for (const route of ['protected', 'relative', 'inspector', 'settings', 'cases', 'drill', 'weather']) {
     await page.goto(`/${route}`);
     const board = page.locator('.detective-board');
     await expect(board).toBeVisible();
@@ -144,7 +144,7 @@ test('touch layouts retain readable choices without moving beams', async ({ brow
 test('all boards reflow at phone and 200-percent desktop-equivalent widths', async ({ page }) => {
   for (const width of [1440, 720, 390]) {
     await page.setViewportSize({ width, height: 1000 });
-    for (const route of ['guardian', 'protected', 'student', 'relative', 'inspector', 'settings', 'cases', 'drill', 'weather']) {
+    for (const route of ['guardian', 'protected', 'relative', 'inspector', 'settings', 'cases', 'drill', 'weather']) {
       await page.goto(`/${route}`);
       await expect(page.locator('main h1')).toBeVisible();
       await expect(page.locator('.detective-board')).toBeVisible();
