@@ -69,6 +69,11 @@ const server = createServer(async (req, res) => {
       req.on('close', () => streams.delete(res)); return;
     }
     if (req.method === 'GET' && path === '/api/state') { json(res, 200, demo.snapshot()); return; }
+    if (req.method === 'GET' && path === '/api/cases') {
+      // This session's files first, then the family's history from Tiger Data.
+      const live = demo.listCases(); const seen = new Set(live.map(c => c.id));
+      json(res, 200, [...live, ...(await tiger.recentCases()).filter(c => !seen.has(c.id))]); return;
+    }
     if (req.method === 'GET' && path.startsWith('/api/case/')) {
       const file = demo.getCase(decodeURIComponent(path.slice('/api/case/'.length)));
       if (!file) { json(res, 404, { error: 'Case file not found.' }); return; }
@@ -92,6 +97,7 @@ const server = createServer(async (req, res) => {
         break;
       }
       case '/api/send': { const input = payment.parse(body); const check = await tiger.check(input.payee, input.amount, input.rail); demo.sent(check); result = check; break; }
+      case '/api/caption': { limit(ip + ':caption', 240); const input = z.object({ who: z.enum(['rosa', 'teller']), text: z.string().max(1000) }).parse(body); demo.caption(input.who, input.text); break; }
       // ---- The teller's tools (run in the browser session, recorded here) ----
       case '/api/ring': {
         const input = z.object({ contact: z.enum(['diego', 'ana']).default('diego'), claim_summary: z.string().max(400).default('') }).parse(body);

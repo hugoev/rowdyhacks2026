@@ -17,6 +17,7 @@ See [PRD v3](docs/PRD.md), the [demo runbook](docs/DEMO.md) (2:40 table demo and
 | `/` | Rosa (laptop, mirrored to the judges) | Her bank app: Home → Send → Tripwire (orb, big captions, one status line) → Outcome |
 | `/call?who=rosa` | Teammate phone | Rings with the scam call (ElevenLabs Agent A, consented clone) |
 | `/call?who=diego` | Teammate phone | Rings when the teller calls Diego (ElevenLabs Agent B, the verifier) |
+| `/dashboard` | Family / big monitor | Mission Control on the detective board: the job and Tiger risk check, the teller conversation live, both phone calls, the verdict, the wire, and the case file; `/dashboard/cases` holds the history (this session plus Tiger Data) |
 | `/case/latest` | Big monitor | The family’s case file, styled as a heist file; follows the live demo |
 | `/operator` | Hidden | START SCAM CALL, CALL DIEGO, FORCE RESULT, RESET, language, coach mode, push-to-talk, event log |
 

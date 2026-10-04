@@ -121,6 +121,21 @@ export class Tiger {
       return false;
     }
   }
+  /** Recent case rows for the family's case history (newest first). */
+  async recentCases(limit = 24): Promise<CaseFile[]> {
+    if (!this.pool) return [];
+    try {
+      await this.init();
+      const { rows } = await this.pool.query('SELECT * FROM teller.cases ORDER BY ts DESC LIMIT $1', [limit]);
+      return rows.map((r, i) => ({
+        id: String(r.id), number: rows.length - i, at: new Date(r.ts as string).getTime(), language: 'en',
+        jobName: String(r.job_name), mark: 'Rosa, 74', impersonated: String(r.impersonated), pressure: (r.pressure as string[]) || [],
+        cover: String(r.cover), getaway: String(r.getaway), foiledBy: String(r.foiled_by), tip: String(r.tip),
+        outcome: r.outcome === 'released' ? 'released' : 'foiled', amount: Number(r.amount), payee: String(r.payee), multiple: 0,
+        secondsToStop: Number(r.seconds_to_stop), writtenBy: r.written_by === 'gemini' ? 'gemini' : 'rules', stored: 'tiger', resultSource: null,
+      }));
+    } catch { return []; }
+  }
   async caseCount() {
     if (!this.pool) return 0;
     try { await this.init(); const { rows } = await this.pool.query('SELECT count(*)::int AS n FROM teller.cases'); return Number(rows[0]?.n) || 0; } catch { return 0; }

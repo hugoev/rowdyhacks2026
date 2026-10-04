@@ -62,3 +62,25 @@ test('the server refuses foreign origins and the teller tools need an active pay
   expect((await post(page, '/ring', { contact: 'diego', claim_summary: 'x' })).status()).toBe(400);
   expect((await post(page, '/token', { payee: 'City Electric', amount: 40, rail: 'bill-pay' })).ok()).toBe(true);
 });
+
+test('the dashboard follows the job live on the detective board', async ({ page }) => {
+  await page.goto('/dashboard');
+  await expect(page.getByRole('heading', { name: 'Before the money moves.' })).toBeVisible();
+  await expect(page.getByText('The vault is quiet.')).toBeVisible();
+  await post(page, '/send', { payee: 'M. Ellis Legal', amount: 2500, rail: 'instant' });
+  await expect(page.getByRole('heading', { name: 'The teller is on the line.' })).toBeVisible();
+  await expect(page.getByText('29×')).toBeVisible();
+  await post(page, '/caption', { who: 'rosa', text: 'My grandson Diego is in jail.' });
+  await expect(page.getByText('My grandson Diego is in jail.')).toBeVisible();
+  await post(page, '/operator/call-diego');
+  await expect(page.locator('.call-card.ringing')).toBeVisible();
+  await post(page, '/operator/force', { status: 'not_me' });
+  await post(page, '/decision', { decision: 'hold', reason: 'Diego did not ask for money.', source: 'rules' });
+  await post(page, '/finish', { source: 'rules', rosa_said: 'He got arrested and needs bail today' });
+  await expect(page.getByRole('heading', { name: 'Heist foiled.' })).toBeVisible();
+  await expect(page.locator('.verdict-stamp.hold')).toHaveText('HELD');
+  await expect(page.getByRole('heading', { name: /FILE \d+ \/\/ THE BAIL JOB/ })).toBeVisible();
+  await page.getByRole('link', { name: 'Case files' }).first().click();
+  await expect(page.getByRole('heading', { name: 'The case files.' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'The Bail Job' }).first()).toBeVisible();
+});

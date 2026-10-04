@@ -1,0 +1,71 @@
+/* v3 panels on the detective board. Palette and type come from the original board. */
+.dash .dash-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+@media (max-width: 1100px) { .dash .dash-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.dash .page-heading h1 { text-transform: none; }
+
+/* 01 The Job */
+.dash .job-body { padding: 20px 22px 18px; display: grid; grid-template-columns: auto 1fr; gap: 6px 26px; align-items: center; }
+.dash .job-multiple { display: grid; justify-items: center; padding: 14px 18px; border: 3px solid var(--red); border-radius: 4px; transform: rotate(-2deg); background: #fff8f2; }
+.dash .job-multiple strong { font: 400 64px/0.9 var(--font-bebas-neue), Impact, sans-serif; color: var(--red); }
+.dash .job-multiple span { font: 700 10px var(--mono); letter-spacing: 1.4px; color: #7a3a2c; text-transform: uppercase; }
+.dash .job-facts { margin: 0; display: grid; gap: 7px; }
+.dash .job-facts div { display: grid; grid-template-columns: 96px 1fr; gap: 10px; font-size: 13px; }
+.dash .job-facts dt { font: 700 9px var(--mono); letter-spacing: 1.2px; text-transform: uppercase; color: #6b5a47; padding-top: 3px; }
+.dash .job-facts dd { margin: 0; color: var(--ink); font-weight: 600; }
+.dash .job-body .source-label { grid-column: 1 / -1; margin-top: 8px; }
+
+/* 02 The Teller */
+.dash .teller-transcript { list-style: none; margin: 0; padding: 14px 20px 18px; display: grid; gap: 10px; max-height: 340px; overflow: auto; }
+.dash .teller-transcript li { display: grid; grid-template-columns: 58px 74px 1fr; gap: 10px; align-items: baseline; }
+.dash .teller-transcript time { font: 9px var(--mono); color: #8a7a66; }
+.dash .teller-transcript b { font: 700 10px var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+.dash .teller-transcript li.teller b { color: #2f5d47; }
+.dash .teller-transcript li.rosa b { color: var(--red); }
+.dash .teller-transcript p { margin: 0; font-size: 14px; line-height: 1.55; }
+.dash .teller-transcript li.rosa p { font-style: italic; color: #4a3c30; }
+@media (max-width: 700px) { .dash .teller-transcript li { grid-template-columns: 1fr; gap: 2px; } }
+
+/* 03 The Calls */
+.dash .call-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; padding: 18px 20px 20px; }
+@media (max-width: 900px) { .dash .call-cards { grid-template-columns: 1fr; } }
+.dash .call-card { border: 1px solid var(--line); border-radius: 4px; padding: 14px; background: #fffdf8; display: grid; gap: 10px; }
+.dash .call-card.ringing { border-color: #d9a441; box-shadow: 0 0 0 3px #d9a44133; animation: dash-ring 1.2s ease-in-out infinite; }
+.dash .call-card.answered { border-color: #6f9a7c; }
+@keyframes dash-ring { 50% { box-shadow: 0 0 0 7px #d9a44111; } }
+.dash .call-card-top { display: flex; gap: 10px; align-items: center; }
+.dash .call-card-top .badge { margin-left: auto; }
+.dash .call-card-top strong { display: block; font-size: 13px; }
+.dash .call-card-top small { display: block; font-size: 10px; color: #7a7364; margin-top: 3px; }
+.dash .call-icon { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; background: #efe7d8; color: #5a4632; flex-shrink: 0; }
+.dash .call-card > p { margin: 0; font-size: 11px; color: #6f6656; line-height: 1.6; }
+.dash .call-result { display: grid; gap: 4px; padding: 10px 12px; background: #f1ece2; border-left: 4px solid #8a7a66; }
+.dash .call-result.not-me { background: #e8efe5; border-left-color: #2f5d47; }
+.dash .call-result b { font: 400 26px/1 var(--font-bebas-neue), Impact, sans-serif; letter-spacing: .03em; }
+.dash .call-result span { font-size: 12px; font-style: italic; }
+.dash .call-result small { font: 9px var(--mono); color: #7a6a56; text-transform: uppercase; letter-spacing: 1px; }
+
+/* 04 The Verdict */
+.dash .verdict-body { padding: 18px 20px 20px; display: grid; gap: 10px; justify-items: start; }
+.dash .verdict-body p { margin: 0; font-size: 13px; line-height: 1.6; }
+.dash .verdict-stamp { font: 400 52px/1 var(--font-bebas-neue), Impact, sans-serif; padding: 2px 16px; border: 5px solid currentColor; transform: rotate(-6deg); letter-spacing: .04em; }
+.dash .verdict-stamp.hold { color: var(--red); animation: dash-stamp .45s cubic-bezier(.2,1.6,.4,1) both; }
+.dash .verdict-stamp.release { color: #2f5d47; }
+@keyframes dash-stamp { from { transform: rotate(-6deg) scale(2.2); opacity: 0; } to { transform: rotate(-6deg) scale(1); opacity: 1; } }
+
+/* The crew's controls (old demo card) */
+.dash .crew-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; position: relative; z-index: 1; }
+.dash .crew-controls .button { margin: 0; font-size: 10px; min-height: 38px; justify-content: center; }
+.dash .crew-controls .button:first-child { grid-column: 1 / -1; background: #fff; }
+.dash .crew-controls .button:last-child { grid-column: 1 / -1; }
+.dash .crew-error { color: #ffe1d6; font-size: 11px; margin-top: 10px; }
+
+/* 06 Case file (kraft) */
+.dash .mc-case { margin-top: 24px; }
+.dash .kraft-file h3 { font-size: clamp(30px, 4vw, 44px); }
+.dash .kraft-levers li { grid-template-columns: 170px 1fr; }
+.dash .kraft-levers b { font: 700 11px var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+@media (max-width: 700px) { .dash .kraft-levers li { grid-template-columns: 1fr; } }
+.dash .case-card .text-link { margin-top: 14px; position: relative; z-index: 1; }
+.dash .case-card ul b { color: #6d4c2c; }
+.dash .demo-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 18px; }
+.dash .teller-transcript li, .dash .teller-transcript p { text-align: left; background: none; padding: 0; border: 0; box-shadow: none; }

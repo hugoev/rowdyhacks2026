@@ -1,0 +1,111 @@
+:root, .rosa-surface {
+  --ink: #241b14;
+  --muted: #574635;
+  --line: #b7a58d;
+}
+
+:is(.workspace, .access-card) :is(
+  .eyebrow, .stat-top, .stat-unit, .stat-note, .family-avatars small,
+  .source-label, .source-label > span, .quiet-text, .small-note,
+  .mono-small, .dial-label, .dial-level, .risk-dial strong small,
+  .chart-heading, .chart-labels, .chart-times, .transcript-mini time,
+  .activity-event time, .queue-description, .payment-summary,
+  .payment-who p, .family-strip small, .case-date, .case-lesson,
+  .integration-row, .relative-note, .footer, .lookout-tabs button,
+  .filter-tabs button, .empty p, .empty h3, .activity-waiting,
+  .activity-waiting p, .activity-waiting > span
+) { color: #574635; }
+
+:is(.workspace, .access-card) :is(
+  .page-heading > div > p:last-child, .stat-card > p,
+  .risk-copy > p:not(.eyebrow), .activity-event p,
+  .settings-card > p, .inspector-input > p, .confirm-dialog p
+) { color: #49392b; }
+
+.workspace :is(.breadcrumb > span, .breadcrumb > svg, .connection) { color: #574635; }
+.workspace .breadcrumb > span {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: .5px;
+  color: #241b14;
+}
+.sidebar .sidebar-family strong {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #30251c;
+}
+.workspace :is(input:not([type='checkbox']), textarea, select) { border-color: #877057; }
+.workspace :is(input, textarea)::placeholder { color: #66513f; opacity: 1; }
+.workspace :is(.button.secondary, .badge.outline, .upload-zone, .preset-row button) {
+  border-color: #877057;
+  color: #49392b;
+}
+.workspace .badge:not(.red):not(.green):not(.amber) { color: #49392b; }
+.workspace :is(.lookout-tabs button.selected, .filter-tabs button.selected) { color: #7e2527; }
+.workspace .risk-dial:is(.high, .critical) .dial-level { color: #a83226; }
+.workspace .critical-key { color: #963429; }
+
+.sidebar :is(.brand small, .nav-label, .sidebar-family small, .sidebar-user small, .crew-note p) {
+  color: #49392b;
+}
+.sidebar .crew-note strong { color: #30251c; }
+
+.workspace .detective-board .stat-top {
+  align-items: flex-start;
+  gap: 10px;
+  color: #241b14;
+}
+.workspace .detective-board .stat-top > span {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: .5px;
+}
+.workspace .detective-board :is(
+  .eyebrow, .mono-small, .source-label, .chart-heading,
+  .case-date, .payment-who p, .activity-event time,
+  .demo-fine, .demo-disclosure, .badge, .case-tab, .transcript-mini time,
+  .tell-chips > span, .payment-meta > span:last-child:not(.badge)
+) {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #30251c;
+}
+.workspace .detective-board :is(.source-label, .chart-heading) {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.workspace .detective-board :is(.chart-times, .chart-labels, .stat-unit, .section-title h2 > span) {
+  font-size: 12px;
+  font-weight: 600;
+  color: #30251c;
+}
+.workspace .detective-board .badge.red { color: #a52921; }
+.workspace .detective-board .badge.green { color: #48653a; }
+.workspace .detective-board .badge.amber { color: #7f5817; }
+.workspace .detective-board .case-tab { color: #fff8e9; }
+.workspace .detective-board :is(.dial-label, .dial-level) { font-size: 10px; font-weight: 600; }
+.workspace .footer { font-size: 12px; color: #30251c; line-height: 1.6; }
+.sidebar .nav-label { font-size: 12px; font-weight: 600; }
+
+.workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #203947; }
+.workspace .detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
+  color: #fff2dc;
+}
+
+/* One warm paper family around the cork, with poster-style case headings. */
+:root, .rosa-surface { --back: #eee8dc; }
+body, .workspace, .rosa-surface { background-color: #eee8dc; }
+.sidebar { border-right-color: #b7a58d; }
+.sidebar :is(.brand, .brand-name, .sidebar-user strong, .mini-cross) { color: #30251c; }
+.sidebar .sidebar-family > svg { color: #456d54; }
+.sidebar .nav-item:focus-visible { outline-color: #7e2527; }
+.topbar, .rosa-topbar { background-color: #eee8dc; }
+body :is(h1, h2, h3, h4, h5, h6) {
+  font-family: var(--font-bebas-neue), 'Arial Narrow', sans-serif !important;
+  font-weight: 400 !important;
+  letter-spacing: .7px !important;
+}

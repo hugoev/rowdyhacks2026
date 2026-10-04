@@ -18,7 +18,7 @@ export class Demo {
     this.state = this.fresh(config, 'en', false, false);
   }
   private fresh(config: DemoState['config'], language: Language, coach: boolean, pushToTalk: boolean): DemoState {
-    return { phase: 'home', language, coach, pushToTalk, check: null, sentAt: null, ring: null, result: null, decision: null, caseFile: null, log: [], config };
+    return { phase: 'home', language, coach, pushToTalk, check: null, sentAt: null, ring: null, result: null, decision: null, caseFile: null, transcript: [], log: [], config };
   }
   private log(text: string) {
     this.state.log = [...this.state.log, { at: this.now(), text }].slice(-60);
@@ -37,6 +37,16 @@ export class Demo {
   setCoach(coach: boolean) { this.state.coach = coach; this.changed(`Scammer coach mode ${coach ? 'ON' : 'OFF'}`); }
   setPushToTalk(on: boolean) { this.state.pushToTalk = on; this.changed(`Push-to-talk ${on ? 'ON' : 'OFF'}`); }
   setPhase(phase: 'home' | 'send') { if (this.state.phase === 'tripwire') return; this.state.phase = phase; this.changed(); }
+
+  /** A finished caption line from Rosa's teller session (shown on the dashboard). */
+  caption(who: 'rosa' | 'teller', text: string) {
+    if (this.state.phase !== 'tripwire' && this.state.phase !== 'outcome') return;
+    const line = clean(text, 400); const last = this.state.transcript.at(-1);
+    if (!line || (last?.who === who && last.text === line)) return;
+    this.state.transcript = [...this.state.transcript, { at: this.now(), who, text: line }].slice(-40);
+    this.changed();
+  }
+  listCases() { return [...this.cases.values()].sort((a, b) => b.at - a.at); }
 
   // ---- Phones ----
   ring(who: Who, agent: AgentKind, variables: Record<string, string>) {
@@ -63,7 +73,7 @@ export class Demo {
 
   // ---- Rosa's payment ----
   sent(check: RiskCheck) {
-    this.state.check = check; this.state.sentAt = this.now(); this.state.result = null; this.state.decision = null; this.state.caseFile = null;
+    this.state.check = check; this.state.sentAt = this.now(); this.state.result = null; this.state.decision = null; this.state.caseFile = null; this.state.transcript = [];
     this.state.phase = check.trigger ? 'tripwire' : 'outcome';
     if (!check.trigger) this.state.decision = { decision: 'release', reason: 'Ordinary payment', at: this.now(), source: 'rules' };
     this.changed(`SEND ${money(check.amount)} → ${check.payee} · ${check.multiple}x typical ($${check.typical}) · ${check.isNewPayee ? 'new payee' : 'known payee'} · ${check.trigger ? 'TRIPWIRE' : 'sent'} [${check.source}]`);

@@ -45,6 +45,8 @@ export type DemoState = {
   result: { status: VerifyStatus; note: string; at: number; source: 'verifier' | 'operator' } | null;
   decision: { decision: Decision; reason: string; at: number; source: 'gemini' | 'rules' } | null;
   caseFile: CaseFile | null;
+  /** Finished caption lines from the teller conversation, relayed for the family dashboard. */
+  transcript: { at: number; who: 'rosa' | 'teller'; text: string }[];
   log: { at: number; text: string }[];
   config: { gemini: boolean; elevenlabs: boolean; scammer: boolean; verifier: boolean; tiger: boolean };
 };

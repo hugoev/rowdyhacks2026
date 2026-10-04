@@ -216,12 +216,16 @@ function useTeller(state: DemoState | null) {
         }
         return { error: `Unknown tool ${name}` };
       },
-      caption: (who, text, done) => setLines(prev => {
+      caption: (who, text, done) => {
+        // Finished lines go to the family dashboard; partial lines stay on Rosa's screen.
+        if (done) void api('/caption', { who, text }).catch(() => {});
+        setLines(prev => {
         const last = prev.at(-1);
         if (last && last.who === who && !last.done) return [...prev.slice(0, -1), { ...last, text, done }];
         if (done && last?.who === who && last.text === text) return prev;
         return [...prev.slice(-5), { id: nextId.current++, who, text, done }];
-      }),
+        });
+      },
       status: (next) => {
         setStatus(next);
         if (next === 'failed' && stateRef.current?.result) void decideByRules();

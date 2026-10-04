@@ -3,7 +3,7 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const vaultRoutes = new Set(['/', '/operator']);
+const vaultRoutes = new Set(['/dashboard', '/dashboard/cases']);
 const canonical = (path: string) => path;
 
 export function PageTransition({ children }: { children: React.ReactNode }) {

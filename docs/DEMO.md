@@ -5,7 +5,7 @@
 ## Before judging (once)
 
 1. `.env` has `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`, `EL_AGENT_SCAMMER_ID`, `EL_AGENT_VERIFIER_ID`, `TIGER_DATABASE_URL`. Run `npm run seed` (prints 29x) and `npm run check:live` (prints PASS).
-2. Deploy (HTTPS needed for phone mics). Open on the laptop: `/` (Rosa's bank app, mirrored to the monitor) and `/operator` (hidden). On the big monitor: `/case/latest`.
+2. Deploy (HTTPS needed for phone mics). Open on the laptop: `/` (Rosa's bank app, mirrored to the monitor) and `/operator` (hidden). On the big monitor: `/dashboard` (Mission Control follows the whole job live, ending in the case file) or `/case/latest` (the case file alone).
 3. Rosa's phone: `/call?who=rosa`. Diego's phone: `/call?who=diego`. Tap **Ready** on both. Ringers and speakerphone on.
 4. Headset or boom mic for Rosa on the laptop. Small speaker for the teller.
 
