@@ -28,6 +28,7 @@ test('the lamp follows the cursor across cards, gaps and the window', async ({ p
   await page.mouse.move(lookout.x + 40, lookout.y + 20);
   await expect(board).toHaveAttribute('data-spotlight', 'pointer');
   await expect(board.locator('[data-board-lit]')).toHaveCount(0);
+  await page.evaluate(() => document.fonts.ready);
   await page.mouse.move(30, 120);
   await expect(board).toHaveAttribute('data-spotlight', 'pointer');
   await expect.poll(() => page.locator('.board-beam ellipse').getAttribute('cx')).toBe('30');
@@ -36,6 +37,16 @@ test('the lamp follows the cursor across cards, gaps and the window', async ({ p
   const bulb = (await page.locator('.board-lamp-shade path[fill="#fff2bb"]').boundingBox())!;
   expect((points[0][0] + points[1][0]) / 2).toBeCloseTo(bulb.x + bulb.width / 2, 0);
   expect((points[0][1] + points[1][1]) / 2).toBeCloseTo(bulb.y + bulb.height / 2, 0);
+  const boardBounds = (await board.boundingBox())!;
+  const clip = await page.locator('.board-beam').evaluate(node => getComputedStyle(node).clipPath);
+  const edges = [...clip.matchAll(/(-?[\d.]+)px/g)].map(match => Number(match[1]));
+  const expected = [boardBounds.y, 1440 - boardBounds.x - boardBounds.width, 1000 - boardBounds.y - boardBounds.height, boardBounds.x, 7];
+  expect(edges).toHaveLength(5);
+  edges.forEach((edge, index) => expect(edge).toBeCloseTo(expected[index], 2));
+  const sidebarWithLight = await page.locator('.sidebar').screenshot();
+  await page.locator('.board-beam').evaluate(node => node.style.visibility = 'hidden');
+  expect(await page.locator('.sidebar').screenshot()).toEqual(sidebarWithLight);
+  await page.locator('.board-beam').evaluate(node => node.style.visibility = '');
   await page.screenshot({ path: 'test-results/window-lamp.png' });
   await page.evaluate(() => document.dispatchEvent(new PointerEvent('pointerout', { relatedTarget: null })));
   await expect(board).toHaveAttribute('data-spotlight', 'idle');

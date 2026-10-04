@@ -91,7 +91,11 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       activate(node, lightInput);
       board.dataset.spotlight = source;
       const layer = beam.current?.ownerSVGElement;
-      if (layer) layer.dataset.spotlight = source;
+      if (layer) {
+        layer.dataset.spotlight = source;
+        // The beam uses viewport coordinates, but light belongs to the cork board.
+        layer.style.clipPath = `inset(${bounds.top}px ${window.innerWidth - bounds.right}px ${window.innerHeight - bounds.bottom}px ${bounds.left}px round 7px)`;
+      }
       const anchor = active && anchors.get(active);
       if (source === 'idle') {
         board.style.setProperty('--lamp-angle', '0deg');
