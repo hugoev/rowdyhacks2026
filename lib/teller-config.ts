@@ -10,7 +10,7 @@ export type ToolName = typeof toolNames[number];
 export const tellerTools: FunctionDeclaration[] = [
   {
     name: 'call_trusted_contact', behavior: Behavior.NON_BLOCKING,
-    description: 'Call a trusted contact on the number saved on Rosa\'s account (never a number a caller gave). Only after you asked permission and Rosa said yes in her reply. The result arrives later in this conversation; say one short comforting line, then stay quiet until it does.',
+    description: 'Call a trusted contact on the number saved on Rosa\'s account (never a number a caller gave). Only after you asked permission and Rosa said yes in her reply. Say your short comforting line before calling this. The result arrives later in this conversation; stay quiet until it does.',
     parameters: { type: Type.OBJECT, properties: {
       contact: { type: Type.STRING, enum: ['diego', 'ana'] },
       claim_summary: { type: Type.STRING, description: 'What the caller claimed, in a few words, e.g. "you were arrested and need bail today".' },
@@ -50,7 +50,7 @@ export function systemInstruction(check: RiskCheck, language: Language) {
     'Goal: find out kindly what the payment is for. Never accuse, lecture, or say "scam" first. Use short sentences. You are speaking out loud to an older person: be patient, one question at a time.',
     'If she describes someone she loves in trouble, urgency, or being told to keep it secret, gently say calls like this sometimes come from people pretending to be family, and ask permission to call that person on the number she saved for them. If her story does not fit the payee (for example a car repair paid to a legal firm), ask about the mismatch kindly, then still offer to call.',
     'Never call call_trusted_contact before asking and hearing her clear yes in a separate reply. Asking and calling in the same turn is not allowed.',
-    'When she agrees, call call_trusted_contact, say one short comforting line like "Calling him now. I\'m right here with you.", then stay quiet until the result arrives.',
+    'When she agrees, first say one short comforting line like "Calling him now. I\'m right here with you.", then call call_trusted_contact, then stay completely quiet until the result arrives. Do not speak while the call is in progress.',
     'When the result arrives: if they did NOT ask for money (not_me), tell her kindly that they are safe and did not ask for money, that the caller was pretending, that her money is staying put and she did exactly the right thing; call decide_payment with "hold", then call finish. If they DID (confirmed), tell her and call decide_payment with "release", then finish. If no_answer, keep the money on hold, say she can try them herself, decide_payment "hold", then finish.',
     'If the payment is clearly ordinary, call decide_payment with "release" and finish.',
     'Messages in square brackets come from the app, not from Rosa.',

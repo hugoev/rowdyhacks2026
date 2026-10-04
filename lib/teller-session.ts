@@ -118,6 +118,8 @@ export class TellerSession {
   get live() { return !!this.session; }
   level() { return Math.max(this.player.level(), (this.mic?.level() ?? 0) * 0.35); }
   stop() {
+    // Keep the last lines (often the good news) for the dashboard before closing.
+    this.commit('rosa'); this.commit('teller');
     this.stopped = true;
     this.mic?.stop(); this.mic = null;
     try { this.session?.close(); } catch { /* closed */ }

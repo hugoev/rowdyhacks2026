@@ -157,6 +157,16 @@ function tipText(tip?: string) {
   return stripped === text ? text : stripped && stripped[0].toLowerCase() + stripped.slice(1);
 }
 
+/** Resolves once the teller has spoken and gone quiet (or after `max` ms). */
+async function untilQuiet(player: { speaking: boolean }, max: number) {
+  const start = Date.now(); let spoke = false; let quietSince = 0;
+  while (Date.now() - start < max) {
+    if (player.speaking) { spoke = true; quietSince = 0; } else if (spoke) { quietSince ||= Date.now(); if (Date.now() - quietSince > 600) return; }
+    else if (Date.now() - start > 2500) return; // it chose not to say anything
+    await new Promise(r => setTimeout(r, 150));
+  }
+}
+
 type Line = { id: number; who: 'rosa' | 'teller'; text: string; done: boolean };
 /**
  * Owns the Gemini Live teller session for one payment, runs its three tools,
@@ -198,8 +208,11 @@ function useTeller(state: DemoState | null) {
       },
       tool: async (name, args, id) => {
         if (name === 'call_trusted_contact') {
-          try { await api('/ring', args); pending.current = { id }; return null; }
-          catch (e) { return { status: 'no_answer', note: (e as Error).message }; }
+          // Turn-taking: let the teller finish "Calling him now…" before Diego's phone rings.
+          pending.current = { id };
+          await untilQuiet(teller.player, 6000);
+          try { await api('/ring', args); return null; }
+          catch (e) { pending.current = null; return { status: 'no_answer', note: (e as Error).message }; }
         }
         if (name === 'decide_payment') { await api('/decision', { ...args, source: 'gemini' }).catch(() => {}); return { ok: true }; }
         if (name === 'finish') {
@@ -244,15 +257,22 @@ function useTeller(state: DemoState | null) {
     catch (e) { console.warn('Teller failed to start', e); setStatus('failed'); }
   }, []);
 
-  // Diego's call uses the same laptop mic in the one-page demo: the teller stops listening meanwhile.
+  // Diego's call uses the same laptop mic and speaker in the one-page demo: the teller
+  // stops listening while it's on, and only speaks the result once the call hangs up.
   const diegoOnCall = state?.ring?.who === 'diego' && state.ring.status !== 'ended';
   useEffect(() => { if (session.current) session.current.muted = !!diegoOnCall; }, [diegoOnCall]);
+  const [, setTick] = useState(0);
 
   // Diego's answer (or the operator's FORCE RESULT) goes back into the live session.
   const result = state?.result;
   useEffect(() => {
     if (!result || delivered.current === result.at || state?.phase !== 'tripwire') return;
+    // The verifier reports mid-call, then says goodbye. Wait for it to hang up (at most 8 s)
+    // so the teller's good news never talks over Diego's call.
+    const waited = Date.now() - result.at;
+    if (diegoOnCall && waited < 8000) { const t = setTimeout(() => setTick(n => n + 1), Math.min(500, 8000 - waited)); return () => clearTimeout(t); }
     delivered.current = result.at;
+    if (session.current) session.current.muted = false;
     const teller = session.current;
     const payload = { status: result.status, note: result.note };
     let sent = false;
@@ -261,7 +281,7 @@ function useTeller(state: DemoState | null) {
     clearTimeout(fallback.current);
     // If the teller doesn't decide within 12 s (or isn't connected), the result decides.
     fallback.current = setTimeout(() => void decideByRules(), sent ? 12000 : 1500);
-  }, [result, state?.phase, decideByRules]);
+  });
 
   return {
     prepare, start, stop, status, lines,

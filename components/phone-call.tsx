@@ -75,7 +75,10 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
           report_result: async (params: { status?: string; note?: string }) => {
             const status = (['not_me', 'confirmed', 'no_answer'].includes(params.status || '') ? params.status : 'no_answer') as VerifyStatus;
             await api('/result', { id, status, note: String(params.note || '').slice(0, 300) });
-            return 'Result delivered to Tripwire.';
+            // Turn-taking: give the verifier ~4 s for its thank-you, then hang up so the
+            // teller can deliver the news without two voices at once.
+            setTimeout(() => { if (conversation.current) void hangUp(); }, 4000);
+            return 'Result delivered to Tripwire. Thank them in one short sentence and end the call.';
           },
         } } : {}),
         onModeChange: ({ mode }) => setSpeaking(mode === 'speaking'),
