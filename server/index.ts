@@ -5,7 +5,7 @@ import next from 'next';
 import { z } from 'zod';
 import { Demo, fallbackFinish } from './state';
 import { Tiger } from './tiger';
-import { GeminiError, mintTellerToken } from './gemini';
+import { GeminiError, mintScammerToken, mintTellerToken } from './gemini';
 import { agentId, agentSignedUrl } from './elevenlabs';
 
 const dev = process.env.NODE_ENV !== 'production';
@@ -16,7 +16,7 @@ const operatorKey = process.env.OPERATOR_KEY || '';
 const tiger = new Tiger();
 const config = {
   gemini: !!process.env.GEMINI_API_KEY, elevenlabs: !!process.env.ELEVENLABS_API_KEY,
-  scammer: !!process.env.ELEVENLABS_API_KEY && !!agentId('scammer'), verifier: !!process.env.ELEVENLABS_API_KEY && !!agentId('verifier'),
+  scammer: !!process.env.GEMINI_API_KEY, verifier: !!process.env.ELEVENLABS_API_KEY && !!agentId('verifier'),
   tiger: tiger.configured,
 };
 const demo = new Demo(config);
@@ -125,6 +125,16 @@ const server = createServer(async (req, res) => {
       }
       // ---- Phones ----
       case '/api/ring/status': { const input = z.object({ id: z.string().uuid(), status: z.enum(['answered', 'ended']) }).parse(body); result = demo.ringStatus(input.id, input.status); break; }
+      case '/api/scammer/token': {
+        // Rosa's phone: the scam call is a Gemini Live voice (ElevenLabs' safety review blocks scam agents).
+        limit(ip + ':scammer', 20);
+        const input = z.object({ id: z.string().uuid() }).parse(body);
+        const ring = demo.state.ring;
+        if (!ring || ring.id !== input.id || ring.agent !== 'scammer' || ring.status === 'ended') throw new Error('This call is no longer active.');
+        try { result = await mintScammerToken(ring.variables.coach === 'on'); }
+        catch (error) { if (error instanceof GeminiError) throw Object.assign(new Error(error.message), { status: 503 }); throw error; }
+        break;
+      }
       case '/api/agent/session': {
         limit(ip + ':agent', 30);
         const input = z.object({ id: z.string().uuid() }).parse(body);

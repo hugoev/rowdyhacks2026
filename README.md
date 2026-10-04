@@ -8,14 +8,15 @@ When a payment looks risky, Tripwire doesn’t show a warning. It starts a real-
 
 See [PRD v3](docs/PRD.md), the [demo runbook](docs/DEMO.md) (2:40 table demo and failure drills), and the [case-file design](docs/CASE-FILES.md). Earlier versions are [archived](docs/archive/v2/ARCHIVE.md).
 
-> Payments are simulated; no bank is connected. The scam call is played by a teammate. The “phone calls” are web pages on teammates’ phones, not telephony.
+> Payments are simulated; no bank is connected. The scam call is an AI voice (stock, not a clone of anyone). The “phone calls” are web pages on teammates’ phones, not telephony.
 
 ## Pages
 
 | Page | Who | What |
 |---|---|---|
+| `/demo` | **The whole demo on one screen** | Start button, Rosa's phone (AI scam call, then her bank app), Diego's phone, and the next step |
 | `/` | Rosa (laptop, mirrored to the judges) | Her bank app: Home → Send → Tripwire (orb, big captions, one status line) → Outcome |
-| `/call?who=rosa` | Teammate phone | Rings with the scam call; a teammate plays the scammer live (ElevenLabs' safety review blocks scam-impersonation agents, so we don't run one) |
+| `/call?who=rosa` | Teammate phone | Rings with the AI scam call (Gemini Live) |
 | `/call?who=diego` | Teammate phone | Rings when the teller calls Diego (ElevenLabs Agent B, the verifier) |
 | `/dashboard` | Family / big monitor | Mission Control on the detective board: the job and Tiger risk check, the teller conversation live, both phone calls, the verdict, the wire, and the case file; `/dashboard/cases` holds the history (this session plus Tiger Data) |
 | `/case/latest` | Big monitor | The family’s case file, styled as a heist file; follows the live demo |

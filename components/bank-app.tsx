@@ -244,6 +244,10 @@ function useTeller(state: DemoState | null) {
     catch (e) { console.warn('Teller failed to start', e); setStatus('failed'); }
   }, []);
 
+  // Diego's call uses the same laptop mic in the one-page demo: the teller stops listening meanwhile.
+  const diegoOnCall = state?.ring?.who === 'diego' && state.ring.status !== 'ended';
+  useEffect(() => { if (session.current) session.current.muted = !!diegoOnCall; }, [diegoOnCall]);
+
   // Diego's answer (or the operator's FORCE RESULT) goes back into the live session.
   const result = state?.result;
   useEffect(() => {

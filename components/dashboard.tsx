@@ -114,7 +114,7 @@ function Mission({ state, cases }: { state: DemoState; cases: CaseFile[] }) {
       <section className="panel dash-calls" data-board-node="calls">
         <SectionTitle index="03" title="The Calls" right={<span className="mono-small">ELEVENLABS AGENTS</span>}/>
         <div className="call-cards">
-          <CallCard title="The inside man" who="Rosa’s phone" note="The scam call · played live by a teammate" ring={state.ring?.who === 'rosa' ? state.ring : null}/>
+          <CallCard title="The inside man" who="Rosa’s phone" note="The scam call · Gemini Live, stock voice" ring={state.ring?.who === 'rosa' ? state.ring : null}/>
           <CallCard title="The real Diego" who={`Diego’s phone · ${contacts.diego.phone}`} note="Verifier agent · number saved on the account" ring={state.ring?.who === 'diego' ? state.ring : null}
             result={state.result ? (state.result.status === 'not_me' ? 'NOT ME' : state.result.status === 'confirmed' ? 'IT’S ME' : 'NO ANSWER') : undefined} resultNote={state.result?.note} forced={state.result?.source === 'operator'}/>
         </div>
@@ -141,7 +141,7 @@ function Mission({ state, cases }: { state: DemoState; cases: CaseFile[] }) {
     </div></div>
 
     <section className="mc-case" data-board-node="case">{file ? <KraftFile file={file}/> : <div className="kraft-file pending"><div className="kraft-tab">CASE FILE</div><p>The file Rosa’s family gets opens here when the job is settled.</p></div>}</section>
-    <div className="demo-bottom"><p className="demo-disclosure">Payments are simulated. The scam call is played live by a teammate; the call to Diego is an ElevenLabs agent.</p><a className="text-link" href="/case/latest" target="_blank" rel="noreferrer">Open the case monitor<ArrowUpRight size={12}/></a></div>
+    <div className="demo-bottom"><p className="demo-disclosure">Payments are simulated. The scam call is an AI voice (Gemini Live); the call to Diego is an ElevenLabs agent.</p><a className="text-link" href="/case/latest" target="_blank" rel="noreferrer">Open the case monitor<ArrowUpRight size={12}/></a></div>
   </>;
 }
 

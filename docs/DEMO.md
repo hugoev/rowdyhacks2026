@@ -2,6 +2,18 @@
 
 “Every bank app asks ‘Are you sure?’ A great teller asks ‘What’s it for?’ and then calls your grandson.”
 
+## The easy way: one page
+
+Open **`/demo`** on the laptop (headset mic, speaker on) and press **Start the demo**. Everything happens on that one screen:
+
+1. Rosa's phone rings ("Diego"). Answer. The scam caller is an AI (Gemini Live, stock voice) that asks for $2,500 bail and says don't tell Mom. Hang up.
+2. Rosa's bank app is now on her phone panel: **Send money → Send $2,500**.
+3. The teller speaks first. Tell it the story; say yes when it asks to call Diego.
+4. Diego's phone rings in the middle panel. Answer and say "No, I'm fine!" into the same mic. (Backup button: "Diego says not me".)
+5. The teller tells Rosa her money is safe; the right panel shows the case file. **Reset** for the next judge.
+
+The right panel always shows the next step. Optional: put `/dashboard` on the big monitor.
+
 ## Before judging (once)
 
 1. `.env` has `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`, `EL_AGENT_SCAMMER_ID`, `EL_AGENT_VERIFIER_ID`, `TIGER_DATABASE_URL`. Run `npm run seed` (prints 29x) and `npm run check:live` (prints PASS).

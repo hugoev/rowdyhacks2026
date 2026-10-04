@@ -15,12 +15,12 @@ export function Operator() {
     <header><h1>Operator</h1><span className={online ? 'ok' : 'bad'}>{online ? 'live' : 'offline'}</span></header>
     <p className="providers">
       <span className={c.gemini ? 'ok' : 'bad'}>Gemini Live</span>
-      <span className="ok">Scammer: live teammate</span>
+      <span className={c.gemini ? 'ok' : 'bad'}>Scammer: Gemini Live</span>
       <span className={c.verifier ? 'ok' : 'bad'}>Verifier agent</span>
       <span className={c.tiger ? 'ok' : 'warn'}>{c.tiger ? 'Tiger Data' : 'Tiger: local data'}</span>
     </p>
     <section className="controls">
-      <button className="go" onClick={() => run('/operator/scam')}>RING ROSA (teammate plays the scammer)</button>
+      <button className="go" onClick={() => run('/operator/scam')}>RING ROSA (AI scam call)</button>
       <button onClick={() => run('/operator/call-diego')}>CALL DIEGO (manual)</button>
       <button className="warn" onClick={() => run('/operator/force', { status: 'not_me' })}>FORCE RESULT · not me</button>
       <button onClick={() => run('/operator/force', { status: 'confirmed' })}>FORCE RESULT · it’s me</button>

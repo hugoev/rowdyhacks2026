@@ -30,6 +30,8 @@ export class TellerSession {
   private rosaLine = ''; private tellerLine = '';
   private transcript: string[] = [];
   pushToTalk = false;
+  /** Stop sending Rosa's mic (e.g. while Diego's call uses the same laptop mic). */
+  muted = false;
   constructor(private hooks: TellerHooks) {}
 
   /** Call from the Send tap (a user gesture) so audio playback is allowed. */
@@ -40,7 +42,7 @@ export class TellerSession {
     this.cue(opening);
     this.mic = await startMicrophone(chunk => {
       // Push-to-talk: audio only flows while the button is held.
-      if (this.pushToTalk && !this.talking) return;
+      if (this.muted || (this.pushToTalk && !this.talking)) return;
       try { this.session?.sendRealtimeInput({ audio: { data: chunk, mimeType: 'audio/pcm;rate=16000' } }); } catch { /* reconnecting */ }
     });
   }

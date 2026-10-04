@@ -2,7 +2,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { VoiceConversation } from '@elevenlabs/client';
 import { Phone, PhoneOff, ShieldCheck } from 'lucide-react';
-import { coachLine, scammerPrompt } from '@/lib/phone-agents';
+import { scammerOpening } from '@/lib/scammer-config';
+import { TellerSession, type Grant } from '@/lib/teller-session';
 import type { VerifyStatus, Who } from '@/lib/types';
 import { api, useDemo } from './use-demo';
 
@@ -12,14 +13,19 @@ import { api, useDemo } from './use-demo';
  * starts the ElevenLabs agent (the scammer for Rosa, the verifier for Diego)
  * on speaker. No telephony: to the judges it looks and sounds like a call.
  */
-export function PhoneCall({ who }: { who: Who }) {
+export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: boolean }) {
   const { state, online } = useDemo();
-  const [ready, setReady] = useState(false);
+  // Embedded in /demo, the page's Start tap already unlocked audio.
+  const [ready, setReady] = useState(embedded);
   const [inCall, setInCall] = useState<{ id: string; since: number; caller: string } | null>(null);
   const [error, setError] = useState('');
   const [speaking, setSpeaking] = useState(false);
   const conversation = useRef<VoiceConversation | null>(null);
+  const scammer = useRef<TellerSession | null>(null);
   const ringtone = useRingtone();
+  const setSpeakingFrom = (call: TellerSession) => {
+    const tick = setInterval(() => { if (scammer.current !== call) { clearInterval(tick); return; } setSpeaking(call.player.speaking); }, 200);
+  };
   const ring = state?.ring?.who === who ? state.ring : null;
   const incoming = !!ring && ring.status === 'ringing' && !inCall;
 
@@ -27,6 +33,7 @@ export function PhoneCall({ who }: { who: Who }) {
 
   const hangUp = useCallback(async () => {
     const current = conversation.current; conversation.current = null;
+    scammer.current?.stop(); scammer.current = null;
     await current?.endSession().catch(() => {});
     setInCall(prev => { if (prev) void api('/ring/status', { id: prev.id, status: 'ended' }).catch(() => {}); return null; });
     setSpeaking(false);
@@ -49,13 +56,20 @@ export function PhoneCall({ who }: { who: Who }) {
     setInCall({ id, since: Date.now(), caller: ring.callerName });
     try {
       await api('/ring/status', { id, status: 'answered' });
-      // The scam call is played live by a teammate (ElevenLabs blocks scam-impersonation agents),
-      // so Rosa's phone just shows the call; only the verifier runs as an ElevenLabs agent.
-      if (ring.agent === 'scammer') return;
+      // The scam call is a Gemini Live voice (stock voice, no clone); ElevenLabs'
+      // safety review blocks scam-impersonation agents. The verifier stays on ElevenLabs.
+      if (ring.agent === 'scammer') {
+        const grant = await api<Grant>('/scammer/token', { id });
+        const call = new TellerSession({ grant: () => api<Grant>('/scammer/token', { id }), tool: async () => ({ ok: true }), caption: () => {}, status: next => { if (next === 'failed') setError('The scam call dropped. Ring again.'); } });
+        scammer.current = call;
+        setSpeakingFrom(call);
+        await call.start(grant, scammerOpening);
+        return;
+      }
       const { signedUrl, variables } = await api<{ signedUrl: string; variables: Record<string, string> }>('/agent/session', { id });
       conversation.current = await VoiceConversation.startSession({
         signedUrl, connectionType: 'websocket',
-        ...(ring.agent === 'verifier' ? { dynamicVariables: variables } : variables.coach ? { overrides: { agent: { prompt: { prompt: `${scammerPrompt}\n${coachLine}` } } } } : {}),
+        dynamicVariables: variables,
         ...(ring.agent === 'verifier' ? { clientTools: {
           // The verifier reports back as soon as it knows; the teller speaks it mid-conversation.
           report_result: async (params: { status?: string; note?: string }) => {
@@ -74,6 +88,7 @@ export function PhoneCall({ who }: { who: Who }) {
     }
   }
   const name = who === 'rosa' ? 'Rosa' : 'Diego';
+  const page = 'call-page' + (embedded ? ' embedded' : '');
   if (!ready) return <main className="call-page idle">
     <p className="call-owner">{name}’s phone</p>
     <button className="big primary" onClick={() => void unlock()}>Ready</button>
@@ -81,7 +96,7 @@ export function PhoneCall({ who }: { who: Who }) {
     {error && <p className="error" role="alert">{error}</p>}
     <p className="conn">{online ? '● connected' : '○ connecting…'}</p>
   </main>;
-  if (inCall) return <main className={'call-page active' + (speaking ? ' speaking' : '')}>
+  if (inCall) return <main className={page + ' active' + (speaking ? ' speaking' : '')}>
     <p className="call-owner">{name}’s phone</p>
     <div className="caller-avatar" aria-hidden>{inCall.caller.startsWith('Tripwire') ? <ShieldCheck size={56}/> : inCall.caller[0]}</div>
     <h1>{inCall.caller}</h1>
@@ -89,7 +104,7 @@ export function PhoneCall({ who }: { who: Who }) {
     <button className="round decline" aria-label="Hang up" onClick={() => void hangUp()}><PhoneOff size={34}/></button>
     {error && <p className="error" role="alert">{error}</p>}
   </main>;
-  if (incoming && ring) return <main className="call-page ringing" aria-live="assertive">
+  if (incoming && ring) return <main className={page + ' ringing'} aria-live="assertive">
     <p className="call-owner">{name}’s phone</p>
     <p className="incoming-label">Incoming call</p>
     <div className="caller-avatar" aria-hidden>{ring.callerName.startsWith('Tripwire') ? <ShieldCheck size={56}/> : ring.callerName[0]}</div>
@@ -100,7 +115,7 @@ export function PhoneCall({ who }: { who: Who }) {
       <button className="round accept" aria-label="Answer" onClick={() => void answer()}><Phone size={34}/></button>
     </div>
   </main>;
-  return <main className="call-page idle">
+  return <main className={page + ' idle'}>
     <p className="call-owner">{name}’s phone</p>
     <p className="clock"><Clock/></p>
     <p className="muted">Ready. Ringer on.</p>
