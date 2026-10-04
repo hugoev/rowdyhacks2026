@@ -29,6 +29,7 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   await rosa.getByRole('button', { name: 'Next scripted line' }).click();
   await expect(guardian.getByText('Keep-it-secret request', { exact: true })).toBeVisible();
   expect(Date.now() - detectionStarted).toBeLessThan(10000);
+  if (run === 1) await guardian.screenshot({ path: 'test-results/detective-active-call.png', fullPage: true });
   await rosa.getByRole('button', { name: 'Ask Alex', exact: true }).click(); await rosa.getByRole('button', { name: 'Check with Alex' }).click();
   await expect(relative.getByRole('button', { name: 'No, that’s not me' })).toBeVisible();
   const callbackStarted = Date.now();
@@ -37,6 +38,7 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   expect(Date.now() - callbackStarted).toBeLessThan(5000);
   await rosa.getByRole('navigation', { name: 'Rosa’s tasks' }).getByRole('button', { name: 'Send money' }).click(); await rosa.getByRole('button', { name: 'Check & send demo payment' }).click();
   await expect(rosa.getByRole('heading', { name: 'Your money can wait.' })).toBeVisible();
+  if (run === 1) await guardian.screenshot({ path: 'test-results/detective-held-payment.png', fullPage: true });
   await guardian.getByRole('button', { name: 'Deny payment', exact: true }).click();
   await guardian.getByRole('dialog').getByRole('button', { name: 'Deny payment' }).click();
   await expect(rosa.getByRole('heading', { name: 'Elena stopped this payment.' })).toBeVisible();
@@ -46,6 +48,7 @@ for (let run = 1; run <= 3; run++) test(`grandson demo completes across three vi
   await expect(guardian.locator('.payment-item').getByText('HEIST FOILED', { exact: true })).toBeVisible();
   await guardian.goto('/cases'); await expect(guardian.getByRole('heading', { name: 'The Grandson Job' })).toBeVisible();
   await expect(guardian.getByRole('heading', { name: 'Your next step', exact: true })).toBeVisible();
+  if (run === 1) await guardian.screenshot({ path: 'test-results/detective-case-file.png', fullPage: true });
   await guardian.reload(); await expect(guardian.getByText('Your guardian denied this demo payment. It was not sent.')).toBeVisible();
   await context.close();
 });
@@ -138,7 +141,7 @@ test('Rosa home, payment result and reduced motion remain readable on a narrow s
 });
 
 
-test('Rosa header returns home and other screens retain the existing theme', async ({ page }) => {
+test('Rosa header returns home and the command center retains its existing font and navigation', async ({ page }) => {
   await page.goto('/protected');
   await expect(page.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
   await expect(page.locator('.family-brand')).toHaveAttribute('href', '/');

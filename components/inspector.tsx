@@ -78,7 +78,7 @@ export function Inspector() {
   return <>
     <div className="page-heading"><div><p className="eyebrow">LOOK CLOSER. BEFORE YOU CLICK.</p><h1>Something feel off<span>?</span></h1><p>Bring the message. We will look for the warning signs.</p></div><Badge tone={gemini ? 'green' : 'outline'}>{gemini ? 'GEMINI MULTIMODAL' : 'TEXT RULES MODE'}</Badge></div>
     <div className="inspector-grid">
-      <section className="panel inspector-input" aria-labelledby="inspector-input-title">
+      <section className="panel inspector-input" data-board-node="inspector-input" aria-labelledby="inspector-input-title">
         <div className="inspector-title"><FileSearch size={24}/><h2 id="inspector-input-title">The Inspector</h2></div>
         <p>Check a text, email, dating-app message, payment request, or suspicious link. You did nothing wrong by checking.</p>
         <form onSubmit={event => void submit(event)}>
@@ -104,7 +104,7 @@ export function Inspector() {
           {error && <div className="error" role="alert"><h3>We could not finish this check</h3><p>{error}</p><p>You can try again or paste the words from the picture. Do not send money while you are unsure.</p></div>}
         </form>
       </section>
-      <section className={'panel inspector-results ' + (result ? 'has-result' : '')} aria-labelledby="inspector-result-title" aria-busy={busy}>
+      <section className={'panel inspector-results ' + (result ? 'has-result' : '')} data-board-node="inspector-result" aria-labelledby="inspector-result-title" aria-busy={busy}>
         {busy ? <div className="inspector-empty" role="status"><FileSearch aria-hidden="true" size={48}/><h2 id="inspector-result-title">Checking your message...</h2><p>Take a breath. You do not need to reply or send money while you wait.</p></div> : result ? <>
           <Badge tone={result.score >= 60 ? 'red' : result.score >= 30 ? 'amber' : 'green'}>{result.score}/100 - {result.source.toUpperCase()}</Badge>
           <h2 id="inspector-result-title" ref={resultHeading} tabIndex={-1}>{result.verdict}</h2>

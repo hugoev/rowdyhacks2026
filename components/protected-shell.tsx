@@ -3,6 +3,9 @@ import { X } from 'lucide-react';
 import { useTripwire } from './context';
 import { Protected } from './protected';
 import { Badge } from './ui';
+import { DetectiveBoard } from './detective-board';
+
+const taskConnections = [['check-call', 'send-money']] as const;
 
 export function ProtectedShell({ student = false }: { student?: boolean }) {
   const { state, error, setError, online } = useTripwire();
@@ -15,7 +18,7 @@ export function ProtectedShell({ student = false }: { student?: boolean }) {
       </header>
       <main id="main" className="main-content">
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}
-        {state ? <Protected student={student}/> : <div className="loading-state"><div className="brand-mark">T<span/></div><h1>Connecting your crew…</h1><p>Preparing the family shield.</p><button className="button secondary" onClick={() => window.location.reload()}>Retry connection</button></div>}
+        {state ? <DetectiveBoard variant="calm" connections={taskConnections}><Protected student={student}/></DetectiveBoard> : <div className="loading-state"><div className="brand-mark">T<span/></div><h1>Connecting your crew…</h1><p>Preparing the family shield.</p><button className="button secondary" onClick={() => window.location.reload()}>Retry connection</button></div>}
       </main>
     </div>
   </div>;

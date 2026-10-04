@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter, Syne } from 'next/font/google';
 import './globals.css';
 import './protected.css';
+import './detective.css';
 import { ServiceWorker } from '@/components/service-worker';
 const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
 const syne = Syne({ subsets: ['latin'], display: 'swap', variable: '--font-syne' });
