@@ -1,6 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { Wordmark } from './wordmark';
+import { BrandMark } from './brand-mark';
 import { useState } from 'react';
 import { Activity, ArrowUpRight, Bell, Check, ChevronRight, CircleHelp, CloudSun, Crosshair, FileSearch, FolderOpen, LayoutDashboard, LockKeyhole, Menu, Radio, RotateCcw, Settings, Shield, ShieldCheck, Users, X } from 'lucide-react';
 import { Provider, useTripwire } from './context';
@@ -38,7 +39,7 @@ function Shell({ view }: { view: View }) {
     <a className="skip-link" href="#main">Skip to main content</a>
     {menu && <button className="sidebar-scrim" aria-label="Close navigation" onClick={() => setMenu(false)}/>}
     <aside className={'sidebar ' + (menu ? 'open' : '')}>
-      <Link className="brand" href="/"><div className="brand-mark">T<span/></div><span className="brand-name"><Wordmark/></span><small>BEFORE THE MONEY MOVES</small></Link>
+      <Link className="brand" href="/"><BrandMark/><span className="brand-name"><Wordmark/></span><small>BEFORE THE MONEY MOVES</small></Link>
       <div className="sidebar-family"><div className="avatar rosa">R</div><div><strong>The Garcia family</strong><small>Protected household</small></div><ShieldCheck size={17}/></div>
       <div className="nav-label">CASEBOARD</div>
       <nav aria-label="Main navigation">
@@ -52,7 +53,7 @@ function Shell({ view }: { view: View }) {
       {critical && <div className="laser-sweep" aria-hidden="true"/>}
       <main id="main" className="main-content">
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}
-        {!state ? <div className="loading-state"><div className="brand-mark">T<span/></div><h1>Preparing your protection…</h1><p>Loading your family safety workspace.</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div> : <DetectiveBoard variant={view === 'relative' || view === 'settings' ? 'calm' : 'standard'} connections={boardConnections[view]} spotlight={view === 'guardian' ? commandSpotlight : undefined}>
+        {!state ? <div className="loading-state"><BrandMark/><h1>Preparing your protection…</h1><p>Loading your family safety workspace.</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div> : <DetectiveBoard variant={view === 'relative' || view === 'settings' ? 'calm' : 'standard'} connections={boardConnections[view]} spotlight={view === 'guardian' ? commandSpotlight : undefined}>
           {view === 'guardian' && <Dashboard/>}{view === 'protected' && <Protected/>}{view === 'relative' && <Relative/>}{view === 'inspector' && <Inspector/>}{view === 'cases' && <Cases/>}{view === 'settings' && <Preferences/>}{view === 'drill' && <HeistDrill/>}{view === 'weather' && <ScamWeather/>}
         </DetectiveBoard>}
       </main>

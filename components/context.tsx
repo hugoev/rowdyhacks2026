@@ -1,6 +1,7 @@
 'use client';
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { io } from 'socket.io-client';
+import { BrandMark } from './brand-mark';
 import type { PublicState, Role } from '@/lib/types';
 
 type Context = { state: PublicState | null; role: Role; online: boolean; error: string; setError: (error: string) => void; request: <T = unknown>(path: string, body?: unknown) => Promise<T>; refresh: () => Promise<void> };
@@ -59,6 +60,6 @@ export function Provider({ role, children }: { role: Role; children: React.React
     await refresh(); return result as T;
   }, [role, refresh]);
   return <AppContext.Provider value={{ state, role, online, error, setError, request, refresh }}>
-    {needsCode ? <main className="access-screen"><div className="access-card"><div className="brand-mark">T<span /></div><p className="eyebrow">YOUR FAMILY’S COUNTER-HEIST CREW</p><h1>Connect your {role} view.</h1><p>Enter the access code provided by the person hosting your family’s Tripwire.</p><form onSubmit={e => { e.preventDefault(); void connect(accessCode).catch(e => setError(e.message)); }}><label>Access code<input type="password" value={accessCode} onChange={e => setAccessCode(e.target.value)} required autoComplete="current-password" /></label><button className="button primary">Connect securely</button></form>{error && <p role="alert" className="error-text">{error}</p>}</div></main> : children}
+    {needsCode ? <main className="access-screen"><div className="access-card"><BrandMark/><p className="eyebrow">YOUR FAMILY’S COUNTER-HEIST CREW</p><h1>Connect your {role} view.</h1><p>Enter the access code provided by the person hosting your family’s Tripwire.</p><form onSubmit={e => { e.preventDefault(); void connect(accessCode).catch(e => setError(e.message)); }}><label>Access code<input type="password" value={accessCode} onChange={e => setAccessCode(e.target.value)} required autoComplete="current-password" /></label><button className="button primary">Connect securely</button></form>{error && <p role="alert" className="error-text">{error}</p>}</div></main> : children}
   </AppContext.Provider>;
 }
