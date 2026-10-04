@@ -30,6 +30,12 @@ Name unit tests `*.test.ts`. Cover risk thresholds, routine-payment friction, fa
 
 ## Commit & Pull Request Guidelines
 
+Before starting any implementation, check the working tree and sync the working branch with its remote: pull the latest changes and push any authorized local commits. Preserve uncommitted work and honor explicit instructions to keep a branch or changes unpushed.
+
+If branches diverge or merge conflicts occur, inspect the differences. Resolve straightforward conflicts only when both changes can be preserved unambiguously; ask the user when resolution requires choosing between intended behaviors or could overwrite teammates' work. Never force-push or discard changes to make a sync succeed.
+
+After implementation and relevant checks, commit only the task's changes, pull and integrate any newer remote changes, then push. If the remote advances during the push, pull again and repeat the conflict-handling process. Verify the working branch and its remote are synchronized before reporting completion. Apply the same explicit no-push exceptions at this stage.
+
 The current team workflow is to commit and push directly to `main`, unless the user explicitly requests a feature branch or pull request. Apply these metadata rules to new work:
 
 - Name branches `<type>/<short-kebab-case-description>`, such as `feat/payment-shield`, `fix/guardian-approval`, or `docs/setup-guide`. Use project-focused names; never use `agent/`, `codex/`, `ai/`, or other automation-identifying prefixes.
