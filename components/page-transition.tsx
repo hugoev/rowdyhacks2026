@@ -3,8 +3,8 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const vaultRoutes = new Set(['/', '/guardian', '/protected', '/relative', '/settings', '/cases']);
-const canonical = (path: string) => path === '/guardian' ? '/' : path;
+const vaultRoutes = new Set(['/', '/operator']);
+const canonical = (path: string) => path;
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();

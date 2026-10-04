@@ -2,11 +2,6 @@
   "name": "tripwire",
   "version": "0.1.0",
   "private": true,
-  "overrides": {
-    "@solana/web3.js": {
-      "jayson": "5.0.0"
-    }
-  },
   "type": "module",
   "engines": {
     "node": ">=22.5.0"
@@ -21,33 +16,22 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test.mjs",
     "test:e2e": "playwright test",
-    "setup:tiger": "node --import tsx scripts/check-tiger.ts --setup",
-    "setup:solana": "node --import tsx scripts/setup-solana.ts",
-    "build:solana": "node scripts/build-solana.mjs",
-    "check:solana": "node --import tsx scripts/check-solana.ts",
-    "check:tiger": "node --import tsx scripts/check-tiger.ts",
     "setup:vultr": "node --import tsx scripts/setup-vultr.ts",
     "check:vultr": "node --import tsx scripts/check-vultr.ts",
-    "check:vultr:e2e": "node --import tsx scripts/check-vultr-e2e.ts",
     "deploy:vultr": "bash scripts/deploy-vultr.sh",
-    "eval:live": "node --import tsx scripts/eval-live.ts",
-    "setup:agent": "node --import tsx scripts/setup-agent.ts",
-    "check:live": "node --import tsx scripts/check-live.ts"
+    "check:live": "node --import tsx scripts/check-live.ts",
+    "seed": "node --import tsx scripts/seed.ts",
+    "setup:agents": "node --import tsx scripts/setup-agents.ts"
   },
   "dependencies": {
     "@elevenlabs/client": "^1.26.0",
     "@google/genai": "^2.27.0",
-    "@solana/web3.js": "^1.99.0",
-    "bcryptjs": "^3.0.2",
-    "bs58": "^6.0.0",
     "dotenv": "^17.2.3",
     "lucide-react": "^0.468.0",
     "next": "16.3.8",
     "pg": "^8.23.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
-    "socket.io": "^4.8.1",
-    "socket.io-client": "^4.8.1",
     "tsx": "^4.20.6",
     "zod": "^4.1.12"
   },

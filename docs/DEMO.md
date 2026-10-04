@@ -1,48 +1,32 @@
-# Tripwire demo runbook (3:00, fully live, no video)
+# Tripwire demo runbook (2:40 at the expo table, repeatable)
 
-“Tripwire listens for the con, not the voice, and stops the payment before the money moves.”
+“Every bank app asks ‘Are you sure?’ A great teller asks ‘What’s it for?’ and then calls your grandson.”
 
-## Setup (once)
+## Before judging (once)
 
-1. `npm ci`, `cp .env.example .env`, add `GEMINI_API_KEY` and `ELEVENLABS_API_KEY`.
-2. `npm run check:live` must print `PASS` (token mint, Live session, tool calls).
-3. Record Diego’s written consent and voice sample; create the instant voice clone; set `ELEVENLABS_SCAMMER_VOICE_ID`; run `npm run setup:agent`; set `ELEVENLABS_AGENT_ID`.
-4. Optional: `npm run eval:live` to fill the eval card with measured numbers (the card says “No measured run yet” until then).
-5. `npm run build && npm start`. Set the family word in **Family settings** (for example “Marigold”).
-
-## Screens
-
-| Device | URL |
-|---|---|
-| Big screen | `/stage` (Rosa left, Mission Control right) |
-| Rosa’s device (headset mic) | `/protected` (Operator drawer at the bottom is for the operator) |
-| Diego’s phone | `/relative` |
-| Operator laptop | `/guardian` and Rosa’s Operator drawer |
+1. `.env` has `GEMINI_API_KEY`, `ELEVENLABS_API_KEY`, `EL_AGENT_SCAMMER_ID`, `EL_AGENT_VERIFIER_ID`, `TIGER_DATABASE_URL`. Run `npm run seed` (prints 29x) and `npm run check:live` (prints PASS).
+2. Deploy (HTTPS needed for phone mics). Open on the laptop: `/` (Rosa's bank app, mirrored to the monitor) and `/operator` (hidden). On the big monitor: `/case/latest`.
+3. Rosa's phone: `/call?who=rosa`. Diego's phone: `/call?who=diego`. Tap **Ready** on both. Ringers and speakerphone on.
+4. Headset or boom mic for Rosa on the laptop. Small speaker for the teller.
 
 ## Beats
 
-| Time | Beat | What should happen |
-|---|---|---|
-| 0:00 | Hook | Narrator. |
-| 0:15 | Operator: Caller channel = **ElevenLabs scammer agent (full arc)** → **Ring Rosa’s phone**. Rosa taps **Answer**. | Status shows “Gemini Live”. |
-| | Clone: “Grandma, it’s me. I got arrested… don’t tell Mom.” | Con Meter tumblers click in with quotes and latencies; surveillance log scrolls; risk dial climbs. |
-| | Whisper on Rosa’s screen: “Ask him for your family word.” Rosa asks out loud, then taps **I asked**. | Clone dodges → `check_family_word → no answer (dodged)`, Trust tumbler turns red. |
-| 1:10 | Clone: “Send it from your bank app, as gift cards.” Rosa: **Open my bank app** → **Send money $2,500**. | “Paused. The caller asked you to keep this secret from your family and refused your family word. We’ve asked Diego.” Diego’s phone buzzes. |
-| 1:45 | Diego reads the card aloud, taps **Not me, block**. | Laser sweep + HEIST FOILED on all screens; Tripwire voice: “Rosa, Diego just confirmed he’s safe and it wasn’t him…”; case file appears. |
-| 2:15 | Reveal: the voice was a live, consented AI clone. | |
-| 2:35 | Mission Control → **Proof points**. | Eval card (real numbers only). |
+| Time | Beat | Operator | What should happen |
+|---|---|---|---|
+| 0:00 | Hook | **START SCAM CALL** at the end | Narrator: “Swivel showed us this…” |
+| 0:15 | Scam call | — | Rosa's phone rings, caller ID “Diego”. Cloned voice: arrested, $2,500 bail, M. Ellis Legal, don't tell Mom. Rosa hangs up. |
+| 0:50 | The teller | — | Rosa: Send money → (prefilled $2,500, M. Ellis Legal, instant) → **Send $2,500**. Screen softens; the teller speaks first: “about 29 times what you usually send… what's it for?” Rosa tells the story; the teller asks to call Diego; Rosa: “Yes, please.” Status: “Calling Diego…” |
+| 1:35 | The call back | (FORCE RESULT · not me if the verifier fails) | Diego's phone rings: “Tripwire · Rosa's bank”. Verifier asks; Diego: “What? No! I'm fine.” Seconds later the teller tells Rosa he's safe. Screen: “Your $2,500 is safe.” |
+| 2:05 | Case file | — | Monitor: laser sweep, FILE 00N // THE BAIL JOB, FOILED stamp. |
+| 2:20 | Reveal | — | “That first call was a live AI clone of Diego's voice, made with his permission…” |
+| after | “Want to be Grandma?” | **RESET** | Hand the judge the headset. RESET returns to Home in under a second. |
 
-## Failure drills (rehearse every one)
+Flexes (only if rehearsed): **FORCE RESULT · it's me** (release path), **Language → Español** before Send (the teller starts in Spanish and follows Rosa), **Scammer coach mode** (the caller tells Rosa to say it's a car repair; the teller asks why a legal firm).
 
-- **Agent goes off-script:** hang up, choose **ElevenLabs scammer agent (short arc)**, ring again (30 s).
-- **Agent or Wi-Fi fails:** choose **Operator microphone**; the operator speaks the lines. Same demo, minus the clone reveal.
-- **Gemini slow or down:** the rule spotter keeps the Con Meter moving (tagged RULE) and prompts the family word; the Teller and Diego’s loop are deterministic.
-- **No audio at all:** choose **Typed lines**, press **Next caller line**; lines go to the rules and, as text, to Gemini.
-- **Network down:** phone hotspot; all surfaces run on one laptop as separate windows.
-- **Reset between runs:** Operator drawer → **Clear activity**.
+## Failure plan
 
-## Q&A anchors
-
-- Why not detect deepfakes? Detection is an arms race. The con’s structure doesn’t change.
-- Privacy? Listening starts only when Rosa answers with Tripwire on; only the caller is heard; audio isn’t stored; only flagged case files are kept; the family word never reaches the model.
-- False positives? Normal payments see nothing; friction appears only with call context or strong anomalies; the family can always release.
+- Scam call doesn't connect → START SCAM CALL again; if ElevenLabs is down, a teammate reads the scammer lines on speaker.
+- Verifier fails or Diego's phone is silent → **FORCE RESULT · not me**; Diego says his line out loud. The teller still delivers the result. If the teller doesn't respond within 12 s, Tripwire rules hold the payment and write the case file.
+- Teller can't connect → Rosa's screen says her money stays put; **CALL DIEGO (manual)**, then FORCE RESULT. The session auto-reconnects twice and re-sends the conversation so far.
+- Loud room → operator turns on **Push-to-talk**; Rosa holds the big button while she talks.
+- Wi-Fi → one phone hotspot for the laptop and both phones.

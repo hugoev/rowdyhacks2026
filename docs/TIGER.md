@@ -1,3 +1,19 @@
+# Tiger Data
+
+Tiger Data (Postgres + TimescaleDB) holds two things, so the anomaly check and the case history share one database:
+
+- `teller.transactions`: Rosa's 12 months of synthetic payments, a hypertable on `ts`. `npm run seed` creates the schema and (re)loads the history.
+- `teller.daily_payments`: a continuous aggregate of daily median payment amounts. Her typical payment is the median of those (about $86), which is where the teller's "about 29 times what you usually send" comes from.
+- `teller.cases`: one row per finished Tripwire case (timestamp, amount, payee, outcome, job name, impersonated, pressure quotes, cover, getaway, foiled-by, tip, seconds to stop, who wrote it).
+
+On Send, one query (`RISK_QUERY` in `server/tiger.ts`) returns her typical payment and whether the payee is known. If Tiger is unreachable, the server uses the identical seed in memory and labels the result `local`.
+
+Set `TIGER_DATABASE_URL` (or `DATABASE_URL`) with `sslmode=require` for Tiger's free tier; set `TIGER_CA_CERT` to verify the certificate.
+
+---
+
+## Earlier notes (v1/v2)
+
 # Tiger Data risk analytics
 
 Add your PostgreSQL connection string to the ignored local `.env`, then restart

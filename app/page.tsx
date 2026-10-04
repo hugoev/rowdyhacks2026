@@ -1,2 +1,2 @@
-import Tripwire from '@/components/tripwire';
-export default function Page() { return <Tripwire view="guardian" />; }
+import { BankApp } from '@/components/bank-app';
+export default function Page() { return <main className="bank-stage"><BankApp/></main>; }

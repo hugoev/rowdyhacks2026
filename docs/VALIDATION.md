@@ -1,5 +1,17 @@
 # Demo validation
 
+## PRD v3 (October 4, 2026)
+
+- Typecheck, production build: pass. Unit tests: 11 passing (risk rule incl. the $40 bill, seed gives $86 typical and 29x, demo state machine, rules case file, Tiger round-trip and outage fallback, keys stay server-side).
+- Browser tests (no provider keys): 6 passing. Acceptance 1 ($40 sends with no Tripwire), Tripwire opens on $2,500, Diego's phone rings in under 2 s from CALL DIEGO, FORCE RESULT not_me shows "Your $2,500 is safe." and a FOILED case file, RESET returns Home in under 1 s (x3), START SCAM CALL rings Rosa's phone, origin and request checks.
+- `npm run check:live` against real gemini-3.8-live (text mode, 4 runs incl. one Spanish): greeting with the 29x context, permission asked and answered before calling, the late `not_me` result delivered mid-session, `decide_payment` hold, `finish` with quotes from Rosa's words. First audio 1.4–3.2 s after token (the app pre-mints the token on the Send screen).
+- Real browser, real Gemini, Rosa's lines spoken into a fake microphone: first teller caption 1.7 s after Send; the teller heard the story, asked permission, rang Diego after "Yes, please call him."; FORCE RESULT not_me → hold → case file "The Bail Job" (pressure "in jail", "needs bail money today"; cover "don't tell his mom"), 43 s to stop.
+- Tiger Data live: `npm run seed` → typical $86, $2,500 to M. Ellis Legal is 29x and new (triggers), $40 to City Electric is known (sends); a finished case was stored in `teller.cases`.
+- Live-tuning findings: answering `decide_payment` with SILENT scheduling made the teller stop talking (now WHEN_IDLE); the teller once dialed before hearing "yes" (prompt now forbids asking and calling in one turn; 3/3 clean since); it sometimes calls `finish` before speaking the good news, so the app now hangs up only after the teller stops speaking.
+- Not yet verified: the two ElevenLabs agents on real phones (agents not created yet: needs the consented clone voice ID), and acceptance 3–4 with Diego's real voice.
+
+## Earlier versions
+
 ## PRD v2 (October 4, 2026)
 
 - Production build, strict TypeScript: pass.

@@ -1,81 +1,64 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
-const headers = (role: string) => ({ 'x-tripwire-client': 'web', 'x-tripwire-role': role });
-async function login(api: APIRequestContext, role: string) { await api.post('/api/session', { headers: headers(role), data: { role } }); }
-test.beforeEach(async ({ request }) => {
-  await login(request, 'guardian'); await request.post('/api/demo/reset', { headers: headers('guardian'), data: {} });
-  await request.post('/api/safe-word/set', { headers: headers('guardian'), data: { word: 'Marigold' } });
+import { test, expect, type Page } from '@playwright/test';
+const post = (page: Page, path: string, data: unknown = {}) => page.request.post('/api' + path, { headers: { 'x-tripwire-client': 'web' }, data });
+test.beforeEach(async ({ page }) => { await post(page, '/operator/reset'); });
+
+test('acceptance 1: $40 to City Electric sends with no Tripwire', async ({ page }) => {
+  await page.goto('/');
+  await page.getByRole('button', { name: 'Send money' }).click();
+  await page.getByRole('button', { name: /City Electric · \$40/ }).click();
+  await page.getByRole('button', { name: 'Send $40' }).click();
+  await expect(page.getByRole('heading', { name: 'Sent.' })).toBeVisible();
+  await expect(page.getByText('No red flags found.')).toBeVisible();
+  await expect(page.getByText(/safety teller/)).toHaveCount(0);
 });
 
-test('unauthenticated and wrong-role callers cannot act for the family', async ({ playwright }) => {
-  const api = await playwright.request.newContext({ baseURL: 'http://localhost:3101' });
-  const guest = await api.get('/api/state', { headers: headers('guardian') }); expect(guest.status()).toBe(401);
-  await login(api, 'protected');
-  expect((await api.get('/api/analytics', { headers: headers('protected') })).status()).toBe(403);
-  expect((await api.post('/api/payments/decide', { headers: headers('protected'), data: { id: '00000000-0000-4000-8000-000000000000', decision: 'approve' } })).status()).toBe(403);
-  expect((await api.post('/api/guardian/reply', { headers: headers('protected'), data: { id: '00000000-0000-4000-8000-000000000000', answer: 'release' } })).status()).toBe(403);
-  expect((await api.post('/api/call/start', { headers: { ...headers('protected'), Origin: 'https://attacker.example' }, data: { consent: true } })).status()).toBe(403);
-  expect((await api.post('/api/live/token', { headers: headers('protected'), data: {} })).status()).toBe(503);
-  await login(api, 'relative');
-  const relative = await (await api.get('/api/state', { headers: headers('relative') })).json();
-  expect(relative).not.toHaveProperty('riskHistory'); expect(relative.call.transcript).toEqual([]);
-  expect((await api.post('/api/live/tool', { headers: headers('relative'), data: { callId: '00000000-0000-4000-8000-000000000000', name: 'hold_payment', args: {} } })).status()).toBe(403);
-  await api.dispose();
-});
-
-for (let run = 1; run <= 3; run++) test(`hero flow: con, family word, Teller pause, Diego blocks — run ${run}`, async ({ browser }) => {
-  const context = await browser.newContext(); const rosa = await context.newPage(); const mc = await context.newPage(); const diego = await context.newPage();
-  await mc.goto('/guardian'); await expect(mc.getByRole('heading', { name: 'Listening for the con.' })).toBeVisible();
-  await diego.goto('/relative'); await expect(diego.getByRole('heading', { name: 'You’re Grandma’s trusted contact.' })).toBeVisible();
-  await rosa.goto('/protected'); await expect(rosa.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible();
-  await rosa.getByText('Operator', { exact: true }).click();
-  await rosa.getByLabel('Caller channel').selectOption('script');
-  await rosa.getByRole('button', { name: 'Ring Rosa’s phone' }).click();
-  await rosa.getByRole('button', { name: 'Answer' }).click();
-  await expect(rosa.getByText('Tripwire rules ·')).toBeVisible();
-  const started = Date.now();
-  await rosa.getByRole('button', { name: /Next caller line/ }).click();
-  await rosa.getByRole('button', { name: /Next caller line/ }).click();
-  const meter = mc.getByRole('list', { name: 'Con Meter' });
-  await expect(meter.getByText('don’t tell Mom', { exact: false })).toBeVisible();
-  await expect(meter.getByText('I got arrested', { exact: false })).toBeVisible();
-  expect(Date.now() - started).toBeLessThan(10000);
-  await expect(mc.getByRole('list', { name: 'Agent tool calls' }).getByText('report_signal').first()).toBeVisible();
-  if (run === 1) await mc.screenshot({ path: 'test-results/mission-control-con.png', fullPage: true });
-  await expect(rosa.getByText('Ask him for your family word.')).toBeVisible();
-  await rosa.getByRole('button', { name: 'I asked' }).click();
-  await rosa.getByLabel('What did they say?').fill('no time');
-  await rosa.getByRole('button', { name: 'Check', exact: true }).click();
-  await expect(rosa.getByText('That wasn’t your family word. Please don’t send money.')).toBeVisible();
-  await expect(meter.locator('.tumbler.red')).toHaveCount(1);
-  await rosa.getByRole('button', { name: 'Open my bank app' }).click();
-  await rosa.getByRole('button', { name: /Send money \$2,500/ }).click();
-  await expect(rosa.getByRole('heading', { name: 'Paused.' })).toBeVisible();
-  await expect(rosa.getByText(/The caller asked you to keep this secret from your family and refused your family word\./)).toBeVisible();
-  await expect(rosa.getByText('We’ve asked Diego.', { exact: false })).toBeVisible();
-  await expect(diego.getByRole('heading', { name: /Someone using your name is asking Grandma for \$2,500 in gift cards in bail money right now/ })).toBeVisible();
-  if (run === 1) await rosa.screenshot({ path: 'test-results/rosa-paused.png', fullPage: true });
-  const tapped = Date.now();
-  await diego.getByRole('button', { name: 'Not me, block' }).click();
-  await expect(rosa.getByRole('heading', { name: 'Your money hasn’t moved.' })).toBeVisible();
-  expect(Date.now() - tapped).toBeLessThan(5000);
-  await expect(rosa.getByText('Rosa, Diego just confirmed he’s safe and it wasn’t him.', { exact: false })).toBeVisible();
-  await expect(diego.getByRole('heading', { name: 'Blocked. Grandma’s money hasn’t moved.' })).toBeVisible();
-  await expect(mc.locator('.kraft-file').getByText('HEIST FOILED', { exact: true })).toBeVisible();
-  await expect(mc.locator('.kraft-levers').getByText('Isolation')).toBeVisible();
-  if (run === 1) await mc.screenshot({ path: 'test-results/mission-control-foiled.png', fullPage: true });
-  await mc.goto('/cases'); await expect(mc.getByRole('heading', { name: 'The Grandson Job' })).toBeVisible();
+for (let run = 1; run <= 3; run++) test(`acceptance 2-6 (teller offline): Tripwire opens, Diego's phone rings, FORCE RESULT holds, case file, RESET — run ${run}`, async ({ browser }) => {
+  const context = await browser.newContext({ permissions: ['microphone'] });
+  const rosa = await context.newPage(); const diego = await context.newPage(); const monitor = await context.newPage(); const operator = await context.newPage();
+  await operator.goto('/operator'); await expect(operator.getByRole('heading', { name: 'Operator' })).toBeVisible();
+  await monitor.goto('/case/latest'); await expect(monitor.getByRole('heading', { name: 'Waiting for the next job…' })).toBeVisible();
+  await diego.goto('/call?who=diego'); await diego.getByRole('button', { name: 'Ready' }).click(); await expect(diego.getByText('Ready. Ringer on.')).toBeVisible();
+  await rosa.goto('/');
+  await rosa.getByRole('button', { name: 'Send money' }).click();
+  await expect(rosa.getByLabel('To', { exact: true })).toHaveValue('M. Ellis Legal');
+  await rosa.getByRole('button', { name: 'Send $2,500' }).click();
+  await expect(rosa.getByText('Tripwire · your bank’s safety teller')).toBeVisible();
+  // Without a Gemini key the teller is offline; the money stays put while family is checked.
+  await expect(rosa.getByText('Your money is staying put while we check with your family.')).toBeVisible();
+  await expect(operator.getByText(/29x typical/).first()).toBeVisible();
+  const rang = Date.now();
+  await operator.getByRole('button', { name: 'CALL DIEGO (manual)' }).click();
+  await expect(diego.getByText('Incoming call')).toBeVisible(); expect(Date.now() - rang).toBeLessThan(2000);
+  await expect(diego.getByRole('heading', { name: 'Tripwire · Rosa’s bank' })).toBeVisible();
+  await expect(rosa.getByText('Calling Diego…')).toBeVisible();
+  await operator.getByRole('button', { name: 'FORCE RESULT · not me' }).click();
+  await expect(rosa.getByRole('heading', { name: 'Your $2,500 is safe.' })).toBeVisible();
+  await expect(rosa.getByText('They pretended to be Diego.')).toBeVisible();
+  await expect(monitor.getByRole('heading', { name: /FILE \d+ \/\/ THE RUSH JOB/ })).toBeVisible();
+  await expect(monitor.getByText('FOILED', { exact: true })).toBeVisible();
+  await expect(monitor.getByText('Tripwire called the real Diego on his saved number')).toBeVisible();
+  if (run === 1) { await rosa.screenshot({ path: 'test-results/rosa-safe.png' }); await monitor.screenshot({ path: 'test-results/case-file.png' }); }
+  const reset = Date.now();
+  await operator.getByRole('button', { name: 'RESET' }).click();
+  await expect(rosa.getByRole('heading', { name: 'Hello, Rosa.' })).toBeVisible(); expect(Date.now() - reset).toBeLessThan(1000);
   await context.close();
 });
 
-test('normal $40 bill with no call goes straight through', async ({ page }) => {
-  await page.goto('/protected'); await page.getByText('Operator', { exact: true }).click();
-  await page.getByRole('button', { name: '$40 bill' }).click();
-  await page.getByRole('button', { name: /Send money \$40/ }).click();
-  await expect(page.getByRole('heading', { name: 'Sent.' })).toBeVisible(); await expect(page.getByText('No red flags found.')).toBeVisible();
+test('START SCAM CALL rings Rosa’s phone with Diego as the caller ID', async ({ browser }) => {
+  const context = await browser.newContext({ permissions: ['microphone'] });
+  const phone = await context.newPage(); const operator = await context.newPage();
+  await phone.goto('/call?who=rosa'); await phone.getByRole('button', { name: 'Ready' }).click();
+  await operator.goto('/operator'); await operator.getByRole('button', { name: 'START SCAM CALL' }).click();
+  await expect(phone.getByText('Incoming call')).toBeVisible(); await expect(phone.getByRole('heading', { name: 'Diego' })).toBeVisible();
+  // Agents aren't configured in tests: answering explains the fallback instead of hanging.
+  await phone.getByRole('button', { name: 'Answer' }).click();
+  await expect(phone.getByText(/EL_AGENT_SCAMMER_ID|ElevenLabs is not configured/)).toBeVisible();
+  await context.close();
 });
 
-test('every view renders', async ({ page }) => {
-  for (const route of ['/guardian', '/protected', '/relative', '/settings', '/cases', '/stage']) {
-    const response = await page.goto(route); expect(response?.status()).toBe(200);
-  }
+test('the server refuses foreign origins and the teller tools need an active payment', async ({ page }) => {
+  expect((await page.request.post('/api/operator/reset', { headers: { 'x-tripwire-client': 'web', Origin: 'https://attacker.example' }, data: {} })).status()).toBe(403);
+  expect((await page.request.post('/api/operator/reset', { data: {} })).status()).toBe(403);
+  expect((await post(page, '/ring', { contact: 'diego', claim_summary: 'x' })).status()).toBe(400);
+  expect((await post(page, '/token', { payee: 'City Electric', amount: 40, rail: 'bill-pay' })).ok()).toBe(true);
 });

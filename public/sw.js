@@ -11,6 +11,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const request = event.request; const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.pathname === '/api/events') return; // live event stream: never intercept
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(fetch(request).catch(() => new Response(JSON.stringify({ error: 'Tripwire is offline. Reconnect to see live family information.' }), { status: 503, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } })));
     return;

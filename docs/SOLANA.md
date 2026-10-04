@@ -1,3 +1,5 @@
+> **Not used in PRD v3.** The app no longer integrates Solana; this documents the earlier devnet escrow prototype in `chain/`.
+
 # Production website, devnet escrow
 
 The live Vultr website uses Solana **devnet**, not mainnet. Displayed dollar

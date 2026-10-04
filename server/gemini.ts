@@ -1,38 +1,32 @@
 import { GoogleGenAI } from '@google/genai';
-import { liveConfig, liveModel } from '../lib/live-config';
-import type { Language } from '../lib/types';
-import { configureProvider, providerFailure } from './provider-status';
+import { liveModel, tellerConfig } from '../lib/teller-config';
+import type { Language, RiskCheck } from '../lib/types';
 
-export function configureGemini() { configureProvider('geminiLive', !!process.env.GEMINI_API_KEY, liveModel()); }
-export class GeminiError extends Error {
-  constructor(public category: string) { super(`Gemini Live ${category}. The rule spotter keeps protecting this call.`); }
-}
+export class GeminiError extends Error {}
 
 /**
- * Mints a short-lived, single-use Live API token locked to our model and config.
- * The real API key never leaves the server.
+ * Mints a short-lived, single-use Live API token with the teller's model and
+ * full config (system instruction with Rosa's payment context, tools) locked
+ * in. The API key never leaves the server and the browser can't alter the prompt.
  */
-export async function mintLiveToken(language: Language, handle?: string) {
-  configureGemini();
-  if (!process.env.GEMINI_API_KEY) throw new GeminiError('not configured');
+export async function mintTellerToken(check: RiskCheck, language: Language, options: { pushToTalk?: boolean } = {}) {
+  if (!process.env.GEMINI_API_KEY) throw new GeminiError('Gemini is not configured. Set GEMINI_API_KEY.');
   const model = liveModel();
+  const config = tellerConfig(check, language, { pushToTalk: options.pushToTalk, voice: process.env.GEMINI_VOICE || undefined });
+  const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, httpOptions: { apiVersion: 'v1alpha' } });
+  const now = Date.now();
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY, httpOptions: { apiVersion: 'v1alpha' } });
-    const now = Date.now();
     const token = await ai.authTokens.create({ config: {
       uses: 1,
-      expireTime: new Date(now + 30 * 60_000).toISOString(),
+      expireTime: new Date(now + 15 * 60_000).toISOString(),
       newSessionExpireTime: new Date(now + 2 * 60_000).toISOString(),
-      liveConnectConstraints: { model, config: liveConfig(language, handle) },
+      liveConnectConstraints: { model, config },
       httpOptions: { apiVersion: 'v1alpha' },
     } });
     if (!token.name) throw new Error('empty token');
-    return { token: token.name, model, expiresAt: now + 30 * 60_000 };
+    return { token: token.name, model, config };
   } catch (error) {
-    const message = error instanceof Error ? error.message : '';
-    const category = /401|403|permission|api key/i.test(message) ? 'authentication failed' : /429|quota/i.test(message) ? 'quota limited' : 'token unavailable';
-    providerFailure('geminiLive', category);
-    console.warn(JSON.stringify({ provider: 'gemini', task: 'live-token', error: category }));
-    throw new GeminiError(category);
+    console.warn(JSON.stringify({ provider: 'gemini', task: 'token', error: (error as Error).message?.slice(0, 120) }));
+    throw new GeminiError('Gemini Live token unavailable.');
   }
 }

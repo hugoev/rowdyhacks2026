@@ -1,64 +1,59 @@
-// Hour-0 gate: mints an ephemeral token, opens a Gemini Live session with the
-// production config, sends one synthetic caller turn, and prints the tool calls.
-//   npm run check:live                       one typed caller line
-//   npm run check:live -- --audio=call.wav   streams a 16-bit mono PCM WAV in real time
-//   (leave ~3 s of silence between caller turns, e.g. say "... [[slnc 3000]] ...")
+// Hour-0 gate for the safety teller. Mints an ephemeral token exactly as the
+// app does, opens a Gemini Live session, and plays Rosa's side as text:
+// story -> permission -> call_trusted_contact -> (late) not_me -> hold -> finish.
+//   npm run check:live            English
+//   npm run check:live -- --es    Spanish
 import 'dotenv/config';
-import { readFileSync } from 'node:fs';
-import { GoogleGenAI } from '@google/genai';
-import { mintLiveToken } from '../server/gemini';
-import { liveConfig } from '../lib/live-config';
+import { FunctionResponseScheduling, GoogleGenAI, type LiveServerMessage } from '@google/genai';
+import { mintTellerToken } from '../server/gemini';
+import { localRisk } from '../server/tiger';
+import { scamPayment } from '../lib/demo-data';
+import { openingCue } from '../lib/teller-config';
 
-/** Returns the PCM payload and sample rate of a 16-bit mono WAV. */
-export function wavPcm(file: Buffer) {
-  if (file.toString('ascii', 0, 4) !== 'RIFF' || file.toString('ascii', 8, 12) !== 'WAVE') throw new Error('Expected a WAV file.');
-  let offset = 12; let rate = 16000; let bits = 16; let channels = 1;
-  while (offset + 8 <= file.length) {
-    const id = file.toString('ascii', offset, offset + 4); const size = file.readUInt32LE(offset + 4);
-    if (id === 'fmt ') { channels = file.readUInt16LE(offset + 10); rate = file.readUInt32LE(offset + 12); bits = file.readUInt16LE(offset + 22); }
-    if (id === 'data') {
-      if (bits !== 16 || channels !== 1) throw new Error('Use 16-bit mono PCM (for example: say -o call.wav --data-format=LEI16@16000 "...").');
-      return { pcm: file.subarray(offset + 8, offset + 8 + size), rate };
-    }
-    offset += 8 + size + (size % 2);
-  }
-  throw new Error('WAV has no data chunk.');
-}
-
-const audioArg = process.argv.find(arg => arg.startsWith('--audio='))?.slice(8);
-const started = Date.now();
-const { token, model } = await mintLiveToken('en');
-console.log(`token minted for ${model} in ${Date.now() - started} ms`);
+const es = process.argv.includes('--es');
+const lines = es
+  ? ['Mi nieto Diego está en la cárcel. Necesita la fianza. Me pidió que no le dijera a su mamá.', 'Sí, por favor, llámelo.']
+  : ['My grandson Diego is in jail. He needs bail. He asked me not to tell his mom.', 'Yes, please call him.'];
+const started = Date.now(); const at = () => `${String(Date.now() - started).padStart(6)} ms`;
+const check = localRisk(scamPayment.payee, scamPayment.amount, scamPayment.rail);
+const { token, model, config } = await mintTellerToken(check, es ? 'es' : 'en');
+console.log(`${at()}  token for ${model} (${check.multiple}x typical, trigger=${check.trigger})`);
 const ai = new GoogleGenAI({ apiKey: token, httpOptions: { apiVersion: 'v1alpha' } });
-let finish!: () => void; const finished = new Promise<void>(resolve => { finish = resolve; });
-let tools = 0; let audioStart = 0; const heard: string[] = [];
-const session = await ai.live.connect({ model, config: liveConfig('en'), callbacks: {
-  onmessage: message => {
-    const text = message.serverContent?.inputTranscription?.text; if (text) heard.push(text);
-    const calls = message.toolCall?.functionCalls; if (!calls?.length) return;
-    tools += calls.length;
-    const at = audioStart ? `+${Date.now() - audioStart} ms after audio start` : `${Date.now() - started} ms`;
-    for (const call of calls) console.log(`${at}  ${call.name}  ${JSON.stringify(call.args)}`);
-    session.sendToolResponse({ functionResponses: calls.map(call => ({ id: call.id, name: call.name, response: { ok: true } })) });
+let said = ''; let audioBytes = 0; let firstAudio = 0; let turn = 0; const tools: string[] = [];
+let pendingCall: { id: string; name: string } | null = null;
+let finish!: (ok: boolean) => void; const done = new Promise<boolean>(r => { finish = r; });
+const timeout = setTimeout(() => finish(false), 75000);
+const session = await ai.live.connect({ model, config, callbacks: {
+  onmessage: (m: LiveServerMessage) => {
+    for (const p of m.serverContent?.modelTurn?.parts || []) if (p.inlineData?.data) { if (!firstAudio) { firstAudio = Date.now(); console.log(`${at()}  first teller audio`); } audioBytes += p.inlineData.data.length * 0.75; }
+    if (m.serverContent?.outputTranscription?.text) said += m.serverContent.outputTranscription.text;
+    if (m.serverContent?.turnComplete) {
+      if (said.trim()) console.log(`${at()}  TELLER: ${said.trim()}`);
+      said = '';
+      // Rosa answers after each of the teller's first two turns.
+      if (turn < lines.length && !pendingCall) { console.log(`${at()}  ROSA:   ${lines[turn]}`); session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: lines[turn++] }] }], turnComplete: true }); }
+    }
+    for (const call of m.toolCall?.functionCalls || []) {
+      tools.push(call.name || '');
+      console.log(`${at()}  TOOL ${call.name} ${JSON.stringify(call.args)}`);
+      if (call.name === 'call_trusted_contact') {
+        pendingCall = { id: call.id || '', name: call.name };
+        // Diego's phone rings and he answers ~6 s later; the result arrives mid-session.
+        setTimeout(() => { console.log(`${at()}  RESULT not_me → delivered`); session.sendToolResponse({ functionResponses: [{ id: pendingCall!.id, name: pendingCall!.name, response: { status: 'not_me', note: "I'm fine, I'm right here. I never asked for money." }, scheduling: FunctionResponseScheduling.INTERRUPT }] }); }, 6000);
+      } else {
+        session.sendToolResponse({ functionResponses: [{ id: call.id, name: call.name, response: { ok: true }, scheduling: FunctionResponseScheduling.WHEN_IDLE }] });
+        if (call.name === 'finish') setTimeout(() => finish(true), 4000);
+      }
+    }
   },
-  onerror: event => console.error('error', (event as ErrorEvent).message),
-  onclose: event => { if (event.code !== 1000) console.error(`closed ${event.code} ${event.reason}`); finish(); },
+  onerror: e => console.error('error', (e as ErrorEvent).message),
+  onclose: e => { if (e.code !== 1000) console.error(`closed ${e.code} ${e.reason}`); finish(false); },
 } });
-if (audioArg) {
-  const { pcm, rate } = wavPcm(readFileSync(audioArg));
-  const frame = Math.round(rate / 10) * 2; audioStart = Date.now();
-  for (let offset = 0; offset < pcm.length; offset += frame) {
-    session.sendRealtimeInput({ audio: { data: pcm.subarray(offset, offset + frame).toString('base64'), mimeType: `audio/pcm;rate=${rate}` } });
-    await new Promise(resolve => setTimeout(resolve, 100));
-  }
-  console.log(`audio sent: ${(pcm.length / 2 / rate).toFixed(1)} s`);
-  // Trailing silence lets turn detection end the caller's turn (as Rosa's reply would).
-  for (let i = 0; i < 30; i++) { session.sendRealtimeInput({ audio: { data: Buffer.alloc(frame).toString('base64'), mimeType: `audio/pcm;rate=${rate}` } }); await new Promise(resolve => setTimeout(resolve, 100)); }
-} else {
-  session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: 'CALLER_SAID: Grandma, it’s me. I got arrested. I need $2,500 for bail right now, and please, don’t tell Mom.' }] }], turnComplete: true });
-}
-setTimeout(() => session.close(), Number(process.env.CHECK_LIVE_MS || (audioArg ? 8000 : 12000)));
-await finished;
-if (heard.length) console.log('transcription:', heard.join('').trim());
-console.log(tools ? `PASS: ${tools} tool calls` : 'FAIL: no tool calls');
-process.exit(tools ? 0 : 1);
+session.sendClientContent({ turns: [{ role: 'user', parts: [{ text: openingCue(es ? 'es' : 'en') }] }], turnComplete: true });
+const ok = await done; clearTimeout(timeout);
+try { session.close(); } catch { /* closed */ }
+const decided = tools.includes('decide_payment');
+console.log(`\naudio received: ${(audioBytes / 48000).toFixed(1)} s · tools: ${tools.join(', ') || 'none'}`);
+const pass = ok && tools.includes('call_trusted_contact') && decided && tools.includes('finish');
+console.log(pass ? 'PASS: story → call Diego → late result → hold → case file' : 'FAIL: see the transcript above');
+process.exit(pass ? 0 : 1);
