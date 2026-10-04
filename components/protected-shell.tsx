@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useState } from 'react';
 import { Sidebar } from './sidebar';
-import { Wordmark } from './wordmark';
 import { BrandMark } from './brand-mark';
 import { ArrowLeft, Menu, X } from 'lucide-react';
 import { useTripwire } from './context';
@@ -17,12 +16,8 @@ export function ProtectedShell() {
     <a className="skip-link" href="#main">Skip to main content</a>
     <Sidebar view="protected" menu={menu} urgent={urgent} onClose={() => setMenu(false)}/>
     <div className="workspace">
-      <header className="topbar">
-        <div className="breadcrumb"><button className="icon-button mobile-menu" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}><Menu size={22}/></button><Link className="family-brand" href="/"><Wordmark/></Link></div>
-        <div className="topbar-right"><Link className="family-settings-link" href="/settings">Settings</Link></div>
-      </header>
       <main id="main" className="main-content">
-        <nav className="family-return" aria-label="Return navigation"><Link href="/" className="button secondary"><ArrowLeft size={22} aria-hidden="true"/>Mission Control</Link></nav>
+        <nav className="family-return" aria-label="Return navigation"><button className="button secondary mobile-menu" aria-label="Open navigation" aria-expanded={menu} onClick={() => setMenu(!menu)}><Menu size={22} aria-hidden="true"/>Navigation</button><Link href="/" className="button secondary"><ArrowLeft size={22} aria-hidden="true"/>Mission Control</Link></nav>
         {error && <div role="alert" className="error-banner"><span>{error}</span><button className="icon-button" aria-label="Dismiss error" onClick={() => setError('')}><X size={18}/></button></div>}
         {state ? <Protected/> : <div className="loading-state"><BrandMark/><h1>Preparing your protection…</h1><p>Loading your family safety workspace.</p><button className="button secondary" onClick={() => window.location.reload()}>Try again</button></div>}
       </main>
