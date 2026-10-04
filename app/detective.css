@@ -1,5 +1,6 @@
 /* The original paper, red, brown, and route-specific fonts remain the palette. */
 .detective-board {
+  --paper-dots: radial-gradient(circle, #715b3d12 .7px, transparent .9px);
   position: relative;
   isolation: isolate;
   padding: 44px 28px 30px;
@@ -18,15 +19,15 @@
   content: '';
   position: absolute;
   top: 24px;
-  width: 58px;
-  height: 20px;
-  background: repeating-linear-gradient(90deg, #fff5d999 0 3px, #ead7ad99 3px 4px);
-  clip-path: polygon(3% 0, 97% 0, 94% 12%, 100% 24%, 95% 38%, 100% 53%, 94% 69%, 99% 83%, 96% 100%, 2% 100%, 6% 85%, 0 72%, 5% 55%, 0 40%, 6% 23%, 0 10%);
-  transform: rotate(-18deg);
+  width: 64px;
+  height: 18px;
+  background: linear-gradient(100deg, #fff3, transparent 65%), #e8d8b8;
+  clip-path: polygon(2% 0, 98% 1%, 96% 13%, 99% 28%, 97% 43%, 100% 60%, 97% 78%, 99% 98%, 1% 100%, 3% 83%, 0 67%, 2% 49%, 0 32%, 3% 15%);
+  transform: rotate(-7deg);
   pointer-events: none;
 }
 .detective-board::before { left: 22px; }
-.detective-board::after { right: 22px; transform: rotate(18deg); }
+.detective-board::after { right: 22px; transform: rotate(7deg); }
 .board-content { position: relative; z-index: 1; min-width: 0; }
 .board-lamp, .board-beam, .board-strings { position: absolute; pointer-events: none; }
 .board-lamp { width: 120px; height: 90px; top: 0; left: calc(50% - 60px); z-index: 3; filter: drop-shadow(0 4px 3px #30251c22); }
@@ -217,6 +218,20 @@
 .board-beam[data-variant='calm'][data-spotlight='pointer'],
 .board-beam[data-variant='calm'][data-spotlight='keyboard'] { opacity: .45; }
 .detective-board--calm [data-board-lit] { background-image: radial-gradient(circle 240px at var(--spot-x, 50%) var(--spot-y, 0%), #fff0b36b, transparent 75%); }
+/* Faint bullet-paper dots stay beneath text and the warm spotlight. */
+.detective-board [data-board-node]:not(.demo-card) {
+  background-image: radial-gradient(circle 230px at var(--spot-x, 50%) var(--spot-y, 0%), #fff0b32b, transparent 75%), var(--paper-dots);
+  background-size: auto, 20px 20px;
+  background-position: center, 10px 10px;
+}
+.detective-board [data-board-lit]:not(.demo-card) {
+  background-image: radial-gradient(circle 230px at var(--spot-x, 50%) var(--spot-y, 0%), #fff0b3b0, transparent 75%), var(--paper-dots);
+}
+.detective-board .page-heading, .detective-board .section-title {
+  background-image: var(--paper-dots);
+  background-size: 20px 20px;
+  background-position: 10px 10px;
+}
 .rosa-surface .detective-board { padding: 44px 24px 28px; }
 .rosa-surface .detective-board .task-choices { gap: 30px; }
 .rosa-surface .detective-board .task-choices button { border-radius: 4px; padding-top: 36px; }
