@@ -101,7 +101,7 @@ export function BankApp() {
     </section>}
 
     {phase === 'tripwire' && <TellerScreen state={state} teller={teller} t={t}/>}
-    {phase === 'outcome' && <Outcome state={state} t={t} onDone={() => { teller.stop(); go('home'); }}/>}
+    {phase === 'outcome' && <Outcome state={state} t={t} onDone={() => { void teller.endQuietly().then(() => go('home')); }}/>}
   </div>;
 }
 
@@ -157,14 +157,15 @@ function tipText(tip?: string) {
   return stripped === text ? text : stripped && stripped[0].toLowerCase() + stripped.slice(1);
 }
 
-/** Resolves once the teller has spoken and gone quiet (or after `max` ms). */
+/** Resolves true once the teller has spoken and gone quiet, false if it stayed silent. */
 async function untilQuiet(player: { speaking: boolean }, max: number) {
   const start = Date.now(); let spoke = false; let quietSince = 0;
   while (Date.now() - start < max) {
-    if (player.speaking) { spoke = true; quietSince = 0; } else if (spoke) { quietSince ||= Date.now(); if (Date.now() - quietSince > 600) return; }
-    else if (Date.now() - start > 2500) return; // it chose not to say anything
+    if (player.speaking) { spoke = true; quietSince = 0; } else if (spoke) { quietSince ||= Date.now(); if (Date.now() - quietSince > 600) return true; }
+    else if (Date.now() - start > 2500) return false; // it chose not to say anything
     await new Promise(r => setTimeout(r, 150));
   }
+  return spoke;
 }
 
 type Line = { id: number; who: 'rosa' | 'teller'; text: string; done: boolean };
@@ -210,7 +211,12 @@ function useTeller(state: DemoState | null) {
         if (name === 'call_trusted_contact') {
           // Turn-taking: let the teller finish "Calling him now…" before Diego's phone rings.
           pending.current = { id };
-          await untilQuiet(teller.player, 6000);
+          // If it dialed without saying its comforting line, prompt it now so the line
+          // comes before the ring (not later, glued to the good news).
+          if (!(await untilQuiet(teller.player, 6000))) {
+            teller.cue('[Diego\'s phone is about to ring. Say only your one short comforting line to Rosa now, like "Calling him now. I\'m right here with you." Then stay quiet until the result arrives.]');
+            await untilQuiet(teller.player, 7000);
+          }
           try { await api('/ring', args); return null; }
           catch (e) { pending.current = null; return { status: 'no_answer', note: (e as Error).message }; }
         }
@@ -218,13 +224,9 @@ function useTeller(state: DemoState | null) {
         if (name === 'finish') {
           await api('/finish', { ...args, source: 'gemini' }).catch(() => {});
           clearTimeout(fallback.current);
-          // Hang up only after the teller finishes speaking (it often says the good news after finish).
-          const begun = Date.now(); let quietSince = 0;
-          const wait = setInterval(() => {
-            if (session.current !== teller) { clearInterval(wait); return; }
-            quietSince = teller.player.speaking ? 0 : quietSince || Date.now();
-            if ((quietSince && Date.now() - quietSince > 2500) || Date.now() - begun > 45000) { clearInterval(wait); teller.stop(); setStatus('closed'); }
-          }, 250);
+          // The teller often speaks the good news right after finish: wait for that line
+          // to start and play out completely before hanging up.
+          void teller.endGracefully({ waitForSpeech: true, max: 30000 }).then(() => { if (session.current === teller) setStatus('closed'); });
           return { ok: true };
         }
         return { error: `Unknown tool ${name}` };
@@ -285,8 +287,10 @@ function useTeller(state: DemoState | null) {
     fallback.current = setTimeout(() => void decideByRules(), sent ? 12000 : 1500);
   });
 
+  /** Done on the outcome screen: let a sentence in progress finish, then close. */
+  const endQuietly = useCallback(async () => { const t = session.current; if (t) await t.endGracefully({ max: 6000 }); stop(); }, [stop]);
   return {
-    prepare, start, stop, status, lines,
+    prepare, start, stop, endQuietly, status, lines,
     level: () => session.current?.level() ?? 0,
     hold: (down: boolean) => session.current?.holdToTalk(down),
   };

@@ -20,8 +20,11 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
   const [inCall, setInCall] = useState<{ id: string; since: number; caller: string } | null>(null);
   const [error, setError] = useState('');
   const [speaking, setSpeaking] = useState(false);
+  const [ending, setEnding] = useState(false);
   const conversation = useRef<VoiceConversation | null>(null);
   const scammer = useRef<TellerSession | null>(null);
+  const reported = useRef(0);
+  const quietTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const ringtone = useRingtone();
   const setSpeakingFrom = (call: TellerSession) => {
     const tick = setInterval(() => { if (scammer.current !== call) { clearInterval(tick); return; } setSpeaking(call.player.speaking); }, 200);
@@ -33,7 +36,8 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
 
   const hangUp = useCallback(async () => {
     const current = conversation.current; conversation.current = null;
-    scammer.current?.stop(); scammer.current = null;
+    const caller = scammer.current; scammer.current = null;
+    if (caller) { setEnding(true); await caller.endGracefully({ max: 5000 }); setEnding(false); }
     await current?.endSession().catch(() => {});
     setInCall(prev => { if (prev) void api('/ring/status', { id: prev.id, status: 'ended' }).catch(() => {}); return null; });
     setSpeaking(false);
@@ -60,7 +64,18 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
       // safety review blocks scam-impersonation agents. The verifier stays on ElevenLabs.
       if (ring.agent === 'scammer') {
         const grant = await api<Grant>('/scammer/token', { id });
-        const call = new TellerSession({ grant: () => api<Grant>('/scammer/token', { id }), tool: async () => ({ ok: true }), caption: () => {}, status: next => { if (next === 'failed') setError('The scam call dropped. Ring again.'); } });
+        const call = new TellerSession({
+          grant: () => api<Grant>('/scammer/token', { id }),
+          // The caller hangs up itself once its sign-off has played (end_call, or the
+          // sign-off words in its own transcript, since audio models rarely call tools).
+          tool: async name => { if (name === 'end_call') setTimeout(() => { if (scammer.current === call) void hangUp(); }, 0); return { ok: true }; },
+          caption: (who, text, done) => {
+            if (who === 'teller' && done && /call you (right )?back|love you,? grandma|te (vuelvo a )?llam/i.test(text)) setTimeout(() => { if (scammer.current === call) void hangUp(); }, 0);
+          },
+          status: next => { if (next === 'failed') setError('The scam call dropped. Ring again.'); },
+        });
+        // Backstop: a real scam call is short; end it at 50 s (after the current sentence).
+        setTimeout(() => { if (scammer.current === call) void hangUp(); }, 50000);
         scammer.current = call;
         setSpeakingFrom(call);
         await call.start(grant, scammerOpening);
@@ -75,14 +90,20 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
           report_result: async (params: { status?: string; note?: string }) => {
             const status = (['not_me', 'confirmed', 'no_answer'].includes(params.status || '') ? params.status : 'no_answer') as VerifyStatus;
             await api('/result', { id, status, note: String(params.note || '').slice(0, 300) });
-            // Turn-taking: give the verifier ~4 s for its thank-you, then hang up so the
-            // teller can deliver the news without two voices at once.
-            setTimeout(() => { if (conversation.current) void hangUp(); }, 4000);
+            // Turn-taking: let the verifier finish its thank-you (it usually ends the call
+            // itself), then hang up so the teller can speak. Never mid-sentence.
+            reported.current = Date.now();
+            setTimeout(() => { if (conversation.current && reported.current) void hangUp(); }, 15000);
             return 'Result delivered to Tripwire. Thank them in one short sentence and end the call.';
           },
         } } : {}),
-        onModeChange: ({ mode }) => setSpeaking(mode === 'speaking'),
-        onDisconnect: () => { conversation.current = null; void api('/ring/status', { id, status: 'ended' }).catch(() => {}); setInCall(null); setSpeaking(false); },
+        onModeChange: ({ mode }) => {
+          setSpeaking(mode === 'speaking');
+          clearTimeout(quietTimer.current);
+          // After reporting, the first pause after its closing words ends the call.
+          if (reported.current && mode !== 'speaking') quietTimer.current = setTimeout(() => { if (conversation.current) void hangUp(); }, 1500);
+        },
+        onDisconnect: () => { conversation.current = null; reported.current = 0; clearTimeout(quietTimer.current); void api('/ring/status', { id, status: 'ended' }).catch(() => {}); setInCall(null); setSpeaking(false); },
         onError: message => setError(String(message)),
       });
     } catch (e) {
@@ -103,8 +124,8 @@ export function PhoneCall({ who, embedded = false }: { who: Who; embedded?: bool
     <p className="call-owner">{name}’s phone</p>
     <div className="caller-avatar" aria-hidden>{inCall.caller.startsWith('Tripwire') ? <ShieldCheck size={56}/> : inCall.caller[0]}</div>
     <h1>{inCall.caller}</h1>
-    <p className="call-timer"><Timer since={inCall.since}/></p>
-    <button className="round decline" aria-label="Hang up" onClick={() => void hangUp()}><PhoneOff size={34}/></button>
+    <p className="call-timer">{ending ? 'Ending call…' : <Timer since={inCall.since}/>}</p>
+    <button className="round decline" aria-label="Hang up" disabled={ending} onClick={() => void hangUp()}><PhoneOff size={34}/></button>
     {error && <p className="error" role="alert">{error}</p>}
   </main>;
   if (incoming && ring) return <main className={page + ' ringing'} aria-live="assertive">

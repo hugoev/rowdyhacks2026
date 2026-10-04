@@ -117,6 +117,25 @@ export class TellerSession {
   rosaSaid() { return [...this.transcript.filter(l => l.startsWith('Rosa:')).map(l => l.slice(6)), this.rosaLine].join(' '); }
   get live() { return !!this.session; }
   level() { return Math.max(this.player.level(), (this.mic?.level() ?? 0) * 0.35); }
+  /**
+   * Ends without cutting anyone off: stops listening, optionally waits for a
+   * final line to start, lets everything queued finish playing, then closes.
+   */
+  async endGracefully({ waitForSpeech = false, max = 12000 } = {}) {
+    this.muted = true;
+    const start = Date.now(); let spoke = this.player.speaking; let quietSince = 0;
+    while (Date.now() - start < max && !this.stopped) {
+      if (this.player.speaking) { spoke = true; quietSince = 0; }
+      else {
+        quietSince ||= Date.now();
+        // Done once the last line has played out (or nothing was coming).
+        if ((spoke || !waitForSpeech) && Date.now() - quietSince > 900) break;
+        if (!spoke && waitForSpeech && Date.now() - start > 6000) break;
+      }
+      await new Promise(r => setTimeout(r, 120));
+    }
+    this.stop();
+  }
   stop() {
     // Keep the last lines (often the good news) for the dashboard before closing.
     this.commit('rosa'); this.commit('teller');
