@@ -91,7 +91,7 @@
 .workspace .footer { font-size: 12px; color: #30251c; line-height: 1.6; }
 .sidebar .nav-label { font-size: 12px; font-weight: 600; }
 
-.workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #fff2dc; }
+.workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #203947; }
 .workspace .detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
   color: #fff2dc;
 }
