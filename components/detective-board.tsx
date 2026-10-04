@@ -185,6 +185,7 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
       <polygon ref={beam} fill={`url(#${gradientId})`}/><ellipse ref={pool} ry="22" fill="#fff5d6" opacity=".24"/>
     </svg>, portalHost)}
     <svg className="board-strings" viewBox={`0 0 ${geometry.width} ${geometry.height}`} preserveAspectRatio="none" aria-hidden="true" focusable="false">
+      <defs><filter id={`${gradientId}-yarn`} x="-20%" y="-20%" width="140%" height="140%"><feTurbulence type="fractalNoise" baseFrequency=".7" numOctaves="2" seed="4" result="fiberNoise"/><feDisplacementMap in="SourceGraphic" in2="fiberNoise" scale="1.6" xChannelSelector="R" yChannelSelector="G"/></filter></defs>
       {connections.map(([from, to], index) => {
         const a = byId.get(from); const b = byId.get(to);
         if (!a || !b) return null;
@@ -194,10 +195,23 @@ export function DetectiveBoard({ children, variant = 'standard', connections = n
         const rail = Math.max(6, Math.min(ax, bx) - 8 - index * 3);
         const top = Math.min(a.y, b.y) - 12;
         const sameColumn = Math.abs(a.x - b.x) < 20;
-        const path = sameColumn ? `M${ax},${ay} L${rail},${ay - 8} L${rail + 3},${by - 12} L${bx},${by}` : `M${ax},${ay} L${ax},${top} L${bx},${top + 3} L${bx},${by}`;
-        return <g key={`${from}-${to}`} className="board-thread"><path d={path} className="board-thread-shadow"/><path d={path} className="board-thread-red"/>{[[ax, ay], [bx, by]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="4" className="board-thread-pin"/>)}</g>;
+        const path = sameColumn ? `M${ax},${ay} Q${rail},${ay - 10} ${rail},${ay + 6} C${rail - 2},${ay + (by - ay) / 3} ${rail + 5},${by - 24} ${rail + 3},${by - 12} Q${rail + 2},${by - 2} ${bx},${by}` : `M${ax},${ay} Q${ax - 3},${top} ${ax + 8},${top} Q${(ax + bx) / 2},${top + 9} ${bx - 8},${top + 3} Q${bx},${top} ${bx},${by}`;
+        return <g key={`${from}-${to}`} className="board-thread"><path d={path} className="board-thread-shadow"/><path d={path} className="board-thread-red" filter={`url(#${gradientId}-yarn)`}/><path d={path} className="board-yarn-fiber"/>{[[ax, ay], [bx, by]].map(([x, y], i) => <circle key={i} cx={x} cy={y} r="4" className="board-thread-pin"/>)}</g>;
       })}
-      {geometry.anchors.map(anchor => <g key={anchor.id} className="board-paper-pin" transform={`translate(${anchor.x + anchor.width / 2},${anchor.y + 7})`}><ellipse cy="3" rx="5" ry="3" fill="#30251c" opacity=".2"/><circle r="4" fill="#b88a47" stroke="#806044"/><circle cx="-1" cy="-1" r="1.2" fill="#f8e6bd"/></g>)}
+      <defs><linearGradient id={`${gradientId}-pin`} x1="0" y1="0" x2="1" y2="0"><stop stopColor="#ff5149"/><stop offset=".3" stopColor="#df191a"/><stop offset=".75" stopColor="#9d090d"/><stop offset="1" stopColor="#f32b2b"/></linearGradient></defs>
+      {geometry.anchors.map(anchor => <g key={anchor.id} className="board-paper-pin" transform={`translate(${anchor.x + anchor.width / 2},${anchor.y + 7})`}>
+        <ellipse cx="3" cy="5" rx="10" ry="3.5" fill="#30251c" opacity=".24"/>
+        <g transform="rotate(30)">
+          <path d="M0 2V12L-1 14 -1 2" fill="#dedbd5" stroke="#625c54" strokeWidth=".8"/>
+          <ellipse cy="2" rx="8" ry="3.5" fill="#a50e14"/>
+          <ellipse cy="1" rx="8" ry="3" fill={`url(#${gradientId}-pin)`}/>
+          <path d="M-4 -10 -3 1Q0 3 4 1L4 -10Z" fill={`url(#${gradientId}-pin)`}/>
+          <path d="M-2.5 -9 -2 0" stroke="#ff8a80" strokeWidth="1"/>
+          <ellipse cy="-10" rx="7" ry="3" fill="#a80c12"/>
+          <ellipse cy="-11" rx="7" ry="2.8" fill="#ed252a" stroke="#a90e13" strokeWidth=".7"/>
+          <path d="M-5 -12Q0 -14 5 -11" fill="none" stroke="#ffafa2" strokeWidth="1.2" strokeLinecap="round"/>
+        </g>
+      </g>)}
     </svg>
     <div className="board-content">{children}</div>
   </div>;
