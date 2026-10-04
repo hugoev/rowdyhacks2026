@@ -19,7 +19,7 @@
   will-change: transform;
 }
 .vault-door-left { left: 0; z-index: 2; animation: vault-door-left 820ms cubic-bezier(.65, 0, .25, 1) both; }
-.vault-door-right { right: 0; animation: vault-door-right 820ms cubic-bezier(.65, 0, .25, 1) both; }
+.vault-door-right { right: 0; z-index: 1; animation: vault-door-right 820ms cubic-bezier(.65, 0, .25, 1) both; }
 .vault-door-inset {
   position: absolute;
   inset: clamp(24px, 5vw, 72px);
@@ -62,7 +62,7 @@
   left: 220px;
   right: 0;
   height: 2px;
-  z-index: 5;
+  z-index: 0;
   background: #ff3b3b;
   box-shadow: 0 0 10px #ff3b3b, 0 0 20px #ff3b3b60;
   animation: vault-scan 820ms ease-in-out both;
