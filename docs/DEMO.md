@@ -40,5 +40,5 @@ Flexes (only if rehearsed): **FORCE RESULT · it's me** (release path), **Langua
 - The scam call is always a teammate (ElevenLabs' safety review blocks scam-impersonation agents). If Rosa's phone page misbehaves, the teammate just speaks the lines in person.
 - Verifier fails or Diego's phone is silent → **FORCE RESULT · not me**; Diego says his line out loud. The teller still delivers the result. If the teller doesn't respond within 12 s, Tripwire rules hold the payment and write the case file.
 - Teller can't connect → Rosa's screen says her money stays put; **CALL DIEGO (manual)**, then FORCE RESULT. The session auto-reconnects twice and re-sends the conversation so far.
-- Loud room → open Demo controls and turn on **Push-to-talk**; Rosa holds the big button while she talks.
+- Loud room → use a headset or directional microphone. The public `/demo` page keeps setup controls hidden.
 - Wi-Fi → one phone hotspot for the laptop and both phones.

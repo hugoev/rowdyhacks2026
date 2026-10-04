@@ -5,12 +5,15 @@ v3 browser calls and microphone need HTTPS; SSE coordinates the two call apps
 and bank app in the same process. Horizontal replicas/serverless functions are
 outside the one-session design.
 
-## Current deployment (v2)
+## Current deployment
 
-URL: https://tripwire.64.177.46.134.sslip.io. This is a temporary hostname, not a
-confirmed GoDaddy Registry domain. Current runtime uses Docker, Node 22, Caddy,
-SQLite, Socket.IO, and paired access codes until the v3 code (on main since
-the safety-teller commit) deploys; v3 needs no SQLite, Socket.IO, or access codes.
+URL: https://tripwire.study. Docker runs Node 22 behind Caddy with SSE and Tiger
+Data. `/` is the dashboard, `/calls` contains saved reviews, and `/demo` is the
+combined call flow. There is no sign-in. Compose defaults `DEMO_MODE` to `true`,
+which also allows demo controls without `OPERATOR_KEY`. `/api/health` reports
+the effective `demoMode` value. Set `DEMO_MODE=false` to enforce a configured
+operator key again. The old offline service worker is retired; `/sw.js` remains
+as a migration that clears Tripwire caches and refreshes controlled windows.
 Keep Node 22.22+; the PRD's Node 20 note does not supersede the current runtime.
 
 Main pushes run checks across Linux/Windows/macOS plus browser and chain tests.

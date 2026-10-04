@@ -23,6 +23,8 @@ See [PRD v3](docs/PRD.md), the [demo runbook](docs/DEMO.md) (2:40 table demo and
 
 `/dashboard` remains a dashboard alias and `/dashboard/cases` redirects to `/calls`. The separate Operator and Case Monitor screens have been removed.
 
+The hosted demo at https://tripwire.study uses `DEMO_MODE=true`: no sign-in or demo access key is needed. `/` opens the dashboard and `/demo` opens the call flow. The old offline service worker is retired; returning browsers remove its caches and recover the live page when the network is available.
+
 ## How it works
 
 | Piece | Live / simulated | Where |
@@ -73,7 +75,7 @@ The teller is a drop-in step in any payment flow: the payment app calls the risk
 - Only risky payments open the teller; there is no call listening or recording.
 - Out-of-band verification goes only to a saved contact.
 - Gemini tokens are single-use, short-lived, and locked to the server-built config; ElevenLabs sessions use server-signed URLs. No API key reaches a browser.
-- Operator actions (which ring teammates’ phones) can require `OPERATOR_KEY` on a hosted deployment; requests are origin-checked, schema-validated, and rate-limited.
+- `DEMO_MODE=true` makes the fictional demo controls public. With demo mode disabled, operator actions can require `OPERATOR_KEY`; requests remain origin-checked, schema-validated, and rate-limited in either mode.
 - See [the threat model](docs/THREAT_MODEL.md).
 
 ## Production

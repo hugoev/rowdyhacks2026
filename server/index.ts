@@ -21,6 +21,7 @@ function allowedOrigin(req: IncomingMessage) {
   return !!host && (from === `http://${host}` || from === `https://${host}`);
 }
 const operatorKey = process.env.OPERATOR_KEY || '';
+const demoMode = process.env.DEMO_MODE === 'true';
 const tiger = new Tiger();
 const config = {
   gemini: !!process.env.GEMINI_API_KEY, elevenlabs: !!process.env.ELEVENLABS_API_KEY,
@@ -46,9 +47,9 @@ async function readBody(req: IncomingMessage) {
   for await (const chunk of req) { size += chunk.length; if (size > 64 * 1024) throw Object.assign(new Error('Request too large.'), { status: 413 }); chunks.push(chunk); }
   try { return JSON.parse(Buffer.concat(chunks).toString() || '{}'); } catch { throw new Error('Invalid JSON request.'); }
 }
-/** Operator actions ring teammates' phones; when OPERATOR_KEY is set (hosted demo), they require it. */
+/** Public demo controls need no key; private runs can require OPERATOR_KEY. */
 function requireOperator(req: IncomingMessage) {
-  if (!operatorKey) return;
+  if (demoMode || !operatorKey) return;
   const given = Buffer.from(String(req.headers['x-operator-key'] || ''));
   const expected = Buffer.from(operatorKey);
   if (given.length !== expected.length || !timingSafeEqual(given, expected)) throw Object.assign(new Error('Operator key required.'), { status: 403 });
@@ -70,7 +71,7 @@ const server = createServer(async (req, res) => {
   if (!path.startsWith('/api/')) { await handle(req, res); return; }
   try {
     if (!allowedOrigin(req)) throw Object.assign(new Error('This origin is not allowed. Check PUBLIC_BASE_URL.'), { status: 403 });
-    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, tiger: tiger.state, gemini: config.gemini, agents: { scammer: config.scammer, verifier: config.verifier }, hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
+    if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, demoMode, tiger: tiger.state, gemini: config.gemini, agents: { scammer: config.scammer, verifier: config.verifier }, hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
     if (req.method === 'GET' && path === '/api/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
       res.write(`data: ${JSON.stringify(demo.snapshot())}\n\n`); streams.add(res);

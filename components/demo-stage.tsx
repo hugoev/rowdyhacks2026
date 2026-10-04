@@ -16,10 +16,7 @@ export function DemoStage() {
   const [error, setError] = useState('');
   const [key, setKey] = useState('');
   useEffect(() => {
-    const supplied = new URLSearchParams(location.search).get('key');
-    if (supplied) { setKey(supplied); return; }
-    try { setKey(localStorage.getItem('tripwire-operator-key') || ''); }
-    catch { setError('Browser storage is unavailable. Enter a demo access key if the server requires one.'); }
+    setKey(new URLSearchParams(location.search).get('key') || '');
   }, []);
   const run = (path: string, body: unknown = {}) => { setError(''); void api(path, body, key).catch(e => setError(e.message)); };
   async function start() {
@@ -53,15 +50,6 @@ export function DemoStage() {
       </div>
     </header>
     {error && <p className="error demo-error" role="alert">{error}</p>}
-    <details className="demo-settings"><summary>Demo controls</summary>
-      <label>Demo access key <input type="password" value={key} onChange={e => {
-        setKey(e.target.value);
-        try { localStorage.setItem('tripwire-operator-key', e.target.value); }
-        catch { setError('The access key works for this page, but the browser could not save it.'); }
-      }} placeholder="Only if required by the server"/></label>
-      <button onClick={() => run('/operator/language', { language: state?.language === 'es' ? 'en' : 'es' })}>Language: {state?.language === 'es' ? 'Spanish' : 'English'}</button>
-      <button onClick={() => run('/operator/push-to-talk', { on: !state?.pushToTalk })}>Push-to-talk: {state?.pushToTalk ? 'on' : 'off'}</button>
-    </details>
     <div className="demo-grid">
       <section className="demo-col"><h2>Rosa’s phone</h2>
         {scamOnRosa ? <div className="phone-frame"><PhoneCall who="rosa" embedded/></div> : <BankApp/>}

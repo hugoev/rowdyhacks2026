@@ -12,7 +12,7 @@ services:
       DATA_DIR: /app/data
       APP_ORIGIN: https://${TRIPWIRE_DOMAIN:?Set TRIPWIRE_DOMAIN in .env.vultr}
       COOKIE_SECURE: "true"
-      DEMO_MODE: "false"
+      DEMO_MODE: ${DEMO_MODE:-true}
       HOSTING_PROVIDER: vultr
       APP_RELEASE: ${TRIPWIRE_RELEASE:-local}
     expose:
