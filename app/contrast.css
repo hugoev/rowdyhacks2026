@@ -1,0 +1,45 @@
+:root, .rosa-surface {
+  --ink: #241b14;
+  --muted: #574635;
+  --line: #b7a58d;
+}
+
+:is(.workspace, .access-card) :is(
+  .eyebrow, .stat-top, .stat-unit, .stat-note, .family-avatars small,
+  .source-label, .source-label > span, .quiet-text, .small-note,
+  .mono-small, .dial-label, .dial-level, .risk-dial strong small,
+  .chart-heading, .chart-labels, .chart-times, .transcript-mini time,
+  .activity-event time, .queue-description, .payment-summary,
+  .payment-who p, .family-strip small, .case-date, .case-lesson,
+  .integration-row, .relative-note, .footer, .lookout-tabs button,
+  .filter-tabs button, .empty p, .empty h3, .activity-waiting,
+  .activity-waiting p, .activity-waiting > span
+) { color: #574635; }
+
+:is(.workspace, .access-card) :is(
+  .page-heading > div > p:last-child, .stat-card > p,
+  .risk-copy > p:not(.eyebrow), .activity-event p,
+  .settings-card > p, .inspector-input > p, .confirm-dialog p
+) { color: #49392b; }
+
+.workspace :is(.breadcrumb > span, .breadcrumb > svg, .connection) { color: #574635; }
+.workspace :is(input:not([type='checkbox']), textarea, select) { border-color: #877057; }
+.workspace :is(input, textarea)::placeholder { color: #66513f; opacity: 1; }
+.workspace :is(.button.secondary, .badge.outline, .upload-zone, .preset-row button) {
+  border-color: #877057;
+  color: #49392b;
+}
+.workspace .badge:not(.red):not(.green):not(.amber) { color: #49392b; }
+.workspace :is(.lookout-tabs button.selected, .filter-tabs button.selected) { color: #7e2527; }
+.workspace .risk-dial:is(.high, .critical) .dial-level { color: #a83226; }
+.workspace .critical-key { color: #963429; }
+
+.sidebar :is(.brand small, .nav-label, .sidebar-family small, .sidebar-user small, .crew-note p) {
+  color: #ead8bb;
+}
+.sidebar .crew-note strong { color: #fff2dc; }
+
+.detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #fff2dc; }
+.detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
+  color: #fff2dc;
+}

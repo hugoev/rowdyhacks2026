@@ -5,6 +5,7 @@ import './protected.css';
 import './transitions.css';
 import { PageTransition } from '@/components/page-transition';
 import './detective.css';
+import './contrast.css';
 import { ServiceWorker } from '@/components/service-worker';
 const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
 const syne = Syne({ subsets: ['latin'], display: 'swap', variable: '--font-syne' });
