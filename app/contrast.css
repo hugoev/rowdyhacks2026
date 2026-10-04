@@ -39,7 +39,46 @@
 }
 .sidebar .crew-note strong { color: #fff2dc; }
 
-.detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #fff2dc; }
-.detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
+.workspace .detective-board .stat-top {
+  align-items: flex-start;
+  gap: 10px;
+  color: #241b14;
+}
+.workspace .detective-board .stat-top > span {
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: .5px;
+}
+.workspace .detective-board :is(
+  .eyebrow, .mono-small, .source-label, .chart-heading,
+  .case-date, .payment-who p, .activity-event time,
+  .demo-fine, .demo-disclosure, .badge, .case-tab, .transcript-mini time,
+  .tell-chips > span, .payment-meta > span:last-child:not(.badge)
+) {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.6;
+  color: #30251c;
+}
+.workspace .detective-board :is(.source-label, .chart-heading) {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.workspace .detective-board :is(.chart-times, .chart-labels, .stat-unit, .section-title h2 > span) {
+  font-size: 12px;
+  font-weight: 600;
+  color: #30251c;
+}
+.workspace .detective-board .badge.red { color: #a52921; }
+.workspace .detective-board .badge.green { color: #48653a; }
+.workspace .detective-board .badge.amber { color: #7f5817; }
+.workspace .detective-board .case-tab { color: #fff8e9; }
+.workspace .detective-board :is(.dial-label, .dial-level) { font-size: 10px; font-weight: 600; }
+.workspace .footer { font-size: 12px; color: #30251c; line-height: 1.6; }
+.sidebar .nav-label { font-size: 12px; font-weight: 600; }
+
+.workspace .detective-board .demo-card :is(.eyebrow, .demo-fine, p) { color: #fff2dc; }
+.workspace .detective-board :is(.demo-disclosure, .demo-disclosure button, .empathy-note, .empathy-note p, .empathy-note p > span) {
   color: #fff2dc;
 }
