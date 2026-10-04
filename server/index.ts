@@ -11,7 +11,15 @@ import { agentId, agentSignedUrl } from './elevenlabs';
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = process.env.HOST || '127.0.0.1';
 const port = Number(process.env.PORT || 3000);
-const origin = process.env.PUBLIC_BASE_URL || process.env.APP_ORIGIN || `http://localhost:${port}`;
+// Normalized: "http://localhost:3000/" in .env must match the browser's "http://localhost:3000".
+const origin = (() => { const raw = process.env.PUBLIC_BASE_URL || process.env.APP_ORIGIN || `http://localhost:${port}`; try { return new URL(raw).origin; } catch { return raw.replace(/\/+$/, ''); } })();
+/** Cross-site requests are refused; same-origin ones (however the page was opened: localhost, 127.0.0.1, LAN IP) are fine. */
+function allowedOrigin(req: IncomingMessage) {
+  const from = req.headers.origin;
+  if (!from || from === origin) return true;
+  const host = req.headers.host;
+  return !!host && (from === `http://${host}` || from === `https://${host}`);
+}
 const operatorKey = process.env.OPERATOR_KEY || '';
 const tiger = new Tiger();
 const config = {
@@ -61,7 +69,7 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url || '/', origin); const path = url.pathname;
   if (!path.startsWith('/api/')) { await handle(req, res); return; }
   try {
-    if (req.headers.origin && req.headers.origin !== origin) throw Object.assign(new Error('This origin is not allowed. Check PUBLIC_BASE_URL.'), { status: 403 });
+    if (!allowedOrigin(req)) throw Object.assign(new Error('This origin is not allowed. Check PUBLIC_BASE_URL.'), { status: 403 });
     if (req.method === 'GET' && path === '/api/health') { json(res, 200, { ok: true, tiger: tiger.state, gemini: config.gemini, agents: { scammer: config.scammer, verifier: config.verifier }, hosting: process.env.HOSTING_PROVIDER || 'local', release: process.env.APP_RELEASE || null }); return; }
     if (req.method === 'GET' && path === '/api/events') {
       res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
