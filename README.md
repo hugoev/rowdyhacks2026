@@ -12,15 +12,16 @@ See [PRD v3](docs/PRD.md), the [demo runbook](docs/DEMO.md) (2:40 table demo and
 
 ## Pages
 
-| Page | Who | What |
-|---|---|---|
-| `/demo` | **The whole demo on one screen** | Start button, Rosa's phone (AI scam call, then her bank app), Diego's phone, and the next step |
-| `/` | Rosa (laptop, mirrored to the judges) | Her bank app: Home → Send → Tripwire (orb, big captions, one status line) → Outcome |
-| `/call?who=rosa` | Teammate phone | Rings with the AI scam call (Gemini Live) |
-| `/call?who=diego` | Teammate phone | Rings when the teller calls Diego (ElevenLabs Agent B, the verifier) |
-| `/dashboard` | Family / big monitor | Mission Control on the detective board: the job and Tiger risk check, the teller conversation live, both phone calls, the verdict, the wire, and the case file; `/dashboard/cases` holds the history (this session plus Tiger Data) |
-| `/case/latest` | Big monitor | The family’s case file, styled as a heist file; follows the live demo |
-| `/operator` | Hidden | START SCAM CALL, CALL DIEGO, FORCE RESULT, RESET, language, coach mode, push-to-talk, event log |
+| Page | What |
+| --- | --- |
+| `/` | Main dashboard: protection totals, recent saved call reviews, and the demo entry point |
+| `/calls` | Saved call reviews with outcomes and expandable details; no audio recordings |
+| `/demo` | Complete demo flow with vault entrance, Rosa's phone and bank, Diego's verification, reset and backup controls |
+| `/bank` | Rosa's standalone bank app |
+| `/call?who=rosa` | Rosa's phone on a separate device |
+| `/call?who=diego` | Diego's phone on a separate device |
+
+`/dashboard` remains a dashboard alias and `/dashboard/cases` redirects to `/calls`. The separate Operator and Case Monitor screens have been removed.
 
 ## How it works
 
@@ -47,9 +48,9 @@ npm run check:live       # real Gemini teller conversation, text mode: story -> 
 npm run dev
 ```
 
-Open `/` on the laptop, `/operator` in another window, and `/call?who=rosa` and `/call?who=diego` on the two phones (HTTPS is required for phone mics; use the Vultr deployment or a tunnel). Tap **Ready** once on each phone.
+Open `/` for the dashboard and choose Demo for the complete one-laptop flow. For separate phones, use `/bank`, `/call?who=rosa`, and `/call?who=diego`; HTTPS is required for phone mics. Tap Ready once on each phone.
 
-Without keys the app still runs: the risk check uses local data, the teller shows as offline, and the operator’s CALL DIEGO and FORCE RESULT drive the outcome and case file.
+Without keys the app still runs: the risk check uses local data, the teller shows as offline, and the backup result control in `/demo` drives the outcome and saves a call review.
 
 ## Verify
 
@@ -78,3 +79,5 @@ The teller is a drop-in step in any payment flow: the payment app calls the risk
 ## Production
 
 `npm run build && npm start` serves Next.js and the API from one port. For Vultr with Caddy HTTPS, follow [the Vultr guide](docs/VULTR.md) (`npm run setup:vultr`, then `npm run deploy:vultr -- user@server-ip`). Use exactly one server instance: the demo session lives in memory.
+
+The main endpoint `/` opens the dashboard. `/dashboard` remains available, `/bank` is Rosa's standalone bank app, and `/demo` opens the combined demo with the vault transition (skipped for reduced-motion preferences).

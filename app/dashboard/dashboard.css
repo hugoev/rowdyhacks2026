@@ -69,3 +69,11 @@
 .dash .case-card ul b { color: #6d4c2c; }
 .dash .demo-bottom { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 18px; }
 .dash .teller-transcript li, .dash .teller-transcript p { text-align: left; background: none; padding: 0; border: 0; box-shadow: none; }
+.saved-call-list { display: grid; gap: 18px; }
+.saved-history .saved-call-list { padding: 20px; }
+.saved-history .section-title .text-link { display: inline-flex; align-items: center; gap: 5px; }
+.saved-call { padding: 24px; min-height: 0; }
+.saved-call h2 { margin-top: 12px; }
+.saved-call summary { cursor: pointer; padding: 16px 0 0; font-weight: 600; }
+.saved-call-details { display: grid; gap: 12px; padding-top: 16px; line-height: 1.7; }
+.dashboard-columns > .demo-card { align-self: start; }

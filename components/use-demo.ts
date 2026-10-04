@@ -1,9 +1,11 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { createContext, createElement, useContext, useEffect, useState, type ReactNode } from 'react';
 import type { DemoState } from '@/lib/types';
 
-/** Live demo state from the server (SSE), reconnecting automatically. */
-export function useDemo() {
+const DemoContext = createContext<{ state: DemoState | null; online: boolean } | null>(null);
+
+/** Share one event stream across all embedded panels so HTTP requests retain a connection. */
+export function DemoProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DemoState | null>(null);
   const [online, setOnline] = useState(false);
   useEffect(() => {
@@ -17,7 +19,13 @@ export function useDemo() {
     connect();
     return () => { closed = true; clearTimeout(retry); source?.close(); };
   }, []);
-  return { state, online };
+  return createElement(DemoContext.Provider, { value: { state, online } }, children);
+}
+
+export function useDemo() {
+  const value = useContext(DemoContext);
+  if (!value) throw new Error('Demo views must be inside DemoProvider.');
+  return value;
 }
 
 export async function api<T = unknown>(path: string, body: unknown = {}, operatorKey?: string): Promise<T> {

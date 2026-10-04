@@ -4,6 +4,7 @@ import './globals.css';
 import './transitions.css';
 import { PageTransition } from '@/components/page-transition';
 import { ServiceWorker } from '@/components/service-worker';
+import { DemoProvider } from '@/components/use-demo';
 const inter = Inter({ subsets: ['latin'], display: 'swap', variable: '--font-inter' });
 const syne = Syne({ subsets: ['latin'], display: 'swap', variable: '--font-syne' });
 const bebasNeue = Bebas_Neue({ subsets: ['latin'], weight: '400', display: 'swap', variable: '--font-bebas-neue' });
@@ -13,5 +14,5 @@ export const metadata: Metadata = {
   icons: { icon: '/favicon.svg' },
 };
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  return <html lang="en" className={`${inter.variable} ${syne.variable} ${bebasNeue.variable}`}><body><PageTransition>{children}</PageTransition><ServiceWorker/></body></html>;
+  return <html lang="en" className={`${inter.variable} ${syne.variable} ${bebasNeue.variable}`}><body><DemoProvider><PageTransition>{children}</PageTransition></DemoProvider><ServiceWorker/></body></html>;
 }

@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Check, Play, RotateCcw } from 'lucide-react';
 import { BankApp } from './bank-app';
 import { PhoneCall } from './phone-call';
@@ -14,11 +14,23 @@ export function DemoStage() {
   const { state } = useDemo();
   const [started, setStarted] = useState(false);
   const [error, setError] = useState('');
-  const run = (path: string, body: unknown = {}) => { setError(''); void api(path, body).catch(e => setError(e.message)); };
+  const [key, setKey] = useState('');
+  useEffect(() => {
+    const supplied = new URLSearchParams(location.search).get('key');
+    if (supplied) { setKey(supplied); return; }
+    try { setKey(localStorage.getItem('tripwire-operator-key') || ''); }
+    catch { setError('Browser storage is unavailable. Enter a demo access key if the server requires one.'); }
+  }, []);
+  const run = (path: string, body: unknown = {}) => { setError(''); void api(path, body, key).catch(e => setError(e.message)); };
   async function start() {
     // This tap unlocks sound and the mic for every panel on the page.
     try { const c = new AudioContext(); await c.resume(); void c.close(); } catch { /* audio unavailable */ }
-    setStarted(true); run('/operator/reset'); setTimeout(() => run('/operator/scam'), 400);
+    try {
+      setError('');
+      await api('/operator/reset', {}, key);
+      await api('/operator/scam', {}, key);
+      setStarted(true);
+    } catch (e) { setError((e as Error).message); }
   }
   const ring = state?.ring;
   const scamOnRosa = ring?.who === 'rosa' && ring.status !== 'ended';
@@ -41,6 +53,15 @@ export function DemoStage() {
       </div>
     </header>
     {error && <p className="error demo-error" role="alert">{error}</p>}
+    <details className="demo-settings"><summary>Demo controls</summary>
+      <label>Demo access key <input type="password" value={key} onChange={e => {
+        setKey(e.target.value);
+        try { localStorage.setItem('tripwire-operator-key', e.target.value); }
+        catch { setError('The access key works for this page, but the browser could not save it.'); }
+      }} placeholder="Only if required by the server"/></label>
+      <button onClick={() => run('/operator/language', { language: state?.language === 'es' ? 'en' : 'es' })}>Language: {state?.language === 'es' ? 'Spanish' : 'English'}</button>
+      <button onClick={() => run('/operator/push-to-talk', { on: !state?.pushToTalk })}>Push-to-talk: {state?.pushToTalk ? 'on' : 'off'}</button>
+    </details>
     <div className="demo-grid">
       <section className="demo-col"><h2>Rosa’s phone</h2>
         {scamOnRosa ? <div className="phone-frame"><PhoneCall who="rosa" embedded/></div> : <BankApp/>}
@@ -51,8 +72,8 @@ export function DemoStage() {
       <section className="demo-col story"><h2>What’s happening</h2>
         <ol className="demo-steps">{steps.map(s => <li key={s.text} className={s.done ? 'done' : s.now ? 'now' : ''}>{s.done ? <Check size={18}/> : <span/>}{s.text}</li>)}</ol>
         {state?.check && <p className="demo-fact"><b>{state.check.multiple}×</b> her usual · {money(state.check.amount)} → {state.check.payee}{state.check.isNewPayee ? ' · new payee' : ''}</p>}
-        {file && <a className="demo-file" href={`/case/${file.id}`} target="_blank" rel="noreferrer"><small>FILE {String(file.number).padStart(3, '0')}</small><strong>{file.jobName}</strong><span className={file.outcome}>{file.outcome === 'foiled' ? 'FOILED' : 'VERIFIED'}</span></a>}
-        <p className="demo-links"><a href="/dashboard" target="_blank" rel="noreferrer">Mission Control</a> · <a href="/case/latest" target="_blank" rel="noreferrer">Case file monitor</a></p>
+        {file && <a className="demo-file" href="/calls" target="_blank" rel="noreferrer"><small>SAVED CALL {String(file.number).padStart(3, '0')}</small><strong>{file.jobName}</strong><span className={file.outcome}>{file.outcome === 'foiled' ? 'FOILED' : 'VERIFIED'}</span></a>}
+        <p className="demo-links"><a href="/">Dashboard</a> · <a href="/calls">Saved calls</a></p>
       </section>
     </div>
   </main>;

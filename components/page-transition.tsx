@@ -3,12 +3,12 @@
 import { useLayoutEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 
-const vaultRoutes = new Set(['/dashboard', '/dashboard/cases']);
-const canonical = (path: string) => path;
+const vaultRoutes = new Set(['/', '/calls', '/demo']);
+const canonical = (path: string) => path === '/dashboard' ? '/' : path === '/dashboard/cases' ? '/calls' : path;
 
 export function PageTransition({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const previous = useRef(pathname);
+  const previous = useRef<string | null>(null);
   const [transition, setTransition] = useState<string | null>(null);
   const [laser, setLaser] = useState<string | null>(null);
 
@@ -16,8 +16,9 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     const from = previous.current;
     previous.current = pathname;
     setTransition(null);
-    if (canonical(from) === canonical(pathname) || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    if (!vaultRoutes.has(from) || !vaultRoutes.has(pathname)) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (from !== null && canonical(from) === canonical(pathname) && pathname !== '/demo') return;
+    if (pathname !== '/demo' && (from === null || !vaultRoutes.has(canonical(from)) || !vaultRoutes.has(canonical(pathname)))) return;
     setTransition(pathname);
     setLaser(pathname + Date.now());
     // A missing animationend event must never leave the decoration on screen.
