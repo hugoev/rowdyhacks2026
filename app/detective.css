@@ -105,6 +105,11 @@
 .detective-board .payment-who h3 { font-size: 18px; }
 .detective-board .payment-who p { font-size: 13px; }
 .detective-board .payment-item { padding: 22px 20px; }
+.payment-details { margin: 8px 0 12px; border-top: 1px solid var(--line); }
+.payment-details > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; cursor: pointer; list-style: none; font-size: 16px; font-weight: 600; }
+.payment-details > summary::-webkit-details-marker { display: none; }
+.payment-details[open] > summary > svg { transform: rotate(90deg); }
+.payment-details-body { padding: 4px 0 12px; overflow-wrap: anywhere; }
 .detective-board .family-strip { gap: 18px; margin-top: 32px; padding: 23px 20px; flex-wrap: wrap; }
 .detective-board .family-strip strong { font-size: 16px; }
 .detective-board .demo-bottom { gap: 18px; flex-wrap: wrap; }
