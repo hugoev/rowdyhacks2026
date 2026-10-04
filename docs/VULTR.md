@@ -14,6 +14,11 @@ which also allows demo controls without `OPERATOR_KEY`. `/api/health` reports
 the effective `demoMode` value. Set `DEMO_MODE=false` to enforce a configured
 operator key again. The old offline service worker is retired; `/sw.js` remains
 as a migration that clears Tripwire caches and refreshes controlled windows.
+
+The same Caddy site also serves https://tripwire.64.177.46.134.sslip.io with a
+public certificate. Both venue DNS servers resolve this backup hostname even
+when they return NXDOMAIN for `tripwire.study`. It proxies to the same Node
+process, so switching URLs preserves the shared demo session and saved reviews.
 Keep Node 22.22+; the PRD's Node 20 note does not supersede the current runtime.
 
 Main pushes run checks across Linux/Windows/macOS plus browser and chain tests.

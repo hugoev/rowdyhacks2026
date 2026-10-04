@@ -25,6 +25,8 @@ See [PRD v3](docs/PRD.md), the [demo runbook](docs/DEMO.md) (2:40 table demo and
 
 The hosted demo at https://tripwire.study uses `DEMO_MODE=true`: no sign-in or demo access key is needed. `/` opens the dashboard and `/demo` opens the call flow. The old offline service worker is retired; returning browsers remove its caches and recover the live page when the network is available.
 
+Venue Wi-Fi backup: https://tripwire.64.177.46.134.sslip.io serves the same app and demo session over HTTPS when the venue DNS does not resolve the new `tripwire.study` domain.
+
 ## How it works
 
 | Piece | Live / simulated | Where |
